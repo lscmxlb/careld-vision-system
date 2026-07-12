@@ -1,0 +1,6 @@
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/SyncServiceApplication.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/controller/SyncController.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/dto/SyncUploadRequest.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/entity/SyncLog.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/service/SyncService.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-sync-service/src/main/java/com/careld/sync/service/impl/SyncServiceImpl.java

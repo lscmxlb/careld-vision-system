@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors -->
+    <color name="primary">#1890FF</color>
+    <color name="primary_dark">#096DD9</color>
+    <color name="accent">#00D4FF</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#52C41A</color>
+    <color name="warning">#FAAD14</color>
+    <color name="error">#F5222D</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8C8C8C</color>
+    <color name="text_tertiary">#595959</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#1A1A1A</color>
+    <color name="surface">#2A2A2A</color>
+    <color name="card">#333333</color>
+    
+    <!-- Focus Colors -->
+    <color name="focus">#00D4FF</color>
+    <color name="selected">#1890FF</color>
+    
+    <!-- Border Colors -->
+    <color name="border">#595959</color>
+    <color name="border_focused">#00D4FF</color>
+</resources>

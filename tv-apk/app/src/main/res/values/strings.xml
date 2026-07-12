@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">可尔欧得视力养护</string>
+    
+    <!-- Navigation -->
+    <string name="nav_vision_test">视力检测</string>
+    <string name="nav_child_search">儿童档案</string>
+    <string name="nav_sync">数据同步</string>
+    <string name="nav_settings">系统设置</string>
+    <string name="nav_back">返回</string>
+    
+    <!-- Login -->
+    <string name="login_title">设备登录</string>
+    <string name="login_store_code_hint">门店编码</string>
+    <string name="login_device_code_hint">设备码</string>
+    <string name="login_button">登录</string>
+    <string name="login_error_empty">请输入门店编码和设备码</string>
+    <string name="login_error_network">网络错误，请检查网络连接</string>
+    
+    <!-- Vision Test -->
+    <string name="vision_test_title">视力检测</string>
+    <string name="vision_test_left_eye">左眼</string>
+    <string name="vision_test_right_eye">右眼</string>
+    <string name="vision_test_before">养护前</string>
+    <string name="vision_test_after">养护后</string>
+    <string name="vision_test_start">开始检测</string>
+    <string name="vision_test_save">保存结果</string>
+    <string name="vision_test_instructions">请使用方向键指示缺口方向</string>
+    
+    <!-- Calibration -->
+    <string name="calibration_title">屏幕校准</string>
+    <string name="calibration_instructions">请将一张标准信用卡（85.60mm × 53.98mm）放在屏幕上，调整下方虚拟卡片大小使其与实际卡片重合。</string>
+    <string name="calibration_confirm">确认校准</string>
+    <string name="calibration_skip">跳过</string>
+    <string name="calibration_success">校准成功</string>
+    
+    <!-- Sync -->
+    <string name="sync_title">数据同步</string>
+    <string name="sync_unsynced">未同步</string>
+    <string name="sync_failed">同步失败</string>
+    <string name="sync_synced">已同步</string>
+    <string name="sync_cached">缓存儿童</string>
+    <string name="sync_last_time">上次同步</string>
+    <string name="sync_now">立即同步</string>
+    <string name="sync_view_logs">查看日志</string>
+    <string name="sync_never">从未</string>
+    
+    <!-- Child Search -->
+    <string name="child_search_title">儿童档案检索</string>
+    <string name="child_search_hint">输入姓名搜索</string>
+    <string name="child_search_empty">暂无数据</string>
+    
+    <!-- Common -->
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="loading">加载中...</string>
+    <string name="error">错误</string>
+    <string name="retry">重试</string>
+</resources>

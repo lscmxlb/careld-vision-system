@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A1A"
+    android:padding="48dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="数据同步"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Stats Panel -->
+    <GridLayout
+        android:id="@+id/statsGrid"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:columnCount="2"
+        android:rowCount="2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle">
+
+        <TextView
+            android:id="@+id/tvUnsyncedCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_stat_card"
+            android:gravity="center"
+            android:padding="32dp"
+            android:text="未同步: 0条"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/tvFailedCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_stat_card"
+            android:gravity="center"
+            android:padding="32dp"
+            android:text="同步失败: 0条"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/tvSyncedCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_stat_card"
+            android:gravity="center"
+            android:padding="32dp"
+            android:text="已同步: 0条"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/tvCachedChildren"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_stat_card"
+            android:gravity="center"
+            android:padding="32dp"
+            android:text="缓存儿童: 0人"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+    </GridLayout>
+
+    <TextView
+        android:id="@+id/tvLastSync"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="上次同步: 从未"
+        android:textColor="#8C8C8C"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statsGrid" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvLastSync" />
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/progressBar">
+
+        <Button
+            android:id="@+id/btnSyncNow"
+            android:layout_width="200dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_tv_button"
+            android:text="立即同步"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+        <Button
+            android:id="@+id/btnViewLogs"
+            android:layout_width="200dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_tv_button"
+            android:text="查看日志"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="200dp"
+            android:layout_height="72dp"
+            android:background="@drawable/bg_tv_button_secondary"
+            android:text="返回"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

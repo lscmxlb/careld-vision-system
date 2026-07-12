@@ -1,0 +1,292 @@
+# ============================================================
+# Careld 视力养护系统 - Docker Compose 配置
+# ============================================================
+# 启动前请复制 .env.example 为 .env 并填写实际密码:
+#   cp .env.example .env
+# ============================================================
+
+version: '3.8'
+
+services:
+  # MySQL 8.0 数据库服务
+  mysql:
+    image: mysql:8.0.36
+    container_name: careld-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: careld_vision
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./mysql-config/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - careld-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 7.x 缓存服务
+  redis:
+    image: redis:7.2-alpine
+    container_name: careld-redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT_EXPOSE:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis-config/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - careld-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 认证服务
+  careld-auth-service:
+    build:
+      context: ../backend/careld-auth-service
+      dockerfile: Dockerfile
+    container_name: careld-auth-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?请在 .env 中设置 JWT_REFRESH_SECRET}
+    ports:
+      - "8281:8281"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - careld-network
+
+  # 用户服务
+  careld-user-service:
+    build:
+      context: ../backend/careld-user-service
+      dockerfile: Dockerfile
+    container_name: careld-user-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+    ports:
+      - "8282:8282"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # 门店服务
+  careld-store-service:
+    build:
+      context: ../backend/careld-store-service
+      dockerfile: Dockerfile
+    container_name: careld-store-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+    ports:
+      - "8283:8283"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # 儿童档案服务
+  careld-child-service:
+    build:
+      context: ../backend/careld-child-service
+      dockerfile: Dockerfile
+    container_name: careld-child-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?请在 .env 中设置 ENCRYPTION_KEY}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+    ports:
+      - "8284:8284"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # 预约排班服务
+  careld-schedule-service:
+    build:
+      context: ../backend/careld-schedule-service
+      dockerfile: Dockerfile
+    container_name: careld-schedule-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+    ports:
+      - "8285:8285"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # 视力检测服务
+  careld-vision-service:
+    build:
+      context: ../backend/careld-vision-service
+      dockerfile: Dockerfile
+    container_name: careld-vision-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+    ports:
+      - "8286:8286"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # TV同步服务
+  careld-sync-service:
+    build:
+      context: ../backend/careld-sync-service
+      dockerfile: Dockerfile
+    container_name: careld-sync-service
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?请在 .env 中设置 REDIS_PASSWORD}
+      - AUTH_SERVICE_URL=http://careld-auth-service:8281
+      - WEBSOCKET_PORT=8287
+    ports:
+      - "8287:8287"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      careld-auth-service:
+        condition: service_started
+    networks:
+      - careld-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: careld-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-config/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx-config/conf.d:/etc/nginx/conf.d
+      - ./nginx-config/ssl:/etc/nginx/ssl
+      - ../frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - careld-auth-service
+      - careld-user-service
+      - careld-store-service
+      - careld-child-service
+      - careld-schedule-service
+      - careld-vision-service
+      - careld-sync-service
+    networks:
+      - careld-network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  careld-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

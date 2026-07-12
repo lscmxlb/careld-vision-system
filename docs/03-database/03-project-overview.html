@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>03-project-overview.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="careld-%E5%8F%AF%E5%B0%94%E6%AC%A7%E5%BE%97%E8%A7%86%E5%8A%9B%E5%85%BB%E6%8A%A4%E6%9C%8D%E5%8A%A1%E4%BF%A1%E6%81%AF%E7%B3%BB%E7%BB%9F---%E9%A1%B9%E7%9B%AE%E6%95%B4%E4%BD%93%E6%8F%8F%E8%BF%B0">Careld 可尔欧得视力养护服务信息系统 - 项目整体描述</h1>
+<blockquote>
+<p>本文档基于代码库和数据库结构，描述整个项目的架构、模块划分及各部分之间的关系。</p>
+</blockquote>
+<hr>
+<h2 id="%E4%B8%80%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0">一、项目概述</h2>
+<p><strong>Careld 可尔欧得视力养护服务信息系统</strong> 是一套面向线下视力养护门店（医院）的云端管理解决方案，覆盖 <strong>四端多角色</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>终端</th>
+<th>技术形态</th>
+<th>使用角色</th>
+<th>核心场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>运营中心Web</td>
+<td>Vue3 SPA (PC)</td>
+<td>总部运营管理员</td>
+<td>全局管理、数据看板、系统配置</td>
+</tr>
+<tr>
+<td>门店Web</td>
+<td>Vue3 SPA (PC)</td>
+<td>门店店长、医生、护士、技师</td>
+<td>儿童建档、预约排班、记录查询</td>
+</tr>
+<tr>
+<td>家长Web</td>
+<td>Vue3 SPA (H5响应式)</td>
+<td>家长用户</td>
+<td>子女档案、检测报告、视力趋势</td>
+</tr>
+<tr>
+<td>安卓TV APK</td>
+<td>Android (Kotlin + SQLite)</td>
+<td>TV设备终端</td>
+<td>电子视力表、离线检测、数据同步</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>说明</strong>：系统中&quot;门店&quot;等同于&quot;医院&quot;，每家门店对应一家医院，医院内设有科室，科室下管理医生、护士、技师等医护人员。护士通过手机号登录门店Web端进行操作。</p>
+</blockquote>
+<p><strong>核心业务流程</strong>：</p>
+<pre class="hljs"><code><div>建档 → 审核 → 排班 → 预约 → 养护前检测 → 养护服务 → 养护后复测 → 数据同步 → 多端查看
+</div></code></pre>
+<hr>
+<h2 id="%E4%BA%8C%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E6%80%BB%E8%A7%88">二、技术架构总览</h2>
+<h3 id="21-%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84">2.1 分层架构</h3>
+<pre class="hljs"><code><div>┌─────────────────────────────────────────────────────────────────┐
+│                         终端接入层                                 │
+├─────────────┬─────────────┬─────────────┬─────────────────────────┤
+│ 运营中心Web  │  门店Web     │  家长Web    │      安卓TV APK         │
+│  (Vue3)     │   (Vue3)    │   (Vue3)    │  (Kotlin+SQLite)       │
+└──────┬──────┴──────┬──────┴──────┬──────┴───────────┬─────────────┘
+       │             │             │                │
+       └─────────────┴─────────────┴────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │    API网关层       │  ← 统一鉴权、限流、HTTPS
+                    └─────────┬─────────┘
+                              │
+       ┌──────────────────────┼──────────────────────┐
+       │                      │                      │
+┌──────┴──────┐  ┌────────────┴────────────┐  ┌─────┴──────┐
+│  业务服务层  │  │      数据存储层         │  │  网络支撑  │
+│ (SpringBoot)│  │                         │  │            │
+│             │  │  MySQL  Redis  OSS      │  │ 宽带/4G/  │
+│ •用户服务    │  │  SQLite(TV本地)         │  │ LTE离线    │
+│ •档案服务    │  │                         │  │            │
+│ •预约服务    │  │                         │  │            │
+│ •视力检测    │  │                         │  │            │
+│ •同步服务    │  │                         │  │            │
+└─────────────┘  └─────────────────────────┘  └────────────┘
+</div></code></pre>
+<h3 id="22-%E6%8A%80%E6%9C%AF%E6%A0%88%E9%80%89%E5%9E%8B">2.2 技术栈选型</h3>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>技术</th>
+<th>版本</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>后端</strong></td>
+<td>Java</td>
+<td>17 LTS</td>
+<td>长期支持版本</td>
+</tr>
+<tr>
+<td></td>
+<td>Spring Boot</td>
+<td>3.2.x</td>
+<td>微服务快速开发</td>
+</tr>
+<tr>
+<td></td>
+<td>MyBatis Plus</td>
+<td>3.5.x</td>
+<td>ORM框架</td>
+</tr>
+<tr>
+<td></td>
+<td>JWT</td>
+<td>0.12.3</td>
+<td>Token认证</td>
+</tr>
+<tr>
+<td></td>
+<td>Knife4j</td>
+<td>4.4.0</td>
+<td>API文档</td>
+</tr>
+<tr>
+<td><strong>前端</strong></td>
+<td>Vue</td>
+<td>3.5.x</td>
+<td>组合式API</td>
+</tr>
+<tr>
+<td></td>
+<td>Vite</td>
+<td>8.x</td>
+<td>构建工具</td>
+</tr>
+<tr>
+<td></td>
+<td>Element Plus</td>
+<td>2.14.x</td>
+<td>UI组件库</td>
+</tr>
+<tr>
+<td></td>
+<td>Pinia</td>
+<td>3.x</td>
+<td>状态管理</td>
+</tr>
+<tr>
+<td></td>
+<td>Axios</td>
+<td>1.18.x</td>
+<td>HTTP客户端</td>
+</tr>
+<tr>
+<td><strong>TV端</strong></td>
+<td>Kotlin</td>
+<td>1.9.x</td>
+<td>Android开发</td>
+</tr>
+<tr>
+<td></td>
+<td>Room</td>
+<td>-</td>
+<td>SQLite ORM</td>
+</tr>
+<tr>
+<td></td>
+<td>Hilt</td>
+<td>2.x</td>
+<td>依赖注入</td>
+</tr>
+<tr>
+<td></td>
+<td>Retrofit</td>
+<td>2.x</td>
+<td>网络请求</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%E4%B8%89%E5%90%8E%E7%AB%AF%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%9E%B6%E6%9E%84">三、后端微服务架构</h2>
+<h3 id="31-%E6%9C%8D%E5%8A%A1%E6%8B%86%E5%88%86">3.1 服务拆分</h3>
+<pre class="hljs"><code><div>backend/
+├── careld-common/           # 公共模块（实体基类、工具类、枚举、异常处理）
+├── careld-auth-service/     # 认证授权服务 → sys_user, sys_role, sys_user_role
+├── careld-user-service/     # 用户管理服务 → sys_user
+├── careld-store-service/    # 门店管理服务 → store_info, store_tv_device
+├── careld-child-service/    # 儿童档案服务 → child_profile
+├── careld-schedule-service/ # 预约排班服务 → schedule_info, reserve_order
+├── careld-vision-service/   # 视力检测服务 → vision_test_record
+└── careld-sync-service/     # TV同步服务 → sync_log, local_child_profile, local_vision_record
+</div></code></pre>
+<h3 id="32-%E5%90%84%E6%9C%8D%E5%8A%A1%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A1%A8%E7%9A%84%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB">3.2 各服务与数据库表的对应关系</h3>
+<table>
+<thead>
+<tr>
+<th>微服务</th>
+<th>负责的数据库表</th>
+<th>核心职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>careld-auth-service</strong></td>
+<td>sys_user, sys_role, sys_user_role</td>
+<td>用户登录、Token管理、权限校验</td>
+</tr>
+<tr>
+<td><strong>careld-user-service</strong></td>
+<td>sys_user</td>
+<td>用户CRUD、账号管理</td>
+</tr>
+<tr>
+<td><strong>careld-store-service</strong></td>
+<td>store_info, store_tv_device, store_department</td>
+<td>门店信息管理、科室管理、TV设备绑定</td>
+</tr>
+<tr>
+<td><strong>careld-child-service</strong></td>
+<td>child_profile</td>
+<td>儿童档案CRUD、档案审核</td>
+</tr>
+<tr>
+<td><strong>careld-schedule-service</strong></td>
+<td>schedule_info, reserve_order</td>
+<td>技师排班、预约管理</td>
+</tr>
+<tr>
+<td><strong>careld-vision-service</strong></td>
+<td>vision_test_record</td>
+<td>检测记录管理、视力对比分析</td>
+</tr>
+<tr>
+<td><strong>careld-sync-service</strong></td>
+<td>sync_log (云端)</td>
+<td>TV数据同步、离线数据接收、增量下发</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%E5%9B%9B%E5%89%8D%E7%AB%AF%E5%BA%94%E7%94%A8%E6%9E%B6%E6%9E%84">四、前端应用架构</h2>
+<h3 id="41-%E8%BF%90%E8%90%A5%E4%B8%AD%E5%BF%83web-admin-web">4.1 运营中心Web (admin-web)</h3>
+<p><strong>路由结构</strong>：</p>
+<pre class="hljs"><code><div>/                           → 主布局
+├── /login                  → 登录页
+├── /dashboard              → 数据看板（首页）
+├── /store/list             → 门店列表
+├── /store/audit            → 档案审核
+├── /schedule               → 排班监控
+├── /device                 → 设备管理
+├── /user                   → 用户管理
+└── /settings               → 系统设置
+</div></code></pre>
+<p><strong>API模块</strong>：</p>
+<ul>
+<li><code>auth.ts</code> - 登录/登出/Token刷新</li>
+<li><code>user.ts</code> - 用户管理（含医生、护士账号）</li>
+<li><code>store.ts</code> - 门店/医院管理</li>
+<li><code>department.ts</code> - 科室管理</li>
+<li><code>child.ts</code> - 儿童档案（审核）</li>
+<li><code>schedule.ts</code> - 排班管理</li>
+<li><code>device.ts</code> - TV设备管理</li>
+<li><code>statistics.ts</code> - 数据统计</li>
+</ul>
+<h3 id="42-%E9%97%A8%E5%BA%97web-store-web">4.2 门店Web (store-web)</h3>
+<p><strong>路由结构</strong>：</p>
+<pre class="hljs"><code><div>/                           → 主布局
+├── /login                  → 登录页（护士手机号登录）
+├── /child                  → 儿童档案
+├── /schedule               → 排班预约
+├── /vision                 → 视力记录
+├── /device                 → 设备管理
+└── /department             → 科室管理（店长可见）
+</div></code></pre>
+<p><strong>权限控制</strong>：</p>
+<ul>
+<li><strong>店长</strong>：可查看/管理所有菜单（含科室管理、医护账号管理）</li>
+<li><strong>医生/护士</strong>：仅可查看/操作儿童档案、排班预约、视力记录</li>
+<li><strong>护士</strong>：通过手机号+密码登录，只能操作自己科室的数据</li>
+</ul>
+<h3 id="43-%E5%AE%B6%E9%95%BFweb-parent-web">4.3 家长Web (parent-web)</h3>
+<p><strong>路由结构</strong>：</p>
+<pre class="hljs"><code><div>/                           → 主布局
+├── /login                  → 登录页
+├── /profile                → 子女档案
+├── /report                 → 检测报告
+└── /trend                  → 视力趋势
+</div></code></pre>
+<hr>
+<h2 id="%E4%BA%94tv%E7%AB%AFapk%E6%9E%B6%E6%9E%84">五、TV端APK架构</h2>
+<h3 id="51-%E6%8A%80%E6%9C%AF%E6%A0%88">5.1 技术栈</h3>
+<ul>
+<li><strong>语言</strong>：Kotlin</li>
+<li><strong>最低SDK</strong>：Android 7.0 (API 24)</li>
+<li><strong>目标SDK</strong>：Android 14 (API 34)</li>
+<li><strong>本地数据库</strong>：Room + SQLite</li>
+<li><strong>依赖注入</strong>：Hilt</li>
+<li><strong>网络</strong>：Retrofit + OkHttp</li>
+<li><strong>协程</strong>：Kotlin Coroutines</li>
+</ul>
+<h3 id="52-%E6%9C%AC%E5%9C%B0%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A1%A8sqlite">5.2 本地数据库表（SQLite）</h3>
+<table>
+<thead>
+<tr>
+<th>表名</th>
+<th>说明</th>
+<th>对应云端表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>local_child_profile</code></td>
+<td>本地儿童简档缓存</td>
+<td>child_profile</td>
+</tr>
+<tr>
+<td><code>local_vision_record</code></td>
+<td>本地视力检测记录</td>
+<td>vision_test_record</td>
+</tr>
+<tr>
+<td><code>local_sync_log</code></td>
+<td>本地同步日志</td>
+<td>sync_log</td>
+</tr>
+<tr>
+<td><code>local_config</code></td>
+<td>本地配置表</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E6%A8%A1%E5%9D%97">5.3 核心功能模块</h3>
+<ul>
+<li><strong>电子视力表</strong>：符合GB 11533-2011标准，支持左右眼分别测量</li>
+<li><strong>离线缓存</strong>：断网时本地存储，联网后自动同步</li>
+<li><strong>设备校准</strong>：屏幕校准模块，视标物理尺寸计算</li>
+<li><strong>数据同步</strong>：增量同步，支持断点续传和失败重试</li>
+</ul>
+<hr>
+<h2 id="%E5%85%AD%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A1%A8%E5%85%B3%E7%B3%BB%E4%B8%8E%E4%B8%9A%E5%8A%A1%E6%98%A0%E5%B0%84">六、数据库表关系与业务映射</h2>
+<h3 id="61-mysql%E8%A1%A8%E5%85%B3%E7%B3%BB%E5%9B%BE">6.1 MySQL表关系图</h3>
+<pre class="hljs"><code><div>┌─────────────────────────────────────────────────────────────────┐
+│                          用户权限层                              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │   sys_user   │◄───│  sys_role    │    │sys_user_role │      │
+│  │  (用户表)     │    │  (角色表)     │◄───│(用户角色关联) │      │
+│  └──────┬───────┘    └──────────────┘    └──────────────┘      │
+│         │                                                       │
+│         │ store_id                                              │
+│         │ dept_id                                               │
+│         ▼                                                       │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  store_info (门店/医院)                                   │   │
+│  │  ──── 一家门店 = 一家医院 ────                            │   │
+│  └────────┬────────────────────────────────────────────────┘   │
+│            │                                                     │
+│            │ store_id                                            │
+│            ▼                                                     │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  store_department (科室)                                  │   │
+│  │  ──── 养护科、检测科、门诊科等 ────                      │   │
+│  └────────┬────────────────────────────────────────────────┘   │
+│            │                                                     │
+│            │ dept_id                                             │
+│            ▼                                                     │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  sys_user (医生/护士/技师)                                │   │
+│  │  user_type: 2=店长, 3=医生, 4=护士, 5=技师               │   │
+│  └────────┬────────────────────────────────────────────────┘   │
+│            │                                                     │
+├────────────┼─────────────────────────────────────────────────────┤
+│            │                  业务数据层                            │
+│            │    ┌──────────────┐    ┌──────────────┐              │
+│            │    │store_tv_device│   │ child_profile │              │
+│            │    │  (TV设备表)  │   │ (儿童档案表)  │              │
+│            │    └──────┬───────┘    └──────┬───────┘              │
+│            │           │                   │                     │
+│            │           │                   │                     │
+│            │    ┌──────┴──────┐    ┌──────┴──────┐              │
+│            │    │schedule_info│◄───│reserve_order│              │
+│            │    │ (排班表)     │    │ (预约订单表) │              │
+│            │    └─────────────┘    └──────┬───────┘              │
+│            │                               │                     │
+│            │    ┌──────────────────────────┘                     │
+│            │    │                                                 │
+│            │    ▼                                                 │
+│            │    ┌──────────────────────┐                        │
+│            └───►│  vision_test_record  │                        │
+│                 │  (视力检测记录表)    │                        │
+│                 └──────────┬───────────┘                        │
+│                          │                                     │
+│                          │ device_id (FK)                     │
+│                          ▼                                     │
+│               ┌──────────────────────┐                        │
+│               │      sync_log        │                        │
+│               │   (数据同步日志表)    │                        │
+│               └──────────────────────┘                        │
+└─────────────────────────────────────────────────────────────────┘
+</div></code></pre>
+<h3 id="62-%E8%A1%A8%E5%85%B3%E7%B3%BB%E8%AF%A6%E7%BB%86%E8%AF%B4%E6%98%8E">6.2 表关系详细说明</h3>
+<h4 id="621-%E7%94%A8%E6%88%B7%E6%9D%83%E9%99%90%E4%BD%93%E7%B3%BB">6.2.1 用户权限体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>sys_user → store_info</strong></td>
+<td>用户通过 <code>store_id</code> 关联门店，门店医护属于特定门店</td>
+</tr>
+<tr>
+<td><strong>sys_user → store_department</strong></td>
+<td>用户通过 <code>dept_id</code> 关联所属科室</td>
+</tr>
+<tr>
+<td><strong>sys_user_role → sys_user</strong></td>
+<td>用户角色关联表通过 <code>user_id</code> 关联用户</td>
+</tr>
+<tr>
+<td><strong>sys_user_role → sys_role</strong></td>
+<td>用户角色关联表通过 <code>role_id</code> 关联角色</td>
+</tr>
+</tbody>
+</table>
+<p><strong>角色定义</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>角色编码</th>
+<th>角色名称</th>
+<th>user_type</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>super_admin</code></td>
+<td>超级管理员</td>
+<td>1</td>
+<td>系统超级管理员</td>
+</tr>
+<tr>
+<td><code>ops_admin</code></td>
+<td>运营管理员</td>
+<td>1</td>
+<td>总部运营人员</td>
+</tr>
+<tr>
+<td><code>store_manager</code></td>
+<td>门店店长</td>
+<td>2</td>
+<td>门店管理人员，管理本医院</td>
+</tr>
+<tr>
+<td><code>store_doctor</code></td>
+<td>门店医生</td>
+<td>3</td>
+<td>门店医生，归属某个科室</td>
+</tr>
+<tr>
+<td><code>store_nurse</code></td>
+<td>门店护士</td>
+<td>4</td>
+<td>门店护士，归属某个科室，通过手机登录</td>
+</tr>
+<tr>
+<td><code>store_technician</code></td>
+<td>门店技师</td>
+<td>5</td>
+<td>门店技师</td>
+</tr>
+<tr>
+<td><code>parent</code></td>
+<td>家长</td>
+<td>6</td>
+<td>家长用户</td>
+</tr>
+</tbody>
+</table>
+<h4 id="622-%E5%8C%BB%E9%99%A2%E7%BB%84%E7%BB%87%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB">6.2.2 医院组织架构体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>store_department → store_info</strong></td>
+<td>科室通过 <code>store_id</code> 关联门店（医院），一院多科室</td>
+</tr>
+<tr>
+<td><strong>sys_user → store_department</strong></td>
+<td>医护通过 <code>dept_id</code> 关联科室，一科多医护</td>
+</tr>
+<tr>
+<td><strong>sys_user → store_info</strong></td>
+<td>医护通过 <code>store_id</code> 关联门店（医院）</td>
+</tr>
+<tr>
+<td><strong>store_tv_device → store_info</strong></td>
+<td>TV设备通过 <code>store_id</code> 关联门店，一店多设备</td>
+</tr>
+</tbody>
+</table>
+<p><strong>科室类型</strong>：</p>
+<ul>
+<li><code>1</code> - 门诊科</li>
+<li><code>2</code> - 养护科</li>
+<li><code>3</code> - 检测科</li>
+<li><code>4</code> - 其他</li>
+</ul>
+<h4 id="623-%E5%84%BF%E7%AB%A5%E6%A1%A3%E6%A1%88%E4%BD%93%E7%B3%BB">6.2.3 儿童档案体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>child_profile → store_info</strong></td>
+<td>儿童档案通过 <code>store_id</code> 关联门店（医院）</td>
+</tr>
+<tr>
+<td><strong>child_profile → sys_user</strong></td>
+<td>通过 <code>parent_user_id</code> 关联家长用户</td>
+</tr>
+<tr>
+<td><strong>child_profile → store_department</strong></td>
+<td>通过 <code>dept_id</code> 关联所属科室（可选）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="624-%E9%A2%84%E7%BA%A6%E6%8E%92%E7%8F%AD%E4%BD%93%E7%B3%BB">6.2.4 预约排班体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>schedule_info → store_info</strong></td>
+<td>排班通过 <code>store_id</code> 关联门店（医院）</td>
+</tr>
+<tr>
+<td><strong>schedule_info → store_department</strong></td>
+<td>排班通过 <code>dept_id</code> 关联科室</td>
+</tr>
+<tr>
+<td><strong>schedule_info → sys_user</strong></td>
+<td>排班通过 <code>technician_id</code> 关联护士/医生</td>
+</tr>
+<tr>
+<td><strong>reserve_order → store_info</strong></td>
+<td>预约通过 <code>store_id</code> 关联门店（医院）</td>
+</tr>
+<tr>
+<td><strong>reserve_order → schedule_info</strong></td>
+<td>预约通过 <code>schedule_id</code> 关联排班</td>
+</tr>
+<tr>
+<td><strong>reserve_order → child_profile</strong></td>
+<td>预约通过 <code>child_id</code> 关联儿童档案</td>
+</tr>
+</tbody>
+</table>
+<h4 id="625-%E8%A7%86%E5%8A%9B%E6%A3%80%E6%B5%8B%E4%BD%93%E7%B3%BB">6.2.5 视力检测体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>vision_test_record → child_profile</strong></td>
+<td>检测记录通过 <code>child_id</code> 关联儿童</td>
+</tr>
+<tr>
+<td><strong>vision_test_record → store_info</strong></td>
+<td>检测记录通过 <code>store_id</code> 关联门店（医院）</td>
+</tr>
+<tr>
+<td><strong>vision_test_record → store_department</strong></td>
+<td>检测记录通过 <code>dept_id</code> 关联科室</td>
+</tr>
+<tr>
+<td><strong>vision_test_record → store_tv_device</strong></td>
+<td>检测记录通过 <code>device_id</code> 关联设备</td>
+</tr>
+<tr>
+<td><strong>vision_test_record → reserve_order</strong></td>
+<td>检测记录通过 <code>reserve_id</code> 关联预约</td>
+</tr>
+</tbody>
+</table>
+<h4 id="626-%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E4%BD%93%E7%B3%BB">6.2.6 数据同步体系</h4>
+<table>
+<thead>
+<tr>
+<th>关系</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>sync_log → store_tv_device</strong></td>
+<td>同步日志通过 <code>device_id</code> 关联设备</td>
+</tr>
+<tr>
+<td><strong>sync_log → store_info</strong></td>
+<td>同步日志通过 <code>store_id</code> 关联门店</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-%E5%8C%BB%E9%99%A2%E7%AE%A1%E7%90%86%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%B5%81%E7%A8%8B">6.3 医院管理核心业务流程</h3>
+<pre class="hljs"><code><div>┌─────────────────────────────────────────────────────────┐
+│                    总部运营中心                           │
+│  1. 创建医院（store_info）                               │
+│  2. 创建医院管理员（门店店长）                            │
+│  └─ user_type = 2（门店店长）                            │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│                      门店Web端                          │
+│  3. 店长登录后创建科室（store_department）               │
+│     ├─ 养护科、检测科、门诊科等                          │
+│     └─ 每个科室关联当前门店（医院）                      │
+│  4. 录入医生和护士（sys_user）                           │
+│     ├─ 医生：user_type = 3                               │
+│     ├─ 护士：user_type = 4（手机号登录）                 │
+│     └─ 每个医护指定 dept_id（所属科室）                 │
+│  5. 排班（schedule_info）                               │
+│     └─ 指定 technician_id（护士/医生ID）                 │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│                      门店Web端                          │
+│                  (护士登录)                              │
+│  6. 护士用手机号+密码登录                                │
+│  7. 查看自己所属科室的排班                               │
+│  8. 执行儿童建档、预约、检测等业务                      │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+           ┌──────────────────────────────────────────┐
+           │              业务数据流向                   │
+           │                                            │
+           │   child_profile → schedule_info            │
+           │         │              │                     │
+           │         │              ▼                     │
+           │         │       reserve_order                │
+           │         │              │                     │
+           │         │              ▼                     │
+           │         └──────► vision_test_record ◄──────│
+           │                                            │
+           └────────────────────────────────────────────┘
+                            │
+                            ▼
+                      ┌──────────┐
+                      │ 家长Web端 │
+                      │(查看报告) │
+                      └──────────┘
+</div></code></pre>
+<hr>
+<h2 id="%E4%B8%83%E5%89%8D%E5%90%8E%E7%AB%AF%E4%BA%A4%E4%BA%92%E5%85%B3%E7%B3%BB">七、前后端交互关系</h2>
+<h3 id="71-api%E6%8E%A5%E5%8F%A3%E8%AE%BE%E8%AE%A1">7.1 API接口设计</h3>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>基础路径</th>
+<th>核心接口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>认证服务</td>
+<td><code>/api/v1/auth</code></td>
+<td>POST /login, POST /device-login, POST /refresh</td>
+</tr>
+<tr>
+<td>用户服务</td>
+<td><code>/api/v1/users</code></td>
+<td>GET /, GET /{id}, POST /, PUT /{id}</td>
+</tr>
+<tr>
+<td>门店服务</td>
+<td><code>/api/v1/stores</code></td>
+<td>GET /, GET /{id}, POST /, PUT /{id}</td>
+</tr>
+<tr>
+<td>科室服务</td>
+<td><code>/api/v1/departments</code></td>
+<td>GET /, GET /{id}, POST /, PUT /{id}</td>
+</tr>
+<tr>
+<td>儿童服务</td>
+<td><code>/api/v1/children</code></td>
+<td>GET /, GET /{id}, POST /, PUT /{id}, POST /{id}/audit</td>
+</tr>
+<tr>
+<td>排班服务</td>
+<td><code>/api/v1/schedules</code></td>
+<td>GET /calendar, POST /, GET /reserves, POST /reserves</td>
+</tr>
+<tr>
+<td>视力服务</td>
+<td><code>/api/v1/vision</code></td>
+<td>GET /records, POST /records, GET /compare</td>
+</tr>
+<tr>
+<td>同步服务</td>
+<td><code>/api/v1/sync</code></td>
+<td>POST /upload, POST /download/children, POST /callback</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-%E5%89%8D%E7%AB%AF%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E7%9A%84%E8%B0%83%E7%94%A8%E5%85%B3%E7%B3%BB">7.2 前端与微服务的调用关系</h3>
+<table>
+<thead>
+<tr>
+<th>前端应用</th>
+<th>调用的后端服务</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>admin-web</strong></td>
+<td>auth, user, store, child, schedule, vision, sync</td>
+<td>全量数据权限</td>
+</tr>
+<tr>
+<td><strong>store-web</strong></td>
+<td>auth, user, store, child, schedule, vision, sync</td>
+<td>本店数据权限（含科室管理）</td>
+</tr>
+<tr>
+<td><strong>parent-web</strong></td>
+<td>auth, child, vision</td>
+<td>绑定子女数据权限</td>
+</tr>
+<tr>
+<td><strong>TV APK</strong></td>
+<td>auth, child, sync</td>
+<td>设备认证 + 本店档案 + 同步</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%E5%85%AB%E6%95%B0%E6%8D%AE%E5%AE%89%E5%85%A8%E4%B8%8E%E9%9A%90%E7%A7%81">八、数据安全与隐私</h2>
+<h3 id="81-%E6%95%8F%E6%84%9F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86">8.1 敏感数据处理</h3>
+<table>
+<thead>
+<tr>
+<th>数据类型</th>
+<th>存储方式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>儿童姓名</td>
+<td>AES-256-GCM加密</td>
+<td><code>name_encrypted</code> 字段存储密文</td>
+</tr>
+<tr>
+<td>家长手机号</td>
+<td>AES-256-GCM + 脱敏</td>
+<td><code>phone_encrypted</code> 存储密文，<code>phone_mask</code> 展示脱敏</td>
+</tr>
+<tr>
+<td>身份证号</td>
+<td>AES-256-GCM加密</td>
+<td><code>id_card_encrypted</code> 字段存储密文</td>
+</tr>
+<tr>
+<td>用户密码</td>
+<td>BCrypt加密</td>
+<td>不可逆哈希存储</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-%E6%95%B0%E6%8D%AE%E9%9A%94%E7%A6%BB%E8%A7%84%E5%88%99">8.2 数据隔离规则</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>数据可见范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>总部运营</td>
+<td>全国所有医院、所有科室、所有数据</td>
+</tr>
+<tr>
+<td>医院店长</td>
+<td>本医院所有科室的数据</td>
+</tr>
+<tr>
+<td>科室医生</td>
+<td>本科室的排班、预约、检测数据</td>
+</tr>
+<tr>
+<td>科室护士</td>
+<td>本科室的排班、预约、检测数据（操作权限）</td>
+</tr>
+<tr>
+<td>家长用户</td>
+<td>仅绑定子女数据</td>
+</tr>
+<tr>
+<td>TV设备</td>
+<td>仅绑定医院的儿童档案</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%E4%B9%9D%E9%A1%B9%E7%9B%AE%E6%A8%A1%E5%9D%97%E5%85%B3%E7%B3%BB%E6%80%BB%E7%BB%93">九、项目模块关系总结</h2>
+<pre class="hljs"><code><div>┌─────────────────────────────────────────────────────────────────┐
+│                        终端层 (Frontend + TV)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │ admin-web   │  │ store-web   │  │ parent-web  │            │
+│  │ (Vue3)      │  │ (Vue3)      │  │ (Vue3)      │            │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘            │
+│         │               │               │                    │
+│         └───────────────┼───────────────┘                    │
+│                         │                                    │
+│                    ┌────┴────┐                              │
+│                    │ API网关  │                              │
+│                    └────┬────┘                              │
+│                         │                                    │
+├─────────────────────────┼────────────────────────────────────┤
+│                         │      业务服务层 (Backend)            │
+│  ┌──────────────────────┼──────────────────────┐              │
+│  │                      │                      │              │
+│  ▼                      ▼                      ▼              │
+│ ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│ │ auth    │  │ user    │  │ store   │  │ child   │        │
+│ │ (认证)  │  │ (用户)  │  │ (门店)  │  │ (档案)  │        │
+│ └────┬────┘  └─────────┘  └─────────┘  └────┬────┘        │
+│      │                                      │               │
+│      │    ┌─────────┐  ┌─────────┐  ┌──────┴────────┐     │
+│      └───►│ schedule│  │ vision  │  │ sync        │     │
+│           │ (排班)  │  │ (视力)  │  │ (TV同步)    │     │
+│           └─────────┘  └─────────┘  └───────────────┘     │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│                      数据层 (Database)                   │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │
+│  │  MySQL  │  │  Redis  │  │   OSS   │  │ SQLite  │     │
+│  │ (主库)  │  │ (缓存)  │  │(文件存储)│  │(TV本地) │     │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘     │
+└─────────────────────────────────────────────────────────┘
+</div></code></pre>
+<hr>
+<h2 id="%E5%8D%81%E9%99%84%E5%BD%95%E6%A8%A1%E5%9D%97%E6%B8%85%E5%8D%95">十、附录：模块清单</h2>
+<h3 id="101-%E5%90%8E%E7%AB%AF%E6%A8%A1%E5%9D%97">10.1 后端模块</h3>
+<table>
+<thead>
+<tr>
+<th>模块名</th>
+<th>端口建议</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>careld-auth-service</td>
+<td>8081</td>
+<td>认证授权</td>
+</tr>
+<tr>
+<td>careld-user-service</td>
+<td>8082</td>
+<td>用户管理</td>
+</tr>
+<tr>
+<td>careld-store-service</td>
+<td>8083</td>
+<td>门店/医院管理、科室管理</td>
+</tr>
+<tr>
+<td>careld-child-service</td>
+<td>8084</td>
+<td>儿童档案</td>
+</tr>
+<tr>
+<td>careld-schedule-service</td>
+<td>8085</td>
+<td>预约排班</td>
+</tr>
+<tr>
+<td>careld-vision-service</td>
+<td>8086</td>
+<td>视力检测</td>
+</tr>
+<tr>
+<td>careld-sync-service</td>
+<td>8087</td>
+<td>TV同步</td>
+</tr>
+<tr>
+<td>careld-common</td>
+<td>-</td>
+<td>公共模块（无独立端口）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-%E5%89%8D%E7%AB%AF%E6%A8%A1%E5%9D%97">10.2 前端模块</h3>
+<table>
+<thead>
+<tr>
+<th>模块名</th>
+<th>端口建议</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>admin-web</td>
+<td>3001</td>
+<td>运营中心（总部管理）</td>
+</tr>
+<tr>
+<td>store-web</td>
+<td>3002</td>
+<td>门店端（医院管理）</td>
+</tr>
+<tr>
+<td>parent-web</td>
+<td>3003</td>
+<td>家长端</td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A8%A1%E5%9D%97">10.3 数据库模块</h3>
+<table>
+<thead>
+<tr>
+<th>数据库</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>careld_vision (MySQL)</td>
+<td>主业务数据库</td>
+</tr>
+<tr>
+<td>careld_vision.db (SQLite)</td>
+<td>TV端本地数据库</td>
+</tr>
+</tbody>
+</table>
+<h3 id="104-%E6%95%B0%E6%8D%AE%E5%BA%93%E8%A1%A8%E6%B8%85%E5%8D%95%E5%8C%BB%E9%99%A2%E7%AE%A1%E7%90%86">10.4 数据库表清单（医院管理）</h3>
+<table>
+<thead>
+<tr>
+<th>表名</th>
+<th>说明</th>
+<th>归属模块</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>sys_user</strong></td>
+<td>用户表（含医生、护士、技师）</td>
+<td>careld-auth-service</td>
+</tr>
+<tr>
+<td><strong>sys_role</strong></td>
+<td>角色表（含医生/护士/技师角色）</td>
+<td>careld-auth-service</td>
+</tr>
+<tr>
+<td><strong>sys_user_role</strong></td>
+<td>用户角色关联表</td>
+<td>careld-auth-service</td>
+</tr>
+<tr>
+<td><strong>store_info</strong></td>
+<td>门店/医院表</td>
+<td>careld-store-service</td>
+</tr>
+<tr>
+<td><strong>store_department</strong></td>
+<td>门店科室表</td>
+<td>careld-store-service</td>
+</tr>
+<tr>
+<td><strong>store_tv_device</strong></td>
+<td>TV设备表</td>
+<td>careld-store-service</td>
+</tr>
+<tr>
+<td><strong>child_profile</strong></td>
+<td>儿童电子档案表</td>
+<td>careld-child-service</td>
+</tr>
+<tr>
+<td><strong>schedule_info</strong></td>
+<td>养护排班表（关联科室和护士）</td>
+<td>careld-schedule-service</td>
+</tr>
+<tr>
+<td><strong>reserve_order</strong></td>
+<td>预约订单表</td>
+<td>careld-schedule-service</td>
+</tr>
+<tr>
+<td><strong>vision_test_record</strong></td>
+<td>视力检测记录表</td>
+<td>careld-vision-service</td>
+</tr>
+<tr>
+<td><strong>sync_log</strong></td>
+<td>数据同步日志表</td>
+<td>careld-sync-service</td>
+</tr>
+<tr>
+<td><strong>sys_operation_log</strong></td>
+<td>系统操作日志表</td>
+<td>careld-auth-service</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A1A"
+    android:padding="48dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="屏幕校准"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvInstructions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="请将一张标准信用卡（85.60mm × 53.98mm）放在屏幕上，调整下方虚拟卡片大小使其与实际卡片重合。"
+        android:textColor="#8C8C8C"
+        android:textSize="28sp"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
+
+    <!-- Calibration Card -->
+    <View
+        android:id="@+id/calibrationCard"
+        android:layout_width="300dp"
+        android:layout_height="190dp"
+        android:layout_marginTop="64dp"
+        android:background="@drawable/bg_calibration_card"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvInstructions" />
+
+    <!-- Width Control -->
+    <TextView
+        android:id="@+id/tvWidthLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:text="宽度调整"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/calibrationCard" />
+
+    <SeekBar
+        android:id="@+id/seekBarWidth"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:max="500"
+        android:progress="300"
+        app:layout_constraintBottom_toBottomOf="@id/tvWidthLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvWidthLabel"
+        app:layout_constraintTop_toTopOf="@id/tvWidthLabel" />
+
+    <!-- Height Control -->
+    <TextView
+        android:id="@+id/tvHeightLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="高度调整"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvWidthLabel" />
+
+    <SeekBar
+        android:id="@+id/seekBarHeight"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:max="400"
+        android:progress="190"
+        app:layout_constraintBottom_toBottomOf="@id/tvHeightLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvHeightLabel"
+        app:layout_constraintTop_toTopOf="@id/tvHeightLabel" />
+
+    <!-- Calibration Info -->
+    <TextView
+        android:id="@+id/tvCalibrationInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text=""
+        android:textColor="#52C41A"
+        android:textSize="24sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/seekBarHeight" />
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvCalibrationInfo">
+
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="200dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_tv_button"
+            android:text="确认校准"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+        <Button
+            android:id="@+id/btnSkip"
+            android:layout_width="200dp"
+            android:layout_height="72dp"
+            android:background="@drawable/bg_tv_button_secondary"
+            android:text="跳过"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

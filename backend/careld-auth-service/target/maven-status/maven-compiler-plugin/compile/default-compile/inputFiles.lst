@@ -1,0 +1,10 @@
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/AuthServiceApplication.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/config/SecurityConfig.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/controller/AuthController.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/dto/DeviceLoginRequest.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/dto/LoginRequest.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/dto/LoginResponse.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/entity/User.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/mapper/UserMapper.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/service/AuthService.java
+/media/ls/2e2f979f-031f-4861-9426-4bfa12c53f8c/share/backup/code/careld-vision-system/backend/careld-auth-service/src/main/java/com/careld/auth/service/impl/AuthServiceImpl.java
