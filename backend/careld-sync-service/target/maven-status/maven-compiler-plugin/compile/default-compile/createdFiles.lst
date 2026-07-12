@@ -1,7 +1,0 @@
-com/careld/sync/controller/SyncController.class
-com/careld/sync/SyncServiceApplication.class
-com/careld/sync/dto/SyncUploadRequest$VisionRecord.class
-com/careld/sync/entity/SyncLog.class
-com/careld/sync/service/SyncService.class
-com/careld/sync/dto/SyncUploadRequest.class
-com/careld/sync/service/impl/SyncServiceImpl.class
