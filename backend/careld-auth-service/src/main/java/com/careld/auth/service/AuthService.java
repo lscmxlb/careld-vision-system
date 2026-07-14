@@ -1,5 +1,6 @@
 package com.careld.auth.service;
 
+import com.careld.auth.dto.CaptchaResponse;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
@@ -34,4 +35,9 @@ public interface AuthService {
      * 根据ID获取用户
      */
     User getUserById(Long userId);
+
+    /**
+     * 生成图形验证码
+     */
+    CaptchaResponse generateCaptcha();
 }

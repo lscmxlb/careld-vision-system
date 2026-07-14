@@ -76,6 +76,21 @@
         <el-form-item label="手机号" required>
           <el-input v-model="childForm.phone" placeholder="请输入手机号" maxlength="11" />
         </el-form-item>
+        <el-form-item label="所属门店" required>
+          <el-select
+            v-model="childForm.storeId"
+            placeholder="请选择门店"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="store in storeList"
+              :key="store.id"
+              :label="store.storeName"
+              :value="store.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="出生日期" required>
           <el-date-picker
             v-model="childForm.birthDate"
@@ -176,8 +191,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Plus } from '@element-plus/icons-vue'
-import type { Child, CreateChildRequest } from '@/types'
-import { childApi } from '@/api'
+import type { Child, CreateChildRequest, Store } from '@/types'
+import { childApi, storeApi } from '@/api'
 
 const router = useRouter()
 
@@ -185,6 +200,7 @@ const router = useRouter()
 const loading = ref(false)
 const addLoading = ref(false)
 const children = ref<Child[]>([])
+const storeList = ref<Store[]>([])
 const showAddChild = ref(false)
 const showDetail = ref(false)
 const detailChild = ref<Child | null>(null)
@@ -193,6 +209,7 @@ const detailChild = ref<Child | null>(null)
 const childForm = reactive<CreateChildRequest>({
   name: '',
   phone: '',
+  storeId: undefined,
   birthDate: '',
   gender: 1,
   eyeCondition: '',
@@ -243,6 +260,10 @@ const handleAddChild = async () => {
     ElMessage.warning('请输入正确的手机号')
     return
   }
+  if (!childForm.storeId) {
+    ElMessage.warning('请选择所属门店')
+    return
+  }
   if (!childForm.birthDate) {
     ElMessage.warning('请选择出生日期')
     return
@@ -269,6 +290,7 @@ const handleAddChild = async () => {
 const resetChildForm = () => {
   childForm.name = ''
   childForm.phone = ''
+  childForm.storeId = undefined
   childForm.birthDate = ''
   childForm.gender = 1
   childForm.eyeCondition = ''
@@ -284,8 +306,18 @@ const viewTrend = (child: Child) => {
   router.push(`/trend?childId=${child.id}`)
 }
 
+// 获取门店列表（添加孩子时选择）
+const fetchStoreList = async () => {
+  try {
+    storeList.value = await storeApi.getStoreList()
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '获取门店列表失败')
+  }
+}
+
 onMounted(() => {
   fetchChildren()
+  fetchStoreList()
 })
 </script>
 

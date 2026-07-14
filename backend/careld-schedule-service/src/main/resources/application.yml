@@ -15,7 +15,6 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: deletedAt
@@ -24,3 +23,6 @@ mybatis-plus:
 logging:
   level:
     com.careld.schedule.mapper: debug
+
+jwt:
+  secret: ${JWT_SECRET}

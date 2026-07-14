@@ -1,5 +1,6 @@
 package com.careld.auth.service.impl;
 
+import com.careld.auth.dto.CaptchaResponse;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
@@ -8,13 +9,18 @@ import com.careld.auth.mapper.UserMapper;
 import com.careld.auth.service.AuthService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.security.JwtUtil;
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.LineCaptcha;
+import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +34,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
+    private final StringRedisTemplate stringRedisTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${jwt.secret}")
@@ -132,6 +139,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public User getUserById(Long userId) {
         return userMapper.selectById(userId);
+    }
+
+    @Override
+    public CaptchaResponse generateCaptcha() {
+        LineCaptcha captcha = CaptchaUtil.createLineCaptcha(120, 40, 4, 30);
+        String code = captcha.getCode();
+        String captchaKey = IdUtil.fastSimpleUUID();
+        // 存入 Redis，5 分钟过期
+        stringRedisTemplate.opsForValue().set("careld:auth:captcha:" + captchaKey, code, Duration.ofMinutes(5));
+
+        CaptchaResponse response = new CaptchaResponse();
+        response.setCaptchaKey(captchaKey);
+        response.setCaptchaImage("data:image/png;base64," + captcha.getImageBase64());
+        return response;
     }
 
     /**

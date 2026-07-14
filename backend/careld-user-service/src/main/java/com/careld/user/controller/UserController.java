@@ -33,6 +33,14 @@ public class UserController {
         return Result.success(userService.getCurrentUser(userId));
     }
 
+    @Operation(summary = "修改本人密码")
+    @PostMapping("/me/password")
+    public Result<Void> changeMyPassword(@RequestAttribute("userId") Long userId,
+                                          @RequestBody Map<String, String> params) {
+        userService.changeMyPassword(userId, params.get("oldPassword"), params.get("newPassword"));
+        return Result.success();
+    }
+
     @Operation(summary = "用户列表")
     @GetMapping
     public Result<PageResult<UserResponse>> listUsers(

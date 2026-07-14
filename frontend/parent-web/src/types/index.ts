@@ -70,6 +70,7 @@ export interface Child {
 export interface CreateChildRequest {
   name: string
   phone: string
+  storeId?: number
   birthDate: string
   gender: number
   eyeCondition: string

@@ -56,4 +56,9 @@ public interface UserService {
      * 根据门店查询用户
      */
     List<UserResponse> listByStoreId(Long storeId);
+
+    /**
+     * 修改本人密码（校验旧密码）
+     */
+    void changeMyPassword(Long userId, String oldPassword, String newPassword);
 }

@@ -37,4 +37,21 @@ public class StoreServiceImpl implements StoreService {
         Store store = new Store(); store.setId(id); store.setStatus(status);
         storeMapper.updateById(store);
     }
+
+    @Override
+    public List<Store> listAllStores() {
+        return storeMapper.selectList(null);
+    }
+
+    @Override
+    public Store getCurrentStore(Long storeId) {
+        if (storeId == null) {
+            throw new BusinessException(400, "当前用户未绑定门店");
+        }
+        Store store = storeMapper.selectById(storeId);
+        if (store == null) {
+            throw new BusinessException(404, "门店不存在");
+        }
+        return store;
+    }
 }

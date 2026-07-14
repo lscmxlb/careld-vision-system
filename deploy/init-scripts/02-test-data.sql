@@ -88,7 +88,7 @@ ON DUPLICATE KEY UPDATE store_code = VALUES(store_code);
 INSERT INTO store_tv_device (id, device_code, device_name, store_id, android_version, screen_resolution, screen_size, app_version, calibration_status, last_online_time, last_sync_time, status, bind_time) VALUES
 (1, 'TV-STORE001-001', '朝阳店大厅TV-1', 1, '12', '3840x2160', 65.0, '1.2.0', 1, NOW() - INTERVAL 1 HOUR,  NOW() - INTERVAL 1 HOUR,  1, '2024-03-15 10:00:00'),
 (2, 'TV-STORE001-002', '朝阳店检测室TV', 1, '12', '3840x2160', 55.0, '1.2.0', 1, NOW() - INTERVAL 2 HOUR,  NOW() - INTERVAL 2 HOUR,  1, '2024-03-16 14:00:00'),
-(3, 'TV-STORE002-001', '浦东店大厅TV',   2, '13', '3840x2160', 65.0, '1.2.0', 1, NOW() - INTERVAL 30 MIN, NOW() - INTERVAL 30 MIN, 1, '2024-05-20 10:00:00'),
+(3, 'TV-STORE002-001', '浦东店大厅TV',   2, '13', '3840x2160', 65.0, '1.2.0', 1, NOW() - INTERVAL 30 MINUTE, NOW() - INTERVAL 30 MINUTE, 1, '2024-05-20 10:00:00'),
 (4, 'TV-STORE003-001', '天河店大厅TV',   3, '11', '1920x1080', 55.0, '1.2.0', 1, NOW() - INTERVAL 3 HOUR,  NOW() - INTERVAL 3 HOUR,  1, '2024-06-10 10:00:00'),
 (5, 'TV-STORE004-001', '福田店大厅TV',   4, '12', '3840x2160', 65.0, '1.2.0', 0, NOW() - INTERVAL 1 DAY,   NULL,                   1, '2024-07-01 10:00:00'),  -- 未校准
 (6, 'TV-STORE005-001', '西湖店大厅TV',   5, '13', '3840x2160', 55.0, '1.2.0', 1, NOW() - INTERVAL 4 HOUR,  NOW() - INTERVAL 4 HOUR,  1, '2024-08-15 10:00:00'),
@@ -223,7 +223,7 @@ INSERT INTO vision_test_record (record_code, child_id, store_id, device_id, rese
 INSERT INTO sync_log (device_id, store_id, sync_type, sync_batch_id, record_count, success_count, fail_count, status, start_time, end_time, duration_ms) VALUES
 (1, 1, 1, 'BATCH-20240700-001', 5, 5, 0, 1, NOW() - INTERVAL 2 HOUR,  NOW() - INTERVAL 2 HOUR + INTERVAL 3 SECOND,  3200),
 (2, 1, 1, 'BATCH-20240700-002', 3, 3, 0, 1, NOW() - INTERVAL 1 HOUR,  NOW() - INTERVAL 1 HOUR + INTERVAL 2 SECOND,  2100),
-(3, 2, 1, 'BATCH-20240700-003', 8, 8, 0, 1, NOW() - INTERVAL 30 MIN, NOW() - INTERVAL 30 MIN + INTERVAL 5 SECOND, 5400),
+(3, 2, 1, 'BATCH-20240700-003', 8, 8, 0, 1, NOW() - INTERVAL 30 MINUTE, NOW() - INTERVAL 30 MINUTE + INTERVAL 5 SECOND, 5400),
 (4, 3, 1, 'BATCH-20240700-004', 2, 2, 0, 1, NOW() - INTERVAL 3 HOUR,  NOW() - INTERVAL 3 HOUR + INTERVAL 1 SECOND,  1200),
 (5, 4, 2, 'BATCH-20240700-005', 10, 10, 0, 1, NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 4 HOUR + INTERVAL 8 SECOND, 8100),
 (6, 5, 1, 'BATCH-20240700-006', 4, 4, 0, 1, NOW() - INTERVAL 5 HOUR,  NOW() - INTERVAL 5 HOUR + INTERVAL 3 SECOND,  3500),

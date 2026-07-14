@@ -30,6 +30,12 @@ public class ChildController {
         return Result.success(childService.listProfiles(storeId, auditStatus, parentUserId, keyword));
     }
 
+    @GetMapping("/pending-count")
+    public Result<Long> pendingCount(@RequestParam(value = "storeId", required = false) Long storeId,
+                                     @RequestParam(value = "parentUserId", required = false) Long parentUserId) {
+        return Result.success(childService.countPending(storeId, parentUserId));
+    }
+
     @GetMapping("/{id}")
     public Result<ChildProfile> get(@PathVariable Long id) {
         return Result.success(childService.getProfile(id));
@@ -78,5 +84,11 @@ public class ChildController {
     @GetMapping("/search")
     public Result<List<ChildProfile>> search(@RequestParam("storeId") Long storeId, @RequestParam("keyword") String keyword) {
         return Result.success(childService.searchForTv(storeId, keyword));
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        childService.deleteProfile(id);
+        return Result.success();
     }
 }

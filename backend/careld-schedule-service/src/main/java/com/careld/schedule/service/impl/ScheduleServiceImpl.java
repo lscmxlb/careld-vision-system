@@ -2,6 +2,7 @@ package com.careld.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.careld.common.exception.BusinessException;
+import com.careld.schedule.dto.BatchScheduleRequest;
 import com.careld.schedule.entity.ReserveOrder;
 import com.careld.schedule.entity.Schedule;
 import com.careld.schedule.mapper.ReserveOrderMapper;
@@ -13,7 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -135,5 +140,68 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
         }
         return orders;
+    }
+
+    @Override
+    public ReserveOrder getReserveById(Long id) {
+        ReserveOrder order = reserveOrderMapper.selectById(id);
+        if (order == null) {
+            throw new BusinessException(404, "预约不存在");
+        }
+        Schedule schedule = scheduleMapper.selectById(order.getScheduleId());
+        if (schedule != null) {
+            order.setTechnicianName(schedule.getTechnicianName());
+        }
+        return order;
+    }
+
+    @Override
+    @Transactional
+    public void updateSchedule(Long id, Schedule schedule) {
+        Schedule exist = scheduleMapper.selectById(id);
+        if (exist == null) {
+            throw new BusinessException(404, "排班不存在");
+        }
+        schedule.setId(id);
+        scheduleMapper.updateById(schedule);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSchedule(Long id) {
+        Schedule exist = scheduleMapper.selectById(id);
+        if (exist == null) {
+            throw new BusinessException(404, "排班不存在");
+        }
+        if (exist.getReservedCount() != null && exist.getReservedCount() > 0) {
+            throw new BusinessException(5003, "存在预约记录，不可删除");
+        }
+        scheduleMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void batchCreate(BatchScheduleRequest request) {
+        if (request.getStartDate() == null || request.getEndDate() == null
+                || request.getTimeSlots() == null || request.getTimeSlots().isEmpty()) {
+            throw new BusinessException(400, "排班日期与时间段不能为空");
+        }
+        Set<Integer> weekDays = request.getWeekDays() == null ? null : new HashSet<>(request.getWeekDays());
+        DateTimeFormatter hm = DateTimeFormatter.ofPattern("HH:mm");
+        for (LocalDate date = request.getStartDate(); !date.isAfter(request.getEndDate()); date = date.plusDays(1)) {
+            if (weekDays != null && !weekDays.isEmpty() && !weekDays.contains(date.getDayOfWeek().getValue())) {
+                continue;
+            }
+            for (BatchScheduleRequest.TimeSlot slot : request.getTimeSlots()) {
+                Schedule schedule = new Schedule();
+                schedule.setStoreId(request.getStoreId());
+                schedule.setScheduleDate(date);
+                schedule.setTechnicianId(request.getTechnicianId());
+                schedule.setTimeSlotStart(LocalTime.parse(slot.getStart(), hm));
+                schedule.setTimeSlotEnd(LocalTime.parse(slot.getEnd(), hm));
+                schedule.setMaxCapacity(slot.getCapacity());
+                createSchedule(schedule);
+            }
+        }
     }
 }

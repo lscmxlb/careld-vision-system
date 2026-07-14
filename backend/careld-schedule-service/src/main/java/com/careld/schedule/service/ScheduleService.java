@@ -16,4 +16,24 @@ public interface ScheduleService {
      * 查询预约列表。storeId 为空时返回所有记录（家长端按 childId 过滤）。
      */
     List<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, LocalDate date);
+
+    /**
+     * 预约详情
+     */
+    ReserveOrder getReserveById(Long id);
+
+    /**
+     * 更新排班
+     */
+    void updateSchedule(Long id, Schedule schedule);
+
+    /**
+     * 删除排班（逻辑删除）
+     */
+    void deleteSchedule(Long id);
+
+    /**
+     * 批量创建排班（按星期过滤）
+     */
+    void batchCreate(com.careld.schedule.dto.BatchScheduleRequest request);
 }

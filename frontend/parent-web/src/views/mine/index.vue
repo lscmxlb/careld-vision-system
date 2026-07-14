@@ -99,7 +99,7 @@ import {
   UserFilled, Calendar, User, Lock, InfoFilled, ArrowRight
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { childApi, reserveApi } from '@/api'
+import { childApi, reserveApi, userApi } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -150,7 +150,7 @@ const submitPassword = async () => {
 
   passwordLoading.value = true
   try {
-    // TODO: 调用修改密码API
+    await userApi.changePassword(passwordForm.oldPassword, passwordForm.newPassword)
     ElMessage.success('密码修改成功')
     showPassword.value = false
   } catch {

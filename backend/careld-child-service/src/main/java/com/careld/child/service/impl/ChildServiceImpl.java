@@ -48,14 +48,55 @@ public class ChildServiceImpl implements ChildService {
         childMapper.updateById(profile);
     }
     @Override
-    public ChildProfile getProfile(Long id) { return childMapper.selectById(id); }
+    public ChildProfile getProfile(Long id) {
+        ChildProfile profile = childMapper.selectEnrichedById(id);
+        if (profile == null) {
+            throw new BusinessException(404, "档案不存在");
+        }
+        enrich(profile);
+        return profile;
+    }
     @Override
     public List<ChildProfile> listProfiles(Long storeId, Integer auditStatus, Long parentUserId, String keyword) {
-        return childMapper.selectByCondition(storeId, auditStatus, parentUserId, keyword);
+        List<ChildProfile> list = childMapper.selectEnrichedList(storeId, auditStatus, parentUserId, keyword);
+        for (ChildProfile profile : list) {
+            enrich(profile);
+        }
+        return list;
     }
     @Override
     public List<ChildProfile> searchForTv(Long storeId, String keyword) {
-        return childMapper.selectByStoreId(storeId);
+        List<ChildProfile> list = childMapper.selectByStoreId(storeId);
+        for (ChildProfile profile : list) {
+            enrich(profile);
+        }
+        return list;
+    }
+
+    /**
+     * 填充派生字段：name/phone 兼容字段 + lastVisionTest 嵌套对象
+     */
+    private void enrich(ChildProfile profile) {
+        if (profile == null) {
+            return;
+        }
+        profile.setName(profile.getNameMask());
+        profile.setPhone(profile.getPhoneMask());
+        if (profile.getLastLeftEye() != null || profile.getLastRightEye() != null || profile.getLastTestTime() != null) {
+            profile.setLastVisionTest(new ChildProfile.LastVisionTest(
+                    profile.getLastTestTime(), profile.getLastLeftEye(), profile.getLastRightEye()));
+        }
+    }
+    @Override
+    public long countPending(Long storeId, Long parentUserId) {
+        return childMapper.countPending(storeId, parentUserId);
+    }
+    @Override
+    @Transactional
+    public void deleteProfile(Long id) {
+        ChildProfile exist = childMapper.selectById(id);
+        if (exist == null) throw new BusinessException(404, "档案不存在");
+        childMapper.deleteById(id);
     }
     private String generateChildCode() {
         return "CH" + System.currentTimeMillis();

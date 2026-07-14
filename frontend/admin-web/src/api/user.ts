@@ -39,5 +39,10 @@ export const userApi = {
   // 重置密码
   resetPassword: (id: number, newPassword: string): Promise<void> => {
     return request.post(`/users/${id}/reset-password`, { newPassword })
+  },
+
+  // 启用/禁用用户
+  updateUserStatus: (id: number, status: number): Promise<void> => {
+    return request.patch(`/users/${id}/status`, { status })
   }
 }

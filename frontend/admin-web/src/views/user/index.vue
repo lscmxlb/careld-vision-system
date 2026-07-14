@@ -303,7 +303,7 @@ const handleToggleStatus = async (row: User) => {
       '提示',
       { type: 'warning' }
     )
-    // 这里应该调用更新状态的API
+    await userApi.updateUserStatus(row.id, row.status === 1 ? 0 : 1)
     ElMessage.success('操作成功')
     fetchData()
   } catch {

@@ -1,6 +1,7 @@
 package com.careld.common.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.careld.common.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
@@ -32,11 +33,9 @@ public class CareldMetaObjectHandler implements MetaObjectHandler {
     }
 
     /**
-     * 获取当前登录用户 ID
-     * TODO: 从 SecurityContext 或 JWT Token 中解析
+     * 获取当前登录用户 ID（由 JwtAuthFilter 填充到 UserContext）
      */
     private Long getCurrentUserId() {
-        // 暂时返回 null，后续集成 JWT 拦截器后从请求上下文获取
-        return null;
+        return UserContext.getCurrentUserId();
     }
 }

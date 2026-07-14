@@ -48,4 +48,10 @@ public class AuthController {
     public Result<LoginResponse> deviceLogin(@Valid @RequestBody DeviceLoginRequest request) {
         return Result.success(authService.deviceLogin(request));
     }
+
+    @Operation(summary = "获取图形验证码")
+    @GetMapping("/captcha")
+    public Result<com.careld.auth.dto.CaptchaResponse> captcha() {
+        return Result.success(authService.generateCaptcha());
+    }
 }
