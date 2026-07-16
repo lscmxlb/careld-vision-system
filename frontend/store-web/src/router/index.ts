@@ -66,6 +66,16 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
     return
   }
+  // 刷新页面后 userInfo 会丢失，用 token 重新拉取，确保权限判断可用
+  if (!userStore.userInfo) {
+    try {
+      await userStore.fetchUserInfo()
+    } catch {
+      userStore.clearToken()
+      next('/login')
+      return
+    }
+  }
   // 权限控制：店长才能访问特定页面
   if (to.meta?.managerOnly && userStore.userInfo?.userType !== 2) {
     next('/dashboard')

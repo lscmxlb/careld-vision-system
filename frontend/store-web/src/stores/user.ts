@@ -4,7 +4,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, LoginRequest } from '@/types'
-import { authApi } from '@/api'
+import { authApi, userApi } from '@/api'
 
 export const useUserStore = defineStore('user', () => {
   // State
@@ -66,6 +66,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 刷新页面后用 token 重载当前用户信息（userInfo 不持久化）
+  const fetchUserInfo = async () => {
+    const res = await userApi.getCurrentUser()
+    userInfo.value = res
+    return res
+  }
+
   return {
     token,
     refreshToken,
@@ -75,6 +82,7 @@ export const useUserStore = defineStore('user', () => {
     login,
     logout,
     handleRefreshToken,
+    fetchUserInfo,
     setToken,
     clearToken
   }
