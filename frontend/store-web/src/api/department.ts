@@ -6,8 +6,9 @@ import type { Department } from '@/types'
 
 export const departmentApi = {
   // 获取科室列表
-  getDepartmentList: (storeId: number): Promise<Department[]> => {
-    return request.get('/departments', { params: { storeId } })
+  getDepartmentList: async (storeId: number): Promise<Department[]> => {
+    const res = await request.get('/departments', { params: { storeId } })
+    return res?.list ?? []
   },
 
   // 获取科室详情
