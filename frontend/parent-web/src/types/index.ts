@@ -232,11 +232,6 @@ export interface ApiResponse<T> {
 }
 
 export interface PageResponse<T> {
-  code: number
-  message: string
-  data: {
-    list: T[]
-    pagination: Pagination
-  }
-  timestamp: number
+  list: T[]
+  pagination: Pagination
 }

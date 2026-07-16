@@ -32,27 +32,33 @@ public class StatisticsController {
     @GetMapping("/store-traffic")
     public Result<StatisticsDtos.StoreTraffic> storeTraffic(
             @RequestParam(value = "storeId", required = false) Long storeId,
-            @RequestParam("startDate") LocalDate startDate,
-            @RequestParam("endDate") LocalDate endDate,
+            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) LocalDate endDate,
             @RequestParam(value = "groupBy", defaultValue = "day") String groupBy) {
-        return Result.success(statisticsService.storeTraffic(storeId, startDate, endDate, groupBy));
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+        LocalDate start = startDate != null ? startDate : end.minusDays(30);
+        return Result.success(statisticsService.storeTraffic(storeId, start, end, groupBy));
     }
 
     @Operation(summary = "视力改善统计")
     @GetMapping("/vision-improvement")
     public Result<StatisticsDtos.VisionImprovement> visionImprovement(
             @RequestParam(value = "storeId", required = false) Long storeId,
-            @RequestParam("startDate") LocalDate startDate,
-            @RequestParam("endDate") LocalDate endDate) {
-        return Result.success(statisticsService.visionImprovement(storeId, startDate, endDate));
+            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) LocalDate endDate) {
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+        LocalDate start = startDate != null ? startDate : end.minusDays(30);
+        return Result.success(statisticsService.visionImprovement(storeId, start, end));
     }
 
     @Operation(summary = "全国门店数据汇总")
     @GetMapping("/national-summary")
     public Result<StatisticsDtos.NationalSummary> nationalSummary(
-            @RequestParam("startDate") LocalDate startDate,
-            @RequestParam("endDate") LocalDate endDate) {
-        return Result.success(statisticsService.nationalSummary(startDate, endDate));
+            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) LocalDate endDate) {
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+        LocalDate start = startDate != null ? startDate : end.minusDays(30);
+        return Result.success(statisticsService.nationalSummary(start, end));
     }
 
     @Operation(summary = "预约/检测趋势")
@@ -67,9 +73,11 @@ public class StatisticsController {
     @GetMapping("/vision-stats")
     public Result<StatisticsDtos.VisionStatistics> visionStats(
             @RequestParam(value = "storeId", required = false) Long storeId,
-            @RequestParam("startDate") LocalDate startDate,
-            @RequestParam("endDate") LocalDate endDate) {
-        return Result.success(statisticsService.visionStats(storeId, startDate, endDate));
+            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) LocalDate endDate) {
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+        LocalDate start = startDate != null ? startDate : end.minusDays(30);
+        return Result.success(statisticsService.visionStats(storeId, start, end));
     }
 
     @Operation(summary = "数据导出")

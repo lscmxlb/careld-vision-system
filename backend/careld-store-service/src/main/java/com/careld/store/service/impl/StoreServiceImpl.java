@@ -1,4 +1,7 @@
 package com.careld.store.service.impl;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
 import com.careld.store.entity.Store;
 import com.careld.store.mapper.StoreMapper;
@@ -29,8 +32,16 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public Store getStoreByCode(String storeCode) { return storeMapper.selectByStoreCode(storeCode); }
     @Override
-    public List<Store> listStores(Integer status, String keyword) {
-        return storeMapper.selectList(null);
+    public IPage<Store> listStores(Integer status, String keyword, Integer page, Integer size) {
+        LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(Store::getStatus, status);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.and(w -> w.like(Store::getStoreName, keyword).or().like(Store::getStoreCode, keyword));
+        }
+        wrapper.orderByDesc(Store::getId);
+        return storeMapper.selectPage(new Page<>(page, size), wrapper);
     }
     @Override
     public void updateStatus(Long id, Integer status) {

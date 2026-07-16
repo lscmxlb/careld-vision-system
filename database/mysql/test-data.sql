@@ -23,32 +23,32 @@ ON DUPLICATE KEY UPDATE role_name = VALUES(role_name);
 -- 2. 用户数据
 -- ============================================================
 -- 密码统一使用 BCrypt 加密，明文均为: Careld@2024
--- BCrypt hash: $2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG
+-- BCrypt hash: $2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO
 INSERT INTO sys_user (id, username, password, real_name, phone, email, user_type, store_id, status) VALUES
 -- 总部运营人员
-(1,  'admin',         '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '超级管理员', '13800000001', 'admin@careld.com',         1, NULL, 1),
-(2,  'ops_zhangsan',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '张三',       '13800000002', 'zhangsan@careld.com',     1, NULL, 1),
-(3,  'ops_lisi',      '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '李四',       '13800000003', 'lisi@careld.com',         1, NULL, 1),
+(1,  'admin',         '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '超级管理员', '13800000001', 'admin@careld.com',         1, NULL, 1),
+(2,  'ops_zhangsan',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '张三',       '13800000002', 'zhangsan@careld.com',     1, NULL, 1),
+(3,  'ops_lisi',      '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '李四',       '13800000003', 'lisi@careld.com',         1, NULL, 1),
 
 -- 北京朝阳门店(STORE001) 员工
-(10, 'store001_mgr',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '王建国',     '13800138001', 'wjg@careld.com',          2, 1,    1),
-(11, 'store001_doc1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '赵医生',     '13800138002', 'zys@careld.com',          2, 1,    1),
-(12, 'store001_doc2', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '孙护士',     '13800138003', 'shs@careld.com',          2, 1,    1),
+(10, 'store001_mgr',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '王建国',     '13800138001', 'wjg@careld.com',          2, 1,    1),
+(11, 'store001_doc1', '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '赵医生',     '13800138002', 'zys@careld.com',          2, 1,    1),
+(12, 'store001_doc2', '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '孙护士',     '13800138003', 'shs@careld.com',          2, 1,    1),
 
 -- 上海浦东门店(STORE002) 员工
-(20, 'store002_mgr',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '陈店长',     '13900239001', 'cdz@careld.com',          2, 2,    1),
-(21, 'store002_doc1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '刘医生',     '13900239002', 'lys@careld.com',          2, 2,    1),
+(20, 'store002_mgr',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '陈店长',     '13900239001', 'cdz@careld.com',          2, 2,    1),
+(21, 'store002_doc1', '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '刘医生',     '13900239002', 'lys@careld.com',          2, 2,    1),
 
 -- 广州天河门店(STORE003) 员工
-(30, 'store003_mgr',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '林店长',     '13700337001', 'lkd@careld.com',          2, 3,    1),
-(31, 'store003_doc1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '黄医生',     '13700337002', 'hys@careld.com',          2, 3,    1),
+(30, 'store003_mgr',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '林店长',     '13700337001', 'lkd@careld.com',          2, 3,    1),
+(31, 'store003_doc1', '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '黄医生',     '13700337002', 'hys@careld.com',          2, 3,    1),
 
 -- 家长用户
-(100, 'parent_liu',   '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '刘妈妈',     '13600136001', 'liuma@163.com',           3, NULL, 1),
-(101, 'parent_chen',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '陈爸爸',     '13600136002', 'chenba@qq.com',           3, NULL, 1),
-(102, 'parent_wang',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '王妈妈',     '13600136003', 'wangma@gmail.com',        3, NULL, 1),
-(103, 'parent_zhao',  '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '赵爸爸',     '13600136004', 'zhaoba@126.com',          3, NULL, 1),
-(104, 'parent_sun',   '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '孙妈妈',     '13600136005', 'sunma@163.com',           3, NULL, 1)
+(100, 'parent_liu',   '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '刘妈妈',     '13600136001', 'liuma@163.com',           3, NULL, 1),
+(101, 'parent_chen',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '陈爸爸',     '13600136002', 'chenba@qq.com',           3, NULL, 1),
+(102, 'parent_wang',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '王妈妈',     '13600136003', 'wangma@gmail.com',        3, NULL, 1),
+(103, 'parent_zhao',  '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '赵爸爸',     '13600136004', 'zhaoba@126.com',          3, NULL, 1),
+(104, 'parent_sun',   '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '孙妈妈',     '13600136005', 'sunma@163.com',           3, NULL, 1)
 ON DUPLICATE KEY UPDATE username = VALUES(username);
 
 -- ============================================================

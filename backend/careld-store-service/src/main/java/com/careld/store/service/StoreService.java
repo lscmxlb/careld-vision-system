@@ -1,4 +1,5 @@
 package com.careld.store.service;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.careld.store.entity.Store;
 import java.util.List;
 public interface StoreService {
@@ -7,7 +8,7 @@ public interface StoreService {
     void deleteStore(Long id);
     Store getStoreById(Long id);
     Store getStoreByCode(String storeCode);
-    List<Store> listStores(Integer status, String keyword);
+    IPage<Store> listStores(Integer status, String keyword, Integer page, Integer size);
     void updateStatus(Long id, Integer status);
 
     /**

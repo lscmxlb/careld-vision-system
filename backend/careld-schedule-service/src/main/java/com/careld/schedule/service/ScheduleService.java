@@ -1,5 +1,6 @@
 package com.careld.schedule.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.careld.schedule.entity.ReserveOrder;
 import com.careld.schedule.entity.Schedule;
 import java.time.LocalDate;
@@ -15,7 +16,7 @@ public interface ScheduleService {
     /**
      * 查询预约列表。storeId 为空时返回所有记录（家长端按 childId 过滤）。
      */
-    List<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, LocalDate date);
+    IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, LocalDate date, Integer page, Integer size);
 
     /**
      * 预约详情

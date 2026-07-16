@@ -11,43 +11,55 @@ export default defineConfig({
     vueDevTools(),
   ],
   server: {
-    host: '0.0.0.0',
+    host: true,
     port: 5175,
     proxy: {
       '/api/v1/auth': {
-        target: 'http://localhost:8281',
+        target: 'http://127.0.0.1:8281',
         changeOrigin: true,
       },
       '/api/v1/users': {
-        target: 'http://localhost:8282',
+        target: 'http://127.0.0.1:8282',
         changeOrigin: true,
       },
       '/api/v1/stores': {
-        target: 'http://localhost:8283',
+        target: 'http://127.0.0.1:8283',
+        changeOrigin: true,
+      },
+      '/api/v1/devices': {
+        target: 'http://127.0.0.1:8283',
         changeOrigin: true,
       },
       '/api/v1/departments': {
-        target: 'http://localhost:8283',
+        target: 'http://127.0.0.1:8283',
         changeOrigin: true,
       },
       '/api/v1/children': {
-        target: 'http://localhost:8284',
+        target: 'http://127.0.0.1:8284',
         changeOrigin: true,
       },
       '/api/v1/schedules': {
-        target: 'http://localhost:8285',
+        target: 'http://127.0.0.1:8285',
         changeOrigin: true,
       },
       '/api/v1/vision': {
-        target: 'http://localhost:8286',
+        target: 'http://127.0.0.1:8286',
         changeOrigin: true,
       },
       '/api/v1/sync': {
-        target: 'http://localhost:8287',
+        target: 'http://127.0.0.1:8287',
+        changeOrigin: true,
+      },
+      '/api/v1/operation-logs': {
+        target: 'http://127.0.0.1:8282',
+        changeOrigin: true,
+      },
+      '/api/v1/statistics': {
+        target: 'http://127.0.0.1:8282',
         changeOrigin: true,
       },
       '/api': {
-        target: 'http://localhost:8281',
+        target: 'http://127.0.0.1:8281',
         changeOrigin: true,
       },
     },

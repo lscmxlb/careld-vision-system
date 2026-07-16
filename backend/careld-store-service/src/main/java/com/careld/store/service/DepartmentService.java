@@ -1,5 +1,6 @@
 package com.careld.store.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.careld.store.entity.Department;
 
 import java.util.List;
@@ -30,9 +31,9 @@ public interface DepartmentService {
     Department getById(Long id);
 
     /**
-     * 根据门店ID查询科室列表
+     * 科室分页列表（storeId 为空时查全部）
      */
-    List<Department> listByStoreId(Long storeId);
+    IPage<Department> listDepartments(Long storeId, Integer page, Integer size);
 
     /**
      * 更新科室状态

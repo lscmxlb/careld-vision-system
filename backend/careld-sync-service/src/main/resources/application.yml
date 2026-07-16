@@ -15,6 +15,11 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deletedAt
+      logic-delete-value: "NOW()"
+      logic-not-delete-value: "NULL"
 
 jwt:
   secret: ${JWT_SECRET}

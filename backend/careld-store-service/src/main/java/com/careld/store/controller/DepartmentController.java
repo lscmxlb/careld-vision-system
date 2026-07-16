@@ -1,5 +1,6 @@
 package com.careld.store.controller;
 
+import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.store.entity.Department;
 import com.careld.store.service.DepartmentService;
@@ -21,8 +22,11 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    public Result<List<Department>> list(@RequestParam("storeId") Long storeId) {
-        return Result.success(departmentService.listByStoreId(storeId));
+    public Result<PageResult<Department>> list(@RequestParam(value = "storeId", required = false) Long storeId,
+                                               @RequestParam(value = "page", defaultValue = "1") Integer page,
+                                               @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        var p = departmentService.listDepartments(storeId, page, size);
+        return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
     @GetMapping("/{id}")

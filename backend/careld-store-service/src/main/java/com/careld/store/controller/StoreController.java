@@ -1,5 +1,6 @@
 package com.careld.store.controller;
 
+import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.UserContext;
 import com.careld.store.entity.Store;
@@ -24,9 +25,12 @@ public class StoreController {
 
     @Operation(summary = "门店列表")
     @GetMapping
-    public Result<List<Store>> list(@RequestParam(value = "status", required = false) Integer status,
-                                    @RequestParam(value = "keyword", required = false) String keyword) {
-        return Result.success(storeService.listStores(status, keyword));
+    public Result<PageResult<Store>> list(@RequestParam(value = "status", required = false) Integer status,
+                                          @RequestParam(value = "keyword", required = false) String keyword,
+                                          @RequestParam(value = "page", defaultValue = "1") Integer page,
+                                          @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        var p = storeService.listStores(status, keyword, page, size);
+        return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
     @Operation(summary = "全量门店列表（下拉用）")

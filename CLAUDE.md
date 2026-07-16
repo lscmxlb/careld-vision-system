@@ -255,6 +255,21 @@ api.interceptors.request.use((config) => {
 })
 ```
 
+> **开发环境 baseURL 必须用 `/api/v1`（走 Vite 代理），不要写 `http://localhost:8281` 直连后端**——否则浏览器跨域拦截，且路径缺 `/api/v1` 会 404。生产再按需配置直连 + 后端 CORS。
+
+#### 前后端接口契约规范（强制）
+- **统一响应体**：后端所有接口返回 `Result<T>`（`{code,message,data,timestamp}`）；`code===200` 为成功。业务异常用 `BusinessException(code, message)`，由 `GlobalExceptionHandler` 返回 HTTP 200 + 错误码，**禁止**把业务错误当成 HTTP 4xx/5xx。
+- **列表接口统一分页**：列表查询必须返回 `Result<PageResult<T>>`，带 `page/size` 参数，用 `PageResult.of(records, current, size, total)`。**禁止**返回裸 `Result<List<T>>`。参考 `UserController.listUsers`、`DeviceController.list`、`OperationLogController.list`。
+- **前端响应拦截器**：`request.ts` 成功时 `return response.data.data`（返回内层 `data`，非完整 Result）。因此：
+  - 单对象接口：直接 `const res = await xxxApi.get(); res.field`
+  - 列表接口：`res.list` / `res.pagination.total`（**不得**写 `res.data.list`）
+- **可选过滤参数**：列表接口的过滤参数（如 `storeId`、`childId`）必须 `required = false`；运营中心后台列表不传这些参数时应返回全量。强制必填会导致“Required request parameter”→ 被包成“系统繁忙”。
+
+#### Vite 代理规范（强制）
+- 每个 `/api/v1/<module>` 路径**必须有显式 proxy 规则**指向对应微服务（如 `/api/v1/operation-logs` → 8282、`/api/v1/statistics` → 8282）。
+- 兜底规则 `'/api' → 8281(auth-service)` **仅作 fallback**，不可依赖它路由业务接口——否则业务请求被转给 auth-service，返回“No static resource”→ 被包成“系统繁忙”。
+- 新增微服务/接口模块时，同步在 admin-web / parent-web / store-web 三端 `vite.config.ts` 的 proxy 中补规则。
+
 ### 3. 数据库规范
 
 #### MySQL
@@ -265,6 +280,13 @@ api.interceptors.request.use((config) => {
 - 字段名：小写+下划线（如 created_at）
 - 主键：id (BIGINT)
 - 必须字段：created_at, updated_at, deleted_at
+- **审计列（强制）**：凡实体继承 `BaseEntity`（`backend/careld-common/.../entity/BaseEntity.java`）的表，必须建出全部五列 `created_by / updated_by / created_at / updated_at / deleted_at`。MyBatis-Plus 会自动映射 `createdBy/updatedBy`，且 `@TableLogic` 依赖 `deleted_at` 在 WHERE 拼接 `deleted_at IS NULL`。缺列会导致 `Unknown column` → 被全局异常包成“系统繁忙”。
+- **逻辑删除配置（强制）**：每个微服务的 `application.yml` 必须配置 `mybatis-plus.global-config.db-config`：`logic-delete-field: deletedAt`、`logic-delete-value: "NOW()"`、`logic-not-delete-value: "NULL"`。缺失时 MP 用默认 `deleted_at=0` 去匹配，而 DATETIME 列存的是 NULL，导致查询返回空（看似接口正常但无数据）。新建微服务时务必从已有服务复制这段配置。
+- **编码（防乱码）**：
+  - 所有 init 脚本首行必须 `SET NAMES utf8mb4;`
+  - 命令行导入必须带 `--default-character-set=utf8mb4`，否则 `docker exec mysql` 默认 `latin1` 客户端会把中文双重编码成乱码
+  - JDBC URL 必须含 `characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true`
+  - MySQL 容器 `character-set-server=utf8mb4`
 
 #### Redis
 - Key 命名规范：`careld:{module}:{business}:{id}`

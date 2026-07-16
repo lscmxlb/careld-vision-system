@@ -1,6 +1,8 @@
 package com.careld.store.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.store.entity.Department;
 import com.careld.store.mapper.DepartmentMapper;
 import com.careld.store.service.DepartmentService;
@@ -41,8 +43,13 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public List<Department> listByStoreId(Long storeId) {
-        return departmentMapper.selectByStoreId(storeId);
+    public IPage<Department> listDepartments(Long storeId, Integer page, Integer size) {
+        LambdaQueryWrapper<Department> wrapper = new LambdaQueryWrapper<>();
+        if (storeId != null) {
+            wrapper.eq(Department::getStoreId, storeId);
+        }
+        wrapper.orderByAsc(Department::getSortOrder).orderByAsc(Department::getId);
+        return departmentMapper.selectPage(new Page<>(page, size), wrapper);
     }
 
     @Override

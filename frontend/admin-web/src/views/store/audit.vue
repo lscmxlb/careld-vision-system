@@ -211,8 +211,8 @@ const fetchData = async () => {
       page: pagination.page,
       size: pagination.size
     })
-    tableData.value = res.data.list
-    pagination.total = res.data.pagination.total
+    tableData.value = res.list
+    pagination.total = res.pagination.total
   } catch (error) {
     console.error('获取档案列表失败', error)
   } finally {

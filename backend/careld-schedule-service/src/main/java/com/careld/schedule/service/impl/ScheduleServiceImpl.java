@@ -1,6 +1,8 @@
 package com.careld.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
 import com.careld.schedule.dto.BatchScheduleRequest;
 import com.careld.schedule.entity.ReserveOrder;
@@ -115,7 +117,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public List<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, LocalDate date) {
+    public IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, LocalDate date, Integer page, Integer size) {
         LambdaQueryWrapper<ReserveOrder> wrapper = new LambdaQueryWrapper<>();
         if (storeId != null) {
             wrapper.eq(ReserveOrder::getStoreId, storeId);
@@ -130,16 +132,16 @@ public class ScheduleServiceImpl implements ScheduleService {
             wrapper.eq(ReserveOrder::getReserveDate, date);
         }
         wrapper.orderByDesc(ReserveOrder::getReserveDate);
-        List<ReserveOrder> orders = reserveOrderMapper.selectList(wrapper);
+        IPage<ReserveOrder> p = reserveOrderMapper.selectPage(new Page<>(page, size), wrapper);
 
         // 从排班表补充 technicianName（storeName 由门店服务提供，此处暂不填充）
-        for (ReserveOrder order : orders) {
+        for (ReserveOrder order : p.getRecords()) {
             Schedule schedule = scheduleMapper.selectById(order.getScheduleId());
             if (schedule != null) {
                 order.setTechnicianName(schedule.getTechnicianName());
             }
         }
-        return orders;
+        return p;
     }
 
     @Override

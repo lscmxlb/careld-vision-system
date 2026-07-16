@@ -6,9 +6,10 @@ import type { Reserve, CreateReserveRequest } from '@/types'
 
 export const reserveApi = {
   /** 获取我的预约列表 */
-  getMyReservations: (storeId?: number): Promise<Reserve[]> => {
+  getMyReservations: async (storeId?: number): Promise<Reserve[]> => {
     const params = storeId ? { storeId } : {}
-    return request.get('/schedules/reserves', { params })
+    const res = await request.get('/schedules/reserves', { params })
+    return res?.list ?? []
   },
 
   /** 创建预约 */

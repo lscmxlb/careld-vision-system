@@ -1,5 +1,6 @@
 package com.careld.schedule.controller;
 
+import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.UserContext;
 import com.careld.schedule.dto.BatchScheduleRequest;
@@ -66,12 +67,15 @@ public class ScheduleController {
 
     @Operation(summary = "预约列表")
     @GetMapping("/reserves")
-    public Result<List<ReserveOrder>> listReserves(
+    public Result<PageResult<ReserveOrder>> listReserves(
             @RequestParam(value = "storeId", required = false) Long storeId,
             @RequestParam(value = "childId", required = false) Long childId,
             @RequestParam(value = "status", required = false) Integer status,
-            @RequestParam(value = "date", required = false) LocalDate date) {
-        return Result.success(scheduleService.listReserves(storeId, childId, status, date));
+            @RequestParam(value = "date", required = false) LocalDate date,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        var p = scheduleService.listReserves(storeId, childId, status, date, page, size);
+        return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
     @Operation(summary = "预约详情")

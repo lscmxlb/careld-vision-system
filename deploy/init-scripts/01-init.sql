@@ -1,6 +1,9 @@
 -- Careld视力养护系统数据库初始化脚本
 -- MySQL 8.0
 
+-- 强制本会话使用 utf8mb4，避免用 latin1 客户端导入导致中文双重编码乱码
+SET NAMES utf8mb4;
+
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS careld_vision 
 CHARACTER SET utf8mb4 
@@ -115,13 +118,35 @@ CREATE TABLE IF NOT EXISTS store_tv_device (
     last_sync_time DATETIME COMMENT '最后同步时间',
     status TINYINT NOT NULL DEFAULT 1 COMMENT '状态:0禁用 1启用',
     bind_time DATETIME COMMENT '绑定时间',
+    created_by BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_device_code (device_code),
     KEY idx_store_id (store_id),
     KEY idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='TV设备表';
+
+-- 门店科室表
+CREATE TABLE IF NOT EXISTS store_department (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '科室ID',
+    store_id BIGINT UNSIGNED NOT NULL COMMENT '所属门店ID',
+    dept_code VARCHAR(64) NOT NULL COMMENT '科室编码',
+    dept_name VARCHAR(128) NOT NULL COMMENT '科室名称',
+    dept_type TINYINT DEFAULT 4 COMMENT '科室类型:1门诊 2养护 3检测 4其他',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '状态:0禁用 1启用',
+    created_by BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
+    PRIMARY KEY (id),
+    KEY idx_store_id (store_id),
+    UNIQUE KEY uk_store_dept (store_id, dept_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='门店科室表';
 
 -- 儿童电子档案表
 CREATE TABLE IF NOT EXISTS child_profile (
@@ -163,6 +188,7 @@ CREATE TABLE IF NOT EXISTS child_profile (
 CREATE TABLE IF NOT EXISTS schedule_info (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '排班ID',
     store_id BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+    dept_id BIGINT UNSIGNED DEFAULT NULL COMMENT '门店部门ID',
     schedule_date DATE NOT NULL COMMENT '排班日期',
     technician_id BIGINT UNSIGNED NOT NULL COMMENT '技师ID',
     technician_name VARCHAR(64) COMMENT '技师姓名',
@@ -173,8 +199,10 @@ CREATE TABLE IF NOT EXISTS schedule_info (
     status TINYINT NOT NULL DEFAULT 1 COMMENT '状态:0取消 1正常 2已满',
     remark TEXT COMMENT '备注',
     created_by BIGINT UNSIGNED COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (id),
     KEY idx_store_date (store_id, schedule_date),
     KEY idx_technician (technician_id),
@@ -201,8 +229,10 @@ CREATE TABLE IF NOT EXISTS reserve_order (
     cancelled_at DATETIME COMMENT '取消时间',
     completed_at DATETIME COMMENT '完成时间',
     created_by BIGINT UNSIGNED COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_order_no (order_no),
     KEY idx_store_id (store_id),
@@ -218,6 +248,7 @@ CREATE TABLE IF NOT EXISTS vision_test_record (
     record_code VARCHAR(64) COMMENT '记录编号',
     child_id BIGINT UNSIGNED NOT NULL COMMENT '儿童档案ID',
     store_id BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+    dept_id BIGINT UNSIGNED DEFAULT NULL COMMENT '科室ID',
     device_id BIGINT UNSIGNED COMMENT 'TV设备ID',
     reserve_id BIGINT UNSIGNED COMMENT '关联预约ID',
     test_type TINYINT NOT NULL COMMENT '检测类型:1养护前 2养护后',
@@ -233,8 +264,11 @@ CREATE TABLE IF NOT EXISTS vision_test_record (
     device_local_id VARCHAR(64) COMMENT 'TV端本地记录ID',
     synced_at DATETIME COMMENT '同步时间',
     remark TEXT COMMENT '备注',
+    created_by BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_record_code (record_code),
     KEY idx_child_id (child_id),
@@ -262,7 +296,11 @@ CREATE TABLE IF NOT EXISTS sync_log (
     error_msg TEXT COMMENT '错误信息',
     request_data JSON COMMENT '请求数据摘要',
     response_data JSON COMMENT '响应数据摘要',
+    created_by BIGINT UNSIGNED DEFAULT NULL COMMENT '创建人',
+    updated_by BIGINT UNSIGNED DEFAULT NULL COMMENT '更新人',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted_at DATETIME DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (id),
     KEY idx_device_id (device_id),
     KEY idx_store_id (store_id),
@@ -311,7 +349,7 @@ ON DUPLICATE KEY UPDATE role_name = VALUES(role_name);
 
 -- 初始化管理员账号 (密码: admin123)
 INSERT INTO sys_user (username, password, real_name, user_type, status) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5HsxXQCd7N1yC3z0Xc4yXqG', '超级管理员', 1, 1)
+('admin', '$2b$10$BQ9kyD4biD3dSESpIV.K/uZ94KgfuoAjQaV4MVVRVYRTlFV/.FZyO', '超级管理员', 1, 1)
 ON DUPLICATE KEY UPDATE username = username;
 
 -- 初始化门店

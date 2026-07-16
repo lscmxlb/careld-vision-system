@@ -117,7 +117,7 @@ public class DepartmentServiceTest {
         dept2.setStatus(1);
         departmentService.createDepartment(dept2);
 
-        var list = departmentService.listByStoreId(1L);
+        var list = departmentService.listDepartments(1L, 1, 20).getRecords();
         assertTrue(list.size() >= 2);
     }
 }

@@ -1,4 +1,7 @@
 package com.careld.vision.service.impl;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.vision.entity.VisionTestRecord;
 import com.careld.vision.mapper.VisionMapper;
 import com.careld.vision.service.VisionService;
@@ -17,8 +20,13 @@ public class VisionServiceImpl implements VisionService {
         return record.getId();
     }
     @Override
-    public List<VisionTestRecord> listByChild(Long childId) {
-        return visionMapper.selectByChildId(childId);
+    public IPage<VisionTestRecord> listRecords(Long childId, Integer page, Integer size) {
+        LambdaQueryWrapper<VisionTestRecord> wrapper = new LambdaQueryWrapper<>();
+        if (childId != null) {
+            wrapper.eq(VisionTestRecord::getChildId, childId);
+        }
+        wrapper.orderByDesc(VisionTestRecord::getCreatedAt);
+        return visionMapper.selectPage(new Page<>(page, size), wrapper);
     }
     @Override
     public Map<String, Object> compareVision(Long childId, Long reserveId) {

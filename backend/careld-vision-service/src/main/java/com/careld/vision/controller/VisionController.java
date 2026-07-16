@@ -1,4 +1,5 @@
 package com.careld.vision.controller;
+import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.vision.entity.VisionTestRecord;
 import com.careld.vision.service.VisionService;
@@ -14,8 +15,12 @@ import java.util.Map;
 public class VisionController {
     private final VisionService visionService;
     @GetMapping("/records")
-    public Result<List<VisionTestRecord>> list(@RequestParam("childId") Long childId) {
-        return Result.success(visionService.listByChild(childId));
+    public Result<PageResult<VisionTestRecord>> list(
+            @RequestParam(value = "childId", required = false) Long childId,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        var p = visionService.listRecords(childId, page, size);
+        return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
     @GetMapping("/records/{id}")
     public Result<VisionTestRecord> get(@PathVariable Long id) {

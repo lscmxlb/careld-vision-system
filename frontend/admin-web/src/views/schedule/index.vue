@@ -250,7 +250,7 @@ const handleViewDetail = async (row: Schedule) => {
       page: 1,
       size: 100
     })
-    reserveList.value = res.data.list
+    reserveList.value = res.list
   } catch {
     reserveList.value = []
   }
