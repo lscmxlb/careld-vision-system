@@ -41,6 +41,8 @@ public class UserServiceImpl implements UserService {
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         user.setUserType(request.getUserType());
+        user.setCenterId(request.getCenterId());
+        user.setAgentId(request.getAgentId());
         user.setStoreId(request.getStoreId());
         user.setStatus(1);
 
@@ -59,6 +61,9 @@ public class UserServiceImpl implements UserService {
         user.setRealName(request.getRealName());
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
+        user.setUserType(request.getUserType());
+        user.setCenterId(request.getCenterId());
+        user.setAgentId(request.getAgentId());
         user.setStoreId(request.getStoreId());
 
         userMapper.updateById(user);
@@ -154,7 +159,12 @@ public class UserServiceImpl implements UserService {
         response.setRealName(user.getRealName());
         response.setPhone(user.getPhone());
         response.setUserType(user.getUserType());
+        response.setCenterId(user.getCenterId());
+        response.setCenterName(user.getCenterName());
+        response.setAgentId(user.getAgentId());
+        response.setAgentName(user.getAgentName());
         response.setStoreId(user.getStoreId());
+        response.setStoreName(user.getStoreName());
         response.setStatus(user.getStatus());
         response.setLastLoginTime(user.getLastLoginTime());
         response.setCreatedAt(user.getCreatedAt());

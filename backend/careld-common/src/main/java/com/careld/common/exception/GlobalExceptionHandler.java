@@ -69,6 +69,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e, HttpServletRequest request) {
         log.error("系统异常: {}, URL: {}", e.getMessage(), request.getRequestURI(), e);
-        return Result.error(500, "系统繁忙，请稍后重试");
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            message = e.getClass().getName();
+        }
+        return Result.error(500, message);
     }
 }

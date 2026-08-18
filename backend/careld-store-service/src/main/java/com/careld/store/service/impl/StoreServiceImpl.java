@@ -9,6 +9,9 @@ import com.careld.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class StoreServiceImpl implements StoreService {
@@ -32,16 +35,21 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public Store getStoreByCode(String storeCode) { return storeMapper.selectByStoreCode(storeCode); }
     @Override
-    public IPage<Store> listStores(Integer status, String keyword, Integer page, Integer size) {
+    public IPage<Store> listStores(Integer status, Long agentId, String keyword, Integer page, Integer size) {
         LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(Store::getStatus, status);
+        }
+        if (agentId != null) {
+            wrapper.eq(Store::getAgentId, agentId);
         }
         if (keyword != null && !keyword.isBlank()) {
             wrapper.and(w -> w.like(Store::getStoreName, keyword).or().like(Store::getStoreCode, keyword));
         }
         wrapper.orderByDesc(Store::getId);
-        return storeMapper.selectPage(new Page<>(page, size), wrapper);
+        IPage<Store> result = storeMapper.selectPage(new Page<>(page, size), wrapper);
+        enrichStoresWithOrgNames(result.getRecords());
+        return result;
     }
     @Override
     public void updateStatus(Long id, Integer status) {
@@ -51,7 +59,39 @@ public class StoreServiceImpl implements StoreService {
 
     @Override
     public List<Store> listAllStores() {
-        return storeMapper.selectList(null);
+        List<Store> stores = storeMapper.selectList(null);
+        enrichStoresWithOrgNames(stores);
+        return stores;
+    }
+
+    private void enrichStoresWithOrgNames(List<Store> stores) {
+        if (stores == null || stores.isEmpty()) return;
+        // 查询代理商名称
+        Map<Long, String> agentNameMap = storeMapper.selectAgentIdAndName().stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r.get("id")).longValue(),
+                        r -> (String) r.get("agent_name"),
+                        (a, b) -> a));
+        // 查询运营中心名称
+        Map<Long, String> centerNameMap = storeMapper.selectCenterIdAndName().stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r.get("id")).longValue(),
+                        r -> (String) r.get("center_name"),
+                        (a, b) -> a));
+        // 查询代理商→运营中心映射
+        Map<Long, Long> agentToCenterMap = storeMapper.selectAgentCenterMapping().stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r.get("id")).longValue(),
+                        r -> ((Number) r.get("center_id")).longValue(),
+                        (a, b) -> a));
+        for (Store store : stores) {
+            store.setAgentName(agentNameMap.getOrDefault(store.getAgentId(), "-"));
+            Long centerId = agentToCenterMap.get(store.getAgentId());
+            if (centerId != null) {
+                store.setCenterName(centerNameMap.getOrDefault(centerId, "-"));
+                store.setCenterId(centerId.toString());
+            }
+        }
     }
 
     @Override

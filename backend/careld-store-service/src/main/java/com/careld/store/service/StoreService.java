@@ -8,7 +8,7 @@ public interface StoreService {
     void deleteStore(Long id);
     Store getStoreById(Long id);
     Store getStoreByCode(String storeCode);
-    IPage<Store> listStores(Integer status, String keyword, Integer page, Integer size);
+    IPage<Store> listStores(Integer status, Long agentId, String keyword, Integer page, Integer size);
     void updateStatus(Long id, Integer status);
 
     /**

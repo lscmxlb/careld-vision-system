@@ -9,6 +9,7 @@ export const deviceApi = {
   getDeviceList: (params: {
     storeId?: number
     status?: number
+    keyword?: string
     page?: number
     size?: number
   }): Promise<PageResponse<Device>> => {
@@ -18,6 +19,21 @@ export const deviceApi = {
   // 获取设备详情
   getDeviceDetail: (id: number): Promise<Device> => {
     return request.get(`/devices/${id}`)
+  },
+
+  // 新增设备
+  createDevice: (data: Partial<Device>): Promise<number> => {
+    return request.post('/devices', data)
+  },
+
+  // 更新设备
+  updateDevice: (id: number, data: Partial<Device>): Promise<void> => {
+    return request.put(`/devices/${id}`, data)
+  },
+
+  // 删除设备
+  deleteDevice: (id: number): Promise<void> => {
+    return request.delete(`/devices/${id}`)
   },
 
   // 绑定设备

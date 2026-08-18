@@ -1,4 +1,5 @@
 package com.careld.store.entity;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.careld.common.entity.BaseEntity;
 import lombok.Data;
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 @TableName("store_info")
 public class Store extends BaseEntity {
     private String storeCode;
+    private Long agentId;
     private String storeName;
     private String provinceCode;
     private String provinceName;
@@ -25,5 +27,17 @@ public class Store extends BaseEntity {
     private Integer networkType;
     private Integer status;
     private java.time.LocalDate openTime;
+    private java.time.LocalDate joinDate;
+    private Integer bedCount;
+    private Integer institutionType;
     private String remark;
+
+    @TableField(exist = false)
+    private String agentName;
+
+    @TableField(exist = false)
+    private String centerName;
+
+    @TableField(exist = false)
+    private String centerId;
 }

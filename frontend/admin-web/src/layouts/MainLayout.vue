@@ -20,40 +20,32 @@
           <el-icon><HomeFilled /></el-icon>
           <template #title>数据看板</template>
         </el-menu-item>
-        
+
+        <el-sub-menu index="/organization">
+          <template #title>
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>组织架构</span>
+          </template>
+          <el-menu-item index="/organization/centers">运营中心</el-menu-item>
+          <el-menu-item index="/organization/agents">代理商管理</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="/store">
           <template #title>
             <el-icon><Shop /></el-icon>
             <span>门店管理</span>
           </template>
           <el-menu-item index="/store/list">门店列表</el-menu-item>
-          <el-menu-item index="/store/audit">档案审核</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/schedule">
-          <el-icon><Calendar /></el-icon>
-          <template #title>排班监控</template>
-        </el-menu-item>
-
-        <el-menu-item index="/reserve">
-          <el-icon><Tickets /></el-icon>
-          <template #title>预约管理</template>
-        </el-menu-item>
-
-        <el-menu-item index="/vision">
-          <el-icon><View /></el-icon>
-          <template #title>视力记录</template>
-        </el-menu-item>
-
-        <el-menu-item index="/department">
-          <el-icon><OfficeBuilding /></el-icon>
-          <template #title>科室管理</template>
-        </el-menu-item>
-
-        <el-menu-item index="/device">
-          <el-icon><Monitor /></el-icon>
-          <template #title>设备管理</template>
-        </el-menu-item>
+        <el-sub-menu index="/device">
+          <template #title>
+            <el-icon><Monitor /></el-icon>
+            <span>设备管理</span>
+          </template>
+          <el-menu-item index="/device/list">设备列表</el-menu-item>
+          <el-menu-item index="/device/types">设备类型</el-menu-item>
+        </el-sub-menu>
 
         <el-menu-item index="/user">
           <el-icon><UserFilled /></el-icon>
@@ -95,9 +87,6 @@
           <breadcrumb />
         </div>
         <div class="header-right">
-          <el-badge :value="pendingCount" class="notification-badge" v-if="pendingCount > 0">
-            <el-icon :size="20"><Bell /></el-icon>
-          </el-badge>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
@@ -128,42 +117,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   HomeFilled,
   Shop,
-  Calendar,
   Monitor,
   UserFilled,
   Setting,
   Fold,
   Expand,
-  Bell,
   ArrowDown,
   OfficeBuilding,
-  Tickets,
-  View,
   DataAnalysis,
   Document
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
-import { childApi } from '@/api'
 import Breadcrumb from '@/components/Breadcrumb.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
 const pendingCount = ref(0)
-
-onMounted(async () => {
-  try {
-    pendingCount.value = await childApi.getPendingAuditCount()
-  } catch {
-    pendingCount.value = 0
-  }
-})
 
 const handleCommand = (command: string) => {
   switch (command) {
@@ -248,10 +224,6 @@ const handleCommand = (command: string) => {
     display: flex;
     align-items: center;
     gap: 24px;
-
-    .notification-badge {
-      cursor: pointer;
-    }
 
     .user-info {
       display: flex;

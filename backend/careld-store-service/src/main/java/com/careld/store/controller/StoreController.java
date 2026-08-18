@@ -26,10 +26,11 @@ public class StoreController {
     @Operation(summary = "门店列表")
     @GetMapping
     public Result<PageResult<Store>> list(@RequestParam(value = "status", required = false) Integer status,
+                                          @RequestParam(value = "agentId", required = false) Long agentId,
                                           @RequestParam(value = "keyword", required = false) String keyword,
                                           @RequestParam(value = "page", defaultValue = "1") Integer page,
                                           @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        var p = storeService.listStores(status, keyword, page, size);
+        var p = storeService.listStores(status, agentId, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 

@@ -22,6 +22,24 @@ const router = createRouter({
           meta: { title: '数据看板', icon: 'HomeFilled' }
         },
         {
+          path: 'organization',
+          redirect: '/organization/centers',
+          children: [
+            {
+              path: 'centers',
+              name: 'OpsCenters',
+              component: () => import('@/views/organization/centers.vue'),
+              meta: { title: '运营中心', icon: 'OfficeBuilding' }
+            },
+            {
+              path: 'agents',
+              name: 'Agents',
+              component: () => import('@/views/organization/agents.vue'),
+              meta: { title: '代理商管理', icon: 'Connection' }
+            }
+          ]
+        },
+        {
           path: 'store',
           redirect: '/store/list',
           children: [
@@ -30,50 +48,32 @@ const router = createRouter({
               name: 'StoreList',
               component: () => import('@/views/store/list.vue'),
               meta: { title: '门店列表', icon: 'Shop' }
-            },
-            {
-              path: 'audit',
-              name: 'StoreAudit',
-              component: () => import('@/views/store/audit.vue'),
-              meta: { title: '档案审核', icon: 'DocumentChecked' }
             }
           ]
         },
         {
-          path: 'schedule',
-          name: 'Schedule',
-          component: () => import('@/views/schedule/index.vue'),
-          meta: { title: '排班监控', icon: 'Calendar' }
-        },
-        {
           path: 'device',
-          name: 'Device',
-          component: () => import('@/views/device/index.vue'),
-          meta: { title: '设备管理', icon: 'Monitor' }
+          redirect: '/device/list',
+          children: [
+            {
+              path: 'list',
+              name: 'DeviceList',
+              component: () => import('@/views/device/index.vue'),
+              meta: { title: '设备列表', icon: 'Monitor' }
+            },
+            {
+              path: 'types',
+              name: 'DeviceTypes',
+              component: () => import('@/views/device/types.vue'),
+              meta: { title: '设备类型', icon: 'Cpu' }
+            }
+          ]
         },
         {
           path: 'user',
           name: 'User',
           component: () => import('@/views/user/index.vue'),
           meta: { title: '用户管理', icon: 'UserFilled' }
-        },
-        {
-          path: 'department',
-          name: 'Department',
-          component: () => import('@/views/department/index.vue'),
-          meta: { title: '科室管理', icon: 'OfficeBuilding' }
-        },
-        {
-          path: 'reserve',
-          name: 'Reserve',
-          component: () => import('@/views/reserve/index.vue'),
-          meta: { title: '预约管理', icon: 'Tickets' }
-        },
-        {
-          path: 'vision',
-          name: 'Vision',
-          component: () => import('@/views/vision/index.vue'),
-          meta: { title: '视力记录', icon: 'View' }
         },
         {
           path: 'statistics',

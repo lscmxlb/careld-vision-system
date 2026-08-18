@@ -28,6 +28,18 @@ public class UserResponse {
     @Schema(description = "用户类型")
     private Integer userType;
 
+    @Schema(description = "运营中心ID")
+    private Long centerId;
+
+    @Schema(description = "运营中心名称")
+    private String centerName;
+
+    @Schema(description = "代理商ID")
+    private Long agentId;
+
+    @Schema(description = "代理商名称")
+    private String agentName;
+
     @Schema(description = "门店ID")
     private Long storeId;
 

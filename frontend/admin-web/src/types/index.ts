@@ -12,6 +12,11 @@ export interface User {
   userType: number
   storeId?: number
   storeName?: string
+  hqId?: number
+  centerId?: number
+  centerName?: string
+  agentId?: number
+  agentName?: string
   status: number
   roles: string[]
   permissions: string[]
@@ -40,6 +45,7 @@ export interface LoginResponse {
 export interface Store {
   id: number
   storeCode: string
+  agentId?: number
   storeName: string
   provinceCode: string
   provinceName: string
@@ -58,6 +64,11 @@ export interface Store {
   deviceCount: number
   staffCount: number
   openTime?: string
+  joinDate?: string
+  bedCount?: number
+  institutionType?: number // 1=公立医疗机构 2=民营医疗机构 3=其他
+  agentName?: string
+  centerName?: string
   createdAt: string
 }
 
@@ -65,6 +76,7 @@ export interface StoreQuery {
   page?: number
   size?: number
   status?: number
+  agentId?: number
   provinceCode?: string
   keyword?: string
 }
@@ -262,14 +274,75 @@ export interface VisionCompare {
   }
 }
 
+// ==================== 组织架构相关 ====================
+export interface BrandHq {
+  id: number
+  brandName: string
+  contactName: string
+  contactPhone: string
+  contactEmail?: string
+  address?: string
+  status: number
+  createdAt: string
+}
+
+export interface OpsCenter {
+  id: number
+  centerCode: string
+  centerName: string
+  hqId: number
+  contactName: string
+  contactPhone: string
+  contactEmail?: string
+  region?: string
+  status: number
+  agentCount?: number
+  storeCount?: number
+  createdAt: string
+}
+
+export interface Agent {
+  id: number
+  agentCode: string
+  agentName: string
+  centerId: number
+  centerName?: string
+  contactName: string
+  contactPhone: string
+  contactEmail?: string
+  region?: string
+  storeCount?: number
+  status: number
+  createdAt: string
+}
+
+// ==================== 设备类型相关 ====================
+export interface DeviceType {
+  id: number
+  typeCode: string
+  typeName: string
+  description?: string
+  defaultServiceLife: number
+  status: number
+  createdAt: string
+}
+
 // ==================== TV设备相关 ====================
 export interface Device {
   id: number
   deviceCode: string
+  deviceTypeId?: number
+  deviceTypeName?: string
+  deviceSn?: string
   deviceName: string
   storeId: number
   storeName: string
   status: number
+  maintenanceDate?: string
+  installDate?: string
+  expireDate?: string
+  warningDays?: number
+  expireStatus?: number // 0正常 1即将到期 2已到期
   calibrationStatus: number
   calibrationData?: {
     pixelPerMm: number

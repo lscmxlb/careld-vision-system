@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Careld 管理后台功能调整规格说明</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; font-size: 14px; line-height: 1.6; color: #333; }
+  h1 { color: #1a1a2e; border-bottom: 2px solid #16213e; padding-bottom: 10px; }
+  h2 { color: #16213e; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  h3 { color: #0f3460; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background-color: #f5f5f5; font-weight: bold; }
+  tr:nth-child(even) { background-color: #fafafa; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  pre { background: #f8f8f8; padding: 15px; border-radius: 5px; overflow-x: auto; }
+  blockquote { border-left: 4px solid #16213e; margin: 15px 0; padding: 10px 20px; background: #f9f9f9; }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Careld 管理后台功能调整规格说明</h1>
+</header>
+<h1 id="careld-管理后台admin-web功能调整规格说明">Careld
+管理后台（admin-web）功能调整规格说明</h1>
+<blockquote>
+<p>基于现有系统功能审查后的修改需求整理<br />
+日期：2026-08-08<br />
+范围：admin-web 门店管理、设备管理、用户管理模块 + 后端对应微服务</p>
+</blockquote>
+<hr />
+<h2 id="一需求总览">一、需求总览</h2>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 45%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th>模块</th>
+<th>变更类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>组织架构</td>
+<td>结构重构</td>
+<td>四级架构：总部 → 运营中心 → 代理商 → 医院(门店)</td>
+</tr>
+<tr>
+<td>门店管理</td>
+<td>字段扩展</td>
+<td>新增代理商关联、加盟时间、床位数、设备明细；业务负责人读取代理商</td>
+</tr>
+<tr>
+<td>菜单调整</td>
+<td>隐藏菜单</td>
+<td>隐藏档案审核、排版监控、预约管理、视力记录、科室管理</td>
+</tr>
+<tr>
+<td>设备类型</td>
+<td>新增模块</td>
+<td>独立的设备类型管理</td>
+</tr>
+<tr>
+<td>设备管理</td>
+<td>字段扩展</td>
+<td>新增设备类型、设备ID（手动输入）、使用寿命（含到期预警）</td>
+</tr>
+<tr>
+<td>数据迁移</td>
+<td>迁移脚本</td>
+<td>现有测试数据迁移至新组织架构</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="二组织架构四级层级">二、组织架构（四级层级）</h2>
+<h3 id="层级关系">2.1 层级关系</h3>
+<pre><code>总部（Brand HQ）
+  └── 运营中心（Operations Center）— 多个
+        └── 代理商（Agent）— 多个
+              └── 医院/门店（Store）— 多个，每个门店只归属一个代理商</code></pre>
+<h3 id="已确认规则">2.2 已确认规则</h3>
+<ul>
+<li>运营中心有<strong>多个</strong>（非单一）</li>
+<li>一个门店<strong>只能归属一个代理商</strong></li>
+<li>门店的”业务负责人”<strong>直接读取其所属代理商的负责人信息</strong>（不在门店表冗余存储）</li>
+<li>设备ID 为<strong>手动输入</strong></li>
+<li>使用寿命到期需要<strong>提醒和预警</strong>功能</li>
+<li>现有测试数据<strong>需要迁移</strong></li>
+</ul>
+<hr />
+<h2 id="三总部brand-hq">三、总部（Brand HQ）</h2>
+<h3 id="数据表-brand_hq">3.1 数据表 <code>brand_hq</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>brand_name</td>
+<td>VARCHAR(100)</td>
+<td>品牌/总部名称</td>
+</tr>
+<tr>
+<td>contact_name</td>
+<td>VARCHAR(50)</td>
+<td>业务负责人姓名</td>
+</tr>
+<tr>
+<td>contact_phone</td>
+<td>VARCHAR(20)</td>
+<td>业务负责人电话</td>
+</tr>
+<tr>
+<td>contact_email</td>
+<td>VARCHAR(100)</td>
+<td>联系邮箱</td>
+</tr>
+<tr>
+<td>address</td>
+<td>VARCHAR(255)</td>
+<td>总部地址</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TINYINT</td>
+<td>状态：0禁用 1启用</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>DATETIME</td>
+<td>更新时间</td>
+</tr>
+<tr>
+<td>deleted_at</td>
+<td>DATETIME</td>
+<td>逻辑删除</td>
+</tr>
+</tbody>
+</table>
+<h3 id="说明">3.2 说明</h3>
+<ul>
+<li>当前项目为单品牌（Careld可尔欧得），但表结构设计支持未来多品牌扩展</li>
+<li>总部下管理多个运营中心</li>
+</ul>
+<hr />
+<h2 id="四运营中心operations-center">四、运营中心（Operations
+Center）</h2>
+<h3 id="数据表-ops_center">4.1 数据表 <code>ops_center</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>center_code</td>
+<td>VARCHAR(50)</td>
+<td>运营中心编码（唯一）</td>
+</tr>
+<tr>
+<td>center_name</td>
+<td>VARCHAR(100)</td>
+<td>运营中心名称</td>
+</tr>
+<tr>
+<td>hq_id</td>
+<td>BIGINT</td>
+<td>所属总部ID（外键）</td>
+</tr>
+<tr>
+<td>contact_name</td>
+<td>VARCHAR(50)</td>
+<td>业务负责人姓名</td>
+</tr>
+<tr>
+<td>contact_phone</td>
+<td>VARCHAR(20)</td>
+<td>业务负责人电话</td>
+</tr>
+<tr>
+<td>contact_email</td>
+<td>VARCHAR(100)</td>
+<td>联系邮箱</td>
+</tr>
+<tr>
+<td>region</td>
+<td>VARCHAR(255)</td>
+<td>负责区域</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TINYINT</td>
+<td>状态：0禁用 1启用</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>DATETIME</td>
+<td>更新时间</td>
+</tr>
+<tr>
+<td>deleted_at</td>
+<td>DATETIME</td>
+<td>逻辑删除</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="五代理商agent">五、代理商（Agent）</h2>
+<h3 id="数据表-agent">5.1 数据表 <code>agent</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>agent_code</td>
+<td>VARCHAR(50)</td>
+<td>代理商编码（唯一）</td>
+</tr>
+<tr>
+<td>agent_name</td>
+<td>VARCHAR(100)</td>
+<td>代理商名称</td>
+</tr>
+<tr>
+<td>center_id</td>
+<td>BIGINT</td>
+<td>所属运营中心ID（外键）</td>
+</tr>
+<tr>
+<td>contact_name</td>
+<td>VARCHAR(50)</td>
+<td>业务负责人姓名</td>
+</tr>
+<tr>
+<td>contact_phone</td>
+<td>VARCHAR(20)</td>
+<td>业务负责人电话</td>
+</tr>
+<tr>
+<td>contact_email</td>
+<td>VARCHAR(100)</td>
+<td>联系邮箱</td>
+</tr>
+<tr>
+<td>region</td>
+<td>VARCHAR(255)</td>
+<td>负责区域</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TINYINT</td>
+<td>状态：0禁用 1启用</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>DATETIME</td>
+<td>更新时间</td>
+</tr>
+<tr>
+<td>deleted_at</td>
+<td>DATETIME</td>
+<td>逻辑删除</td>
+</tr>
+</tbody>
+</table>
+<h3 id="说明-1">5.2 说明</h3>
+<ul>
+<li>代理商的业务负责人信息（contact_name /
+contact_phone）即为其下属门店的”业务负责人”</li>
+<li>门店通过 <code>agent_id</code>
+关联，前端展示时直接读取代理商的负责人信息</li>
+</ul>
+<hr />
+<h2 id="六用户管理">六、用户管理</h2>
+<h3 id="用户表-sys_user-调整">6.1 用户表 <code>sys_user</code> 调整</h3>
+<p>新增字段： - <code>hq_id</code> BIGINT — 所属总部 -
+<code>center_id</code> BIGINT — 所属运营中心 - <code>agent_id</code>
+BIGINT — 所属代理商</p>
+<p>用户类型调整： | user_type | 说明 | |———–|——| | 1 | 总部人员 | | 2 |
+运营中心人员 | | 3 | 代理商人员 | | 4 |
+门店人员（原门店店长/医生/护士合并或保留子类型） | | 6 |
+家长（保持不变） |</p>
+<h3 id="前端页面">6.2 前端页面</h3>
+<ul>
+<li>总部管理页：总部信息 CRUD + 业务负责人</li>
+<li>运营中心管理页：列表 + CRUD + 业务负责人（按总部筛选）</li>
+<li>代理商管理页：列表 + CRUD + 业务负责人（按运营中心筛选）</li>
+</ul>
+<hr />
+<h2 id="七门店管理模块字段扩展">七、门店管理模块（字段扩展）</h2>
+<h3 id="现有-store_info-表新增字段">7.1 现有 <code>store_info</code>
+表新增字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>agent_id</td>
+<td>BIGINT</td>
+<td>所属代理商ID（外键，一个门店只归属一个代理商）</td>
+</tr>
+<tr>
+<td>join_date</td>
+<td>DATE</td>
+<td>加盟时间</td>
+</tr>
+<tr>
+<td>bed_count</td>
+<td>INT</td>
+<td>床位数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="业务负责人非冗余字段">7.2 业务负责人（非冗余字段）</h3>
+<p>门店列表/详情中的”业务负责人”信息<strong>不单独存储</strong>在门店表，而是通过
+<code>agent_id</code> 关联查询代理商的 <code>contact_name</code> /
+<code>contact_phone</code>。</p>
+<h3 id="设备明细">7.3 设备明细</h3>
+<p>门店详情页展示该门店下的设备清单（关联设备管理模块），包含： -
+设备类型名称 - 设备ID（手动输入的序列号） - 设备状态 - 使用寿命 /
+到期日期</p>
+<h3 id="菜单隐藏项">7.4 菜单隐藏项</h3>
+<p>以下菜单在 admin-web
+中<strong>全部隐藏</strong>（不删除代码，仅前端菜单不展示）： - ❌
+档案审核 - ❌ 排版监控 - ❌ 预约管理 - ❌ 视力记录 - ❌ 科室管理</p>
+<hr />
+<h2 id="八设备类型管理新增模块">八、设备类型管理（新增模块）</h2>
+<h3 id="数据表-device_type">8.1 数据表 <code>device_type</code></h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>type_code</td>
+<td>VARCHAR(50)</td>
+<td>类型编码（唯一）</td>
+</tr>
+<tr>
+<td>type_name</td>
+<td>VARCHAR(100)</td>
+<td>类型名称（如：视力检测仪、养护仪、TV终端）</td>
+</tr>
+<tr>
+<td>description</td>
+<td>VARCHAR(500)</td>
+<td>类型描述</td>
+</tr>
+<tr>
+<td>default_service_life</td>
+<td>INT</td>
+<td>默认使用寿命（月）</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TINYINT</td>
+<td>状态：0禁用 1启用</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>DATETIME</td>
+<td>更新时间</td>
+</tr>
+<tr>
+<td>deleted_at</td>
+<td>DATETIME</td>
+<td>逻辑删除</td>
+</tr>
+</tbody>
+</table>
+<h3 id="前端页面-1">8.2 前端页面</h3>
+<ul>
+<li>设备类型列表页（CRUD）</li>
+<li>字段：类型编码、类型名称、描述、默认使用寿命、状态</li>
+<li>作为设备管理中”新增设备”时的下拉选择数据源</li>
+</ul>
+<hr />
+<h2 id="九设备管理模块字段扩展-到期预警">九、设备管理模块（字段扩展 +
+到期预警）</h2>
+<h3 id="现有-store_tv_device-表新增字段">9.1 现有
+<code>store_tv_device</code> 表新增字段</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>device_type_id</td>
+<td>BIGINT</td>
+<td>设备类型ID（外键）</td>
+</tr>
+<tr>
+<td>device_sn</td>
+<td>VARCHAR(100)</td>
+<td>设备ID/序列号（<strong>手动输入</strong>，唯一）</td>
+</tr>
+<tr>
+<td>service_life_months</td>
+<td>INT</td>
+<td>使用寿命（月）</td>
+</tr>
+<tr>
+<td>install_date</td>
+<td>DATE</td>
+<td>安装日期</td>
+</tr>
+<tr>
+<td>expire_date</td>
+<td>DATE</td>
+<td>到期日期（= install_date + service_life_months）</td>
+</tr>
+<tr>
+<td>warning_days</td>
+<td>INT</td>
+<td>提前预警天数（默认30天）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="到期预警机制">9.2 到期预警机制</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>状态</th>
+<th>条件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正常</td>
+<td>expire_date &gt; 当前日期 + warning_days</td>
+<td>绿色标识</td>
+</tr>
+<tr>
+<td>即将到期</td>
+<td>当前日期 &lt; expire_date &lt;= 当前日期 + warning_days</td>
+<td>黄色预警</td>
+</tr>
+<tr>
+<td>已到期</td>
+<td>expire_date &lt;= 当前日期</td>
+<td>红色告警</td>
+</tr>
+</tbody>
+</table>
+<h3 id="预警功能">9.3 预警功能</h3>
+<ul>
+<li>设备列表页：到期状态列（颜色标识）</li>
+<li>首页仪表盘：即将到期设备数量提醒</li>
+<li>可选：到期前 N 天发送系统通知/消息提醒</li>
+</ul>
+<h3 id="设备列表展示">9.4 设备列表展示</h3>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设备名称</td>
+<td>device_name</td>
+</tr>
+<tr>
+<td>设备类型</td>
+<td>关联 device_type 表</td>
+</tr>
+<tr>
+<td>设备ID</td>
+<td>device_sn（手动输入）</td>
+</tr>
+<tr>
+<td>所属门店</td>
+<td>关联 store_info</td>
+</tr>
+<tr>
+<td>使用寿命</td>
+<td>service_life_months</td>
+</tr>
+<tr>
+<td>安装日期</td>
+<td>install_date</td>
+</tr>
+<tr>
+<td>到期日期</td>
+<td>expire_date</td>
+</tr>
+<tr>
+<td>到期状态</td>
+<td>正常/即将到期/已到期</td>
+</tr>
+<tr>
+<td>设备状态</td>
+<td>在线/离线/维修</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="十后端接口变更清单">十、后端接口变更清单</h2>
+<h3 id="组织架构careld-user-service-8282">10.1
+组织架构（careld-user-service :8282）</h3>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/api/v1/hq</td>
+<td>GET/POST</td>
+<td>总部列表/新增</td>
+</tr>
+<tr>
+<td>/api/v1/hq/{id}</td>
+<td>GET/PUT/DELETE</td>
+<td>总部详情/编辑/删除</td>
+</tr>
+<tr>
+<td>/api/v1/centers</td>
+<td>GET/POST</td>
+<td>运营中心列表/新增（支持 hq_id 过滤）</td>
+</tr>
+<tr>
+<td>/api/v1/centers/{id}</td>
+<td>GET/PUT/DELETE</td>
+<td>运营中心详情/编辑/删除</td>
+</tr>
+<tr>
+<td>/api/v1/agents</td>
+<td>GET/POST</td>
+<td>代理商列表/新增（支持 center_id 过滤）</td>
+</tr>
+<tr>
+<td>/api/v1/agents/{id}</td>
+<td>GET/PUT/DELETE</td>
+<td>代理商详情/编辑/删除</td>
+</tr>
+</tbody>
+</table>
+<h3 id="门店管理careld-store-service-8283">10.2
+门店管理（careld-store-service :8283）</h3>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>变更</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/api/v1/stores</td>
+<td>扩展字段</td>
+<td>新增 agent_id、join_date、bed_count</td>
+</tr>
+<tr>
+<td>/api/v1/stores/{id}</td>
+<td>扩展响应</td>
+<td>详情中返回代理商业务负责人信息</td>
+</tr>
+<tr>
+<td>/api/v1/stores/{id}/devices</td>
+<td>新增</td>
+<td>获取门店设备明细列表</td>
+</tr>
+</tbody>
+</table>
+<h3 id="设备管理careld-store-service-8283">10.3
+设备管理（careld-store-service :8283）</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>接口</th>
+<th>变更</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/api/v1/devices</td>
+<td>扩展字段</td>
+<td>新增
+device_type_id、device_sn、service_life_months、expire_date</td>
+</tr>
+<tr>
+<td>/api/v1/devices/expiring</td>
+<td>新增</td>
+<td>获取即将到期/已到期设备列表</td>
+</tr>
+<tr>
+<td>/api/v1/device-types</td>
+<td>GET/POST</td>
+<td>设备类型列表/新增</td>
+</tr>
+<tr>
+<td>/api/v1/device-types/{id}</td>
+<td>GET/PUT/DELETE</td>
+<td>设备类型详情/编辑/删除</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="十一前端菜单结构调整后">十一、前端菜单结构（调整后）</h2>
+<pre><code>admin-web 菜单
+├── 首页/仪表盘              ← 含设备到期预警数量
+├── 用户管理
+│   ├── 总部管理             ← 品牌总部
+│   ├── 运营中心             ← 第二级
+│   └── 代理商管理           ← 第三级
+├── 门店管理
+│   └── 门店列表             ← 含代理商关联、加盟时间、床位数、设备明细
+├── 设备管理
+│   ├── 设备类型             ← 新增
+│   └── 设备列表             ← 含设备类型、设备ID、使用寿命、到期状态
+└── （隐藏，不删除代码）
+    ├── 档案审核
+    ├── 排版监控
+    ├── 预约管理
+    ├── 视力记录
+    └── 科室管理</code></pre>
+<hr />
+<h2 id="十二数据迁移方案">十二、数据迁移方案</h2>
+<h3 id="迁移步骤">12.1 迁移步骤</h3>
+<ol type="1">
+<li>创建新表：<code>brand_hq</code>、<code>ops_center</code>、<code>agent</code>、<code>device_type</code></li>
+<li>扩展现有表：<code>store_info</code>（新增
+agent_id、join_date、bed_count）、<code>store_tv_device</code>（新增
+device_type_id、device_sn、service_life_months
+等）、<code>sys_user</code>（新增 hq_id、center_id、agent_id）</li>
+<li>插入默认总部数据（Careld 可尔欧得总部）</li>
+<li>创建运营中心并关联到总部</li>
+<li>创建代理商并关联到运营中心</li>
+<li>将现有 8 家门店分配到代理商</li>
+<li>将现有 15 个用户分配到对应层级</li>
+<li>插入默认设备类型数据</li>
+<li>为现有设备补充类型和序列号</li>
+</ol>
+<h3 id="现有测试数据映射">12.2 现有测试数据映射</h3>
+<p><strong>总部</strong>： - Careld 可尔欧得总部（默认唯一）</p>
+<p><strong>运营中心</strong>（按区域划分，示例）： | 运营中心 | 负责区域
+| |———-|———-| | 华北运营中心 | 北京、武汉 | | 华东运营中心 |
+上海、杭州、南京 | | 华南运营中心 | 广州、深圳 | | 西南运营中心 | 成都
+|</p>
+<p><strong>代理商</strong>（示例）： | 代理商 | 所属运营中心 |
+业务负责人 | 下属门店 | |——–|————-|———–|———-| | 北京朝阳代理 |
+华北运营中心 | 张三 13800000002 | 北京朝阳门店 | | 上海浦东代理 |
+华东运营中心 | 李四 13800000003 | 上海浦东门店 | | … | … | … | … |</p>
+<p><strong>设备类型</strong>（默认）： | 类型编码 | 类型名称 |
+默认寿命(月) | |———-|———-|————-| | TV_TERMINAL | TV终端 | 60 | |
+VISION_TEST | 视力检测仪 | 36 | | CARE_DEVICE | 养护仪 | 48 |</p>
+<hr />
+<h2 id="十三实施优先级">十三、实施优先级</h2>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>模块</th>
+<th>依赖</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>数据库表结构变更 + 迁移脚本</td>
+<td>无</td>
+<td>所有功能的基础</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>后端：总部/运营中心/代理商 CRUD</td>
+<td>P0-DB</td>
+<td>核心架构</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>后端：门店管理字段扩展</td>
+<td>P0</td>
+<td>依赖代理商</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>后端：设备类型 CRUD</td>
+<td>P0-DB</td>
+<td>独立模块</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>后端：设备管理字段扩展 + 到期预警</td>
+<td>P1-设备类型</td>
+<td>依赖设备类型</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>前端：用户管理页面重构</td>
+<td>P0-后端</td>
+<td>依赖后端接口</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>前端：门店管理页面扩展</td>
+<td>P1-门店后端</td>
+<td>依赖后端接口</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>前端：设备管理 + 设备类型页面</td>
+<td>P1-设备后端</td>
+<td>依赖后端接口</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>前端：菜单隐藏调整</td>
+<td>无</td>
+<td>独立可做</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

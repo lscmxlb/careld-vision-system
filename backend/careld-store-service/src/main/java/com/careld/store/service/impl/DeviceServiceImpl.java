@@ -8,8 +8,10 @@ import com.careld.common.exception.BusinessException;
 import com.careld.store.dto.CalibrationRequest;
 import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
+import com.careld.store.entity.DeviceType;
 import com.careld.store.entity.Store;
 import com.careld.store.entity.TvDevice;
+import com.careld.store.mapper.DeviceTypeMapper;
 import com.careld.store.mapper.StoreMapper;
 import com.careld.store.mapper.TvDeviceMapper;
 import com.careld.store.service.DeviceService;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +36,7 @@ public class DeviceServiceImpl implements DeviceService {
 
     private final TvDeviceMapper tvDeviceMapper;
     private final StoreMapper storeMapper;
+    private final DeviceTypeMapper deviceTypeMapper;
 
     @Override
     public IPage<DeviceResponse> pageDevices(Long storeId, Integer status, String keyword, Integer page, Integer size) {
@@ -40,7 +44,8 @@ public class DeviceServiceImpl implements DeviceService {
         tvDeviceMapper.selectPage(p, buildWrapper(storeId, status, keyword));
         List<TvDevice> records = p.getRecords();
         Map<Long, String> nameMap = resolveStoreNames(records);
-        List<DeviceResponse> list = records.stream().map(d -> toResponse(d, nameMap)).collect(Collectors.toList());
+        Map<Long, String> typeNameMap = resolveDeviceTypeNames(records);
+        List<DeviceResponse> list = records.stream().map(d -> toResponse(d, nameMap, typeNameMap)).collect(Collectors.toList());
 
         Page<DeviceResponse> result = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
         result.setRecords(list);
@@ -51,14 +56,16 @@ public class DeviceServiceImpl implements DeviceService {
     public List<DeviceResponse> listDevices(Long storeId, Integer status, String keyword) {
         List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, status, keyword));
         Map<Long, String> nameMap = resolveStoreNames(devices);
-        return devices.stream().map(d -> toResponse(d, nameMap)).collect(Collectors.toList());
+        Map<Long, String> typeNameMap = resolveDeviceTypeNames(devices);
+        return devices.stream().map(d -> toResponse(d, nameMap, typeNameMap)).collect(Collectors.toList());
     }
 
     @Override
     public DeviceResponse getDeviceById(Long id) {
         TvDevice device = getEntityById(id);
         Map<Long, String> nameMap = resolveStoreNames(Collections.singletonList(device));
-        return toResponse(device, nameMap);
+        Map<Long, String> typeNameMap = resolveDeviceTypeNames(Collections.singletonList(device));
+        return toResponse(device, nameMap, typeNameMap);
     }
 
     @Override
@@ -138,6 +145,68 @@ public class DeviceServiceImpl implements DeviceService {
         return device;
     }
 
+    @Override
+    public Long createDevice(TvDevice device) {
+        // 如果有设备编码，检查重复
+        if (StringUtils.hasText(device.getDeviceCode())) {
+            TvDevice exist = tvDeviceMapper.selectByDeviceCode(device.getDeviceCode());
+            if (exist != null) {
+                throw new BusinessException(2001, "设备编码已存在");
+            }
+        }
+        // 计算到期日期
+        calculateExpireDate(device);
+        device.setStatus(device.getStatus() == null ? 1 : device.getStatus());
+        device.setCalibrationStatus(device.getCalibrationStatus() == null ? 0 : device.getCalibrationStatus());
+        device.setBindTime(LocalDateTime.now());
+        device.setLastOnlineTime(LocalDateTime.now());
+        tvDeviceMapper.insert(device);
+        return device.getId();
+    }
+
+    @Override
+    public void updateDevice(Long id, TvDevice device) {
+        TvDevice exist = getEntityById(id);
+        device.setId(id);
+        // 重新计算到期日期
+        calculateExpireDate(device);
+        tvDeviceMapper.updateById(device);
+    }
+
+    @Override
+    public void deleteDevice(Long id) {
+        TvDevice device = getEntityById(id);
+        tvDeviceMapper.deleteById(id);
+    }
+
+    /**
+     * 设置默认预警天数
+     */
+    private void calculateExpireDate(TvDevice device) {
+        if (device.getWarningDays() == null) {
+            device.setWarningDays(30);
+        }
+    }
+
+    /**
+     * 计算到期状态: 0正常 1即将到期 2已到期
+     * 基于维护日期(maintenanceDate)计算
+     */
+    private Integer calculateExpireStatus(TvDevice device) {
+        if (device.getMaintenanceDate() == null) {
+            return 0; // 无维护日期，视为正常
+        }
+        LocalDate today = LocalDate.now();
+        if (today.isAfter(device.getMaintenanceDate())) {
+            return 2; // 已过期
+        }
+        int warningDays = device.getWarningDays() != null ? device.getWarningDays() : 30;
+        if (today.plusDays(warningDays).isAfter(device.getMaintenanceDate())) {
+            return 1; // 即将到期
+        }
+        return 0; // 正常
+    }
+
     private LambdaQueryWrapper<TvDevice> buildWrapper(Long storeId, Integer status, String keyword) {
         LambdaQueryWrapper<TvDevice> wrapper = new LambdaQueryWrapper<>();
         if (storeId != null) {
@@ -148,7 +217,8 @@ public class DeviceServiceImpl implements DeviceService {
         }
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(TvDevice::getDeviceCode, keyword)
-                    .or().like(TvDevice::getDeviceName, keyword));
+                    .or().like(TvDevice::getDeviceName, keyword)
+                    .or().like(TvDevice::getDeviceSn, keyword));
         }
         wrapper.orderByDesc(TvDevice::getId);
         return wrapper;
@@ -170,10 +240,29 @@ public class DeviceServiceImpl implements DeviceService {
         return stores.stream().collect(Collectors.toMap(Store::getId, Store::getStoreName, (a, b) -> a));
     }
 
-    private DeviceResponse toResponse(TvDevice d, Map<Long, String> nameMap) {
+    private Map<Long, String> resolveDeviceTypeNames(List<TvDevice> devices) {
+        if (devices.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> typeIds = devices.stream()
+                .map(TvDevice::getDeviceTypeId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (typeIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<DeviceType> types = deviceTypeMapper.selectBatchIds(typeIds);
+        return types.stream().collect(Collectors.toMap(DeviceType::getId, DeviceType::getTypeName, (a, b) -> a));
+    }
+
+    private DeviceResponse toResponse(TvDevice d, Map<Long, String> nameMap, Map<Long, String> typeNameMap) {
         DeviceResponse r = new DeviceResponse();
         r.setId(d.getId());
         r.setDeviceCode(d.getDeviceCode());
+        r.setDeviceTypeId(d.getDeviceTypeId());
+        r.setDeviceTypeName(d.getDeviceTypeId() != null ? typeNameMap.get(d.getDeviceTypeId()) : null);
+        r.setDeviceSn(d.getDeviceSn());
         r.setDeviceName(d.getDeviceName());
         r.setStoreId(d.getStoreId());
         r.setStoreName(nameMap.get(d.getStoreId()));
@@ -181,6 +270,11 @@ public class DeviceServiceImpl implements DeviceService {
         r.setScreenResolution(d.getScreenResolution());
         r.setScreenSize(d.getScreenSize());
         r.setAppVersion(d.getAppVersion());
+        r.setMaintenanceDate(d.getMaintenanceDate());
+        r.setInstallDate(d.getInstallDate());
+        r.setExpireDate(d.getExpireDate());
+        r.setWarningDays(d.getWarningDays());
+        r.setExpireStatus(calculateExpireStatus(d));
         r.setCalibrationStatus(d.getCalibrationStatus());
         if (StringUtils.hasText(d.getCalibrationData())) {
             try {

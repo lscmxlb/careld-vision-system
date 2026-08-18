@@ -1,5 +1,6 @@
 package com.careld.user.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.careld.common.entity.BaseEntity;
 import lombok.Data;
@@ -22,9 +23,22 @@ public class User extends BaseEntity {
     private String avatarUrl;
     private Integer userType;
     private Long storeId;
+    private Long hqId;
+    private Long centerId;
+    private Long agentId;
     private Integer status;
     private LocalDateTime lastLoginTime;
     private String lastLoginIp;
     private Integer loginFailCount;
     private LocalDateTime lockTime;
+
+    // ===== 以下为聚合字段，不映射数据库列（供前端展示）=====
+    @TableField(exist = false)
+    private String storeName;
+
+    @TableField(exist = false)
+    private String agentName;
+
+    @TableField(exist = false)
+    private String centerName;
 }

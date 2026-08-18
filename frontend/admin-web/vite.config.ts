@@ -12,7 +12,7 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    port: 5174,
+    port: 5172,
     proxy: {
       '/api/v1/auth': {
         target: 'http://127.0.0.1:8281',
@@ -22,11 +22,19 @@ export default defineConfig({
         target: 'http://127.0.0.1:8282',
         changeOrigin: true,
       },
+      '/api/v1/org': {
+        target: 'http://127.0.0.1:8282',
+        changeOrigin: true,
+      },
       '/api/v1/stores': {
         target: 'http://127.0.0.1:8283',
         changeOrigin: true,
       },
       '/api/v1/devices': {
+        target: 'http://127.0.0.1:8283',
+        changeOrigin: true,
+      },
+      '/api/v1/device-types': {
         target: 'http://127.0.0.1:8283',
         changeOrigin: true,
       },

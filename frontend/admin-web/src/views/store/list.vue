@@ -12,14 +12,14 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="省份">
-          <el-select v-model="queryForm.provinceCode" placeholder="选择省份" clearable>
-            <el-option
-              v-for="item in provinces"
-              :key="item.code"
-              :label="item.name"
-              :value="item.code"
-            />
+        <el-form-item label="运营中心">
+          <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange">
+            <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="代理商">
+          <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch">
+            <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -29,17 +29,10 @@
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input
-            v-model="queryForm.keyword"
-            placeholder="门店名称/编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
+          <el-input v-model="queryForm.keyword" placeholder="门店名称/编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>搜索
-          </el-button>
+          <el-button type="primary" @click="handleSearch"><el-icon><Search /></el-icon>搜索</el-button>
           <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
@@ -48,28 +41,43 @@
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="storeCode" label="门店编码" width="120" />
         <el-table-column prop="storeName" label="门店名称" min-width="150" />
-        <el-table-column prop="provinceName" label="省份" width="100" />
-        <el-table-column prop="cityName" label="城市" width="100" />
-        <el-table-column prop="contactName" label="联系人" width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" width="130" />
+        <el-table-column label="省/市/区" width="180">
+          <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="机构性质" width="120">
+          <template #default="{ row }">
+            <el-tag :type="institutionTypeTag(row.institutionType)">{{ institutionTypeLabel(row.institutionType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="运营中心" width="120">
+          <template #default="{ row }">
+            <span v-if="row.centerName">{{ row.centerName }}</span>
+            <el-tag v-else type="danger" size="small">未设置</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="代理商" width="120">
+          <template #default="{ row }">
+            <span v-if="row.agentName">{{ row.agentName }}</span>
+            <el-tag v-else type="danger" size="small">未设置</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="业务负责人" width="100">
+          <template #default="{ row }">{{ getAgentContactName(row.agentId) }}</template>
+        </el-table-column>
+        <el-table-column prop="joinDate" label="加盟时间" width="120" />
+        <el-table-column prop="bedCount" label="床位数" width="80" />
         <el-table-column prop="deviceCount" label="设备数" width="80" />
         <el-table-column prop="staffCount" label="员工数" width="80" />
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="success" size="small" @click="handleView(row)">详情</el-button>
-            <el-button
-              :type="row.status === 1 ? 'danger' : 'success'"
-              size="small"
-              @click="handleToggleStatus(row)"
-            >
+            <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
+            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
           </template>
@@ -78,45 +86,49 @@
 
       <!-- 分页 -->
       <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.size"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+          @size-change="handleSizeChange" @current-change="handleCurrentChange" />
       </div>
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      destroy-on-close
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="100px"
-      >
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="650px" destroy-on-close>
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
         <el-form-item label="门店编码" prop="storeCode">
           <el-input v-model="formData.storeCode" placeholder="请输入门店编码" />
         </el-form-item>
         <el-form-item label="门店名称" prop="storeName">
           <el-input v-model="formData.storeName" placeholder="请输入门店名称" />
         </el-form-item>
-        <el-form-item label="所属地区" prop="districtCode">
+        <el-form-item label="所在地区" prop="regionCodes">
           <el-cascader
-            v-model="areaValue"
-            :options="areaOptions"
-            :props="{ value: 'code', label: 'name' }"
+            v-model="formData.regionCodes"
+            :options="regionData"
             placeholder="选择省/市/区"
-            @change="handleAreaChange"
+            clearable
+            style="width: 100%"
+            @change="onRegionChange"
           />
+        </el-form-item>
+        <el-form-item label="机构性质" prop="institutionType">
+          <el-radio-group v-model="formData.institutionType">
+            <el-radio :label="1">公立医疗机构</el-radio>
+            <el-radio :label="2">民营医疗机构</el-radio>
+            <el-radio :label="3">其他</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="代理商" prop="agentId">
+          <el-select v-model="formData.agentId" placeholder="选择代理商" filterable>
+            <el-option v-for="item in allAgents" :key="item.id" :label="item.agentName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="加盟时间" prop="joinDate">
+          <el-date-picker v-model="formData.joinDate" type="date" value-format="YYYY-MM-DD" placeholder="选择加盟时间" />
+        </el-form-item>
+        <el-form-item label="床位数" prop="bedCount">
+          <el-input-number v-model="formData.bedCount" :min="0" placeholder="请输入床位数" />
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
           <el-input v-model="formData.address" placeholder="请输入详细地址" />
@@ -128,15 +140,7 @@
           <el-input v-model="formData.contactPhone" placeholder="请输入联系电话" />
         </el-form-item>
         <el-form-item label="营业时间" prop="businessHours">
-          <el-time-picker
-            v-model="businessTime"
-            is-range
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            format="HH:mm"
-            @change="handleTimeChange"
-          />
+          <el-input v-model="formData.businessHours" placeholder="如：09:00-18:00" />
         </el-form-item>
         <el-form-item label="网络类型" prop="networkType">
           <el-radio-group v-model="formData.networkType">
@@ -151,69 +155,52 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 设备明细弹窗 -->
+    <el-dialog v-model="deviceDialogVisible" :title="`${currentStoreName} - 设备明细`" width="800px" destroy-on-close>
+      <el-table :data="storeDevices" v-loading="deviceLoading" stripe>
+        <el-table-column prop="deviceCode" label="设备编码" width="140" />
+        <el-table-column prop="deviceName" label="设备名称" width="140" />
+        <el-table-column prop="deviceTypeName" label="设备类型" width="120" />
+        <el-table-column prop="deviceSn" label="设备SN" width="140" />
+        <el-table-column prop="installDate" label="安装日期" width="120" />
+        <el-table-column prop="maintenanceDate" label="维护日期" width="120" />
+        <el-table-column label="到期状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="expireStatusType(row.expireStatus)">{{ expireStatusLabel(row.expireStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 defineOptions({ name: 'AdminStoreList' })
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { storeApi } from '@/api'
-import type { Store, StoreQuery } from '@/types'
+import { storeApi, orgApi, deviceApi } from '@/api'
+import type { Store, StoreQuery, OpsCenter, Agent, Device } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
+import { regionData } from 'element-china-area-data'
 
-const router = useRouter()
-
-// 表格数据
 const loading = ref(false)
 const tableData = ref<Store[]>([])
-const pagination = reactive({
-  page: 1,
-  size: 10,
-  total: 0
-})
+const centerOptions = ref<OpsCenter[]>([])
+const agentOptions = ref<Agent[]>([])
+const allAgents = ref<Agent[]>([])
+const pagination = reactive({ page: 1, size: 10, total: 0 })
 
-// 查询表单
-const queryForm = reactive<StoreQuery>({
+const queryForm = reactive<StoreQuery & { centerId?: number }>({
   page: 1,
   size: 10,
   status: undefined,
-  provinceCode: undefined,
+  agentId: undefined,
+  centerId: undefined,
   keyword: ''
 })
 
-// 省份选项（模拟数据）
-const provinces = ref([
-  { code: '110000', name: '北京市' },
-  { code: '310000', name: '上海市' },
-  { code: '440000', name: '广东省' },
-  { code: '330000', name: '浙江省' },
-  { code: '320000', name: '江苏省' }
-])
-
-// 地区级联选项
-const areaOptions = ref([
-  {
-    code: '110000',
-    name: '北京市',
-    children: [
-      {
-        code: '110100',
-        name: '北京市',
-        children: [
-          { code: '110101', name: '东城区' },
-          { code: '110102', name: '西城区' },
-          { code: '110105', name: '朝阳区' },
-          { code: '110106', name: '丰台区' }
-        ]
-      }
-    ]
-  }
-])
-
-// 弹窗相关
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增门店')
 const formRef = ref<FormInstance>()
@@ -221,9 +208,10 @@ const submitLoading = ref(false)
 const isEdit = ref(false)
 const currentId = ref<number | null>(null)
 
-const formData = reactive<Partial<Store>>({
+const formData = reactive<Partial<Store> & { regionCodes?: string[] }>({
   storeCode: '',
   storeName: '',
+  agentId: undefined,
   provinceCode: '',
   provinceName: '',
   cityCode: '',
@@ -234,16 +222,19 @@ const formData = reactive<Partial<Store>>({
   contactName: '',
   contactPhone: '',
   businessHours: '',
-  networkType: 1
+  networkType: 1,
+  joinDate: '',
+  bedCount: 0,
+  institutionType: undefined,
+  regionCodes: []
 })
-
-const areaValue = ref<string[]>([])
-const businessTime = ref<[Date, Date] | null>(null)
 
 const formRules: FormRules = {
   storeCode: [{ required: true, message: '请输入门店编码', trigger: 'blur' }],
   storeName: [{ required: true, message: '请输入门店名称', trigger: 'blur' }],
-  districtCode: [{ required: true, message: '请选择所属地区', trigger: 'change' }],
+  regionCodes: [{ required: true, message: '请选择所在地区', trigger: 'change' }],
+  institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }],
+  agentId: [{ required: true, message: '请选择代理商', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
   contactName: [{ required: true, message: '请输入联系人姓名', trigger: 'blur' }],
   contactPhone: [
@@ -252,7 +243,82 @@ const formRules: FormRules = {
   ]
 }
 
-// 获取列表数据
+const institutionTypeLabel = (type?: number) => {
+  const map: Record<number, string> = { 1: '公立医疗机构', 2: '民营医疗机构', 3: '其他' }
+  return map[type ?? 0] || '未设置'
+}
+
+const institutionTypeTag = (type?: number) => {
+  const map: Record<number, string> = { 1: 'success', 2: 'warning', 3: 'info' }
+  return map[type ?? 0] || 'danger'
+}
+
+const onRegionChange = (codes: string[] | undefined) => {
+  if (codes && codes.length === 3) {
+    formData.provinceCode = codes[0]
+    formData.cityCode = codes[1]
+    formData.districtCode = codes[2]
+    // 从 regionData 中查找名称
+    const province = regionData.find(p => p.value === codes[0])
+    formData.provinceName = province?.label || ''
+    const city = province?.children?.find((c: any) => c.value === codes[1])
+    formData.cityName = city?.label || ''
+    const district = city?.children?.find((d: any) => d.value === codes[2])
+    formData.districtName = district?.label || ''
+  } else {
+    formData.provinceCode = ''
+    formData.provinceName = ''
+    formData.cityCode = ''
+    formData.cityName = ''
+    formData.districtCode = ''
+    formData.districtName = ''
+  }
+}
+
+// 设备明细
+const deviceDialogVisible = ref(false)
+const deviceLoading = ref(false)
+const storeDevices = ref<Device[]>([])
+const currentStoreName = ref('')
+
+const getAgentName = (agentId?: number) => {
+  const agent = allAgents.value.find(a => a.id === agentId)
+  return agent?.agentName || '-'
+}
+
+const getAgentContactName = (agentId?: number) => {
+  const agent = allAgents.value.find(a => a.id === agentId)
+  return agent?.contactName || '-'
+}
+
+const expireStatusLabel = (status?: number) => {
+  const map: Record<number, string> = { 0: '正常', 1: '即将到期', 2: '已到期' }
+  return map[status ?? 0] || '正常'
+}
+
+const expireStatusType = (status?: number) => {
+  const map: Record<number, string> = { 0: 'success', 1: 'warning', 2: 'danger' }
+  return map[status ?? 0] || 'success'
+}
+
+const fetchCenters = async () => {
+  try { centerOptions.value = await orgApi.getAllCenters() } catch (e) { console.error('获取运营中心失败', e) }
+}
+
+const fetchAllAgents = async () => {
+  try { allAgents.value = await orgApi.getAllAgents() } catch (e) { console.error('获取代理商失败', e) }
+}
+
+const onCenterChange = async (val: number | undefined) => {
+  queryForm.agentId = undefined
+  if (val) {
+    agentOptions.value = await orgApi.getAllAgents(val)
+  } else {
+    agentOptions.value = []
+  }
+  handleSearch()
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -270,113 +336,114 @@ const fetchData = async () => {
   }
 }
 
-// 搜索
-const handleSearch = () => {
-  pagination.page = 1
-  fetchData()
-}
-
-// 重置
+const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleReset = () => {
   queryForm.status = undefined
-  queryForm.provinceCode = undefined
+  queryForm.agentId = undefined
+  queryForm.centerId = undefined
   queryForm.keyword = ''
+  agentOptions.value = []
   pagination.page = 1
   fetchData()
 }
+const handleSizeChange = (val: number) => { pagination.size = val; fetchData() }
+const handleCurrentChange = (val: number) => { pagination.page = val; fetchData() }
 
-// 分页变化
-const handleSizeChange = (val: number) => {
-  pagination.size = val
-  fetchData()
-}
-
-const handleCurrentChange = (val: number) => {
-  pagination.page = val
-  fetchData()
-}
-
-// 新增
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增门店'
-  resetForm()
+  Object.assign(formData, { storeCode: '', storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', businessHours: '', networkType: 1, joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [] })
+  currentId.value = null
   dialogVisible.value = true
 }
 
-// 编辑
+/**
+ * 根据存储的省市区信息从 regionData 中查找匹配的级联编码
+ * 兼容多种编码格式：2位/4位/6位混合，以及名称不完全匹配的情况
+ */
+const findRegionCodes = (row: Store): string[] => {
+  // 策略1：名称匹配（处理直辖市"市辖区"问题）
+  if (row.provinceName) {
+    const province = regionData.find(p => p.label === row.provinceName)
+    if (province) {
+      // 尝试精确匹配城市名
+      let city = province.children?.find((c: any) => c.label === row.cityName)
+      // 直辖市处理：城市名与省名相同但cascader用的是"市辖区"
+      if (!city && row.cityName === row.provinceName) {
+        city = province.children?.find((c: any) => c.label === '市辖区')
+      }
+      if (city) {
+        const district = city.children?.find((d: any) => d.label === row.districtName)
+        if (district) return [province.value, city.value, district.value]
+        return [province.value, city.value]
+      }
+      return [province.value]
+    }
+  }
+
+  // 策略2：编码截断匹配
+  // cascader格式：省=2位, 市=4位, 区=6位
+  const truncCode = (code: string, len: number) => {
+    if (!code) return ''
+    const s = String(code)
+    return s.length > len ? s.substring(0, len) : s
+  }
+  const pCode = truncCode(String(row.provinceCode || ''), 2)
+  const cCode = truncCode(String(row.cityCode || ''), 4)
+  const dCode = truncCode(String(row.districtCode || ''), 6)
+
+  if (pCode) {
+    const province = regionData.find(p => p.value === pCode)
+    if (province && cCode) {
+      const city = province.children?.find((c: any) => c.value === cCode)
+      if (city) {
+        const district = city.children?.find((d: any) => d.value === dCode)
+        if (district) return [province.value, city.value, district.value]
+        return [province.value, city.value]
+      }
+      return [province.value]
+    }
+  }
+
+  return []
+}
+
 const handleEdit = (row: Store) => {
   isEdit.value = true
   dialogTitle.value = '编辑门店'
   currentId.value = row.id
   Object.assign(formData, row)
+  // 先清空再设置，确保级联选择器正确回显
+  formData.regionCodes = []
   dialogVisible.value = true
+  nextTick(() => {
+    formData.regionCodes = findRegionCodes(row)
+  })
 }
 
-// 查看详情
-const handleView = (row: Store) => {
-  router.push(`/store/detail/${row.id}`)
+const handleViewDevices = async (row: Store) => {
+  currentStoreName.value = row.storeName
+  deviceDialogVisible.value = true
+  deviceLoading.value = true
+  try {
+    const res = await deviceApi.getDeviceList({ storeId: row.id, page: 1, size: 100 })
+    storeDevices.value = res.list
+  } catch (error) {
+    console.error('获取设备列表失败', error)
+  } finally {
+    deviceLoading.value = false
+  }
 }
 
-// 切换状态
 const handleToggleStatus = async (row: Store) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要${row.status === 1 ? '禁用' : '启用'}门店"${row.storeName}"吗？`,
-      '提示',
-      { type: 'warning' }
-    )
+    await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}门店"${row.storeName}"吗？`, '提示', { type: 'warning' })
     await storeApi.updateStoreStatus(row.id, row.status === 1 ? 0 : 1)
     ElMessage.success('操作成功')
     fetchData()
-  } catch {
-    // 取消操作
-  }
+  } catch { /* 取消 */ }
 }
 
-// 地区选择变化
-const handleAreaChange = (value: string[]) => {
-  if (value.length === 3) {
-    formData.provinceCode = value[0]
-    formData.cityCode = value[1]
-    formData.districtCode = value[2]
-    // 这里需要根据code查找对应的name
-  }
-}
-
-// 时间选择变化
-const handleTimeChange = (value: [Date, Date] | null) => {
-  if (value) {
-    const format = (date: Date) => {
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-    }
-    formData.businessHours = `${format(value[0])}-${format(value[1])}`
-  }
-}
-
-// 重置表单
-const resetForm = () => {
-  Object.assign(formData, {
-    storeCode: '',
-    storeName: '',
-    provinceCode: '',
-    provinceName: '',
-    cityCode: '',
-    cityName: '',
-    districtCode: '',
-    districtName: '',
-    address: '',
-    contactName: '',
-    contactPhone: '',
-    businessHours: '',
-    networkType: 1
-  })
-  areaValue.value = []
-  businessTime.value = null
-  currentId.value = null
-}
-
-// 提交
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -402,26 +469,16 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  fetchCenters()
+  fetchAllAgents()
   fetchData()
 })
 </script>
 
 <style scoped lang="scss">
 .store-list-page {
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .search-form {
-    margin-bottom: 20px;
-  }
-
-  .pagination-wrapper {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-  }
+  .card-header { display: flex; justify-content: space-between; align-items: center; }
+  .search-form { margin-bottom: 20px; }
+  .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
 }
 </style>

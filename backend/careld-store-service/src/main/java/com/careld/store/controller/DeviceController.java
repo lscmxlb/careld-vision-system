@@ -6,6 +6,7 @@ import com.careld.common.result.Result;
 import com.careld.store.dto.CalibrationRequest;
 import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
+import com.careld.store.entity.TvDevice;
 import com.careld.store.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +41,26 @@ public class DeviceController {
     @GetMapping("/{id}")
     public Result<DeviceResponse> get(@PathVariable Long id) {
         return Result.success(deviceService.getDeviceById(id));
+    }
+
+    @Operation(summary = "新增设备")
+    @PostMapping
+    public Result<Long> create(@RequestBody TvDevice device) {
+        return Result.success(deviceService.createDevice(device));
+    }
+
+    @Operation(summary = "更新设备")
+    @PutMapping("/{id}")
+    public Result<Void> update(@PathVariable Long id, @RequestBody TvDevice device) {
+        deviceService.updateDevice(id, device);
+        return Result.success();
+    }
+
+    @Operation(summary = "删除设备")
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        deviceService.deleteDevice(id);
+        return Result.success();
     }
 
     @Operation(summary = "设备绑定门店")

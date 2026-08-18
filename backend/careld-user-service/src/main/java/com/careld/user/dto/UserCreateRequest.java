@@ -32,8 +32,14 @@ public class UserCreateRequest {
     private String email;
 
     @NotNull(message = "用户类型不能为空")
-    @Schema(description = "用户类型:1总部运营 2门店医护 3家长", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "用户类型:1总部 2门店维护 3家长 4运营中心 5代理商", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer userType;
+
+    @Schema(description = "运营中心ID")
+    private Long centerId;
+
+    @Schema(description = "代理商ID")
+    private Long agentId;
 
     @Schema(description = "所属门店ID")
     private Long storeId;

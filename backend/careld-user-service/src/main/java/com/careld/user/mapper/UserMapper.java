@@ -25,8 +25,11 @@ public interface UserMapper extends BaseMapper<User> {
      * 条件查询用户列表
      */
     @Select("<script>" +
-            "SELECT u.*, s.store_name as storeName FROM sys_user u " +
+            "SELECT u.*, s.store_name as storeName, a.agent_name as agentName, c.center_name as centerName " +
+            "FROM sys_user u " +
             "LEFT JOIN store_info s ON u.store_id = s.id " +
+            "LEFT JOIN agent a ON u.agent_id = a.id AND a.deleted_at IS NULL " +
+            "LEFT JOIN ops_center c ON u.center_id = c.id AND c.deleted_at IS NULL " +
             "WHERE u.deleted_at IS NULL " +
             "<if test='userType != null'> AND u.user_type = #{userType} </if>" +
             "<if test='storeId != null'> AND u.store_id = #{storeId} </if>" +

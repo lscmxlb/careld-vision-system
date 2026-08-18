@@ -3,10 +3,11 @@ package com.careld.store.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * TV 设备响应 DTO（含门店名称，供前端展示）
+ * TV 设备响应 DTO（含门店名称、设备类型名称，供前端展示）
  */
 @Data
 @Schema(description = "TV 设备信息")
@@ -17,6 +18,15 @@ public class DeviceResponse {
 
     @Schema(description = "设备唯一码")
     private String deviceCode;
+
+    @Schema(description = "设备类型ID")
+    private Long deviceTypeId;
+
+    @Schema(description = "设备类型名称")
+    private String deviceTypeName;
+
+    @Schema(description = "设备SN（手动输入）")
+    private String deviceSn;
 
     @Schema(description = "设备名称")
     private String deviceName;
@@ -38,6 +48,21 @@ public class DeviceResponse {
 
     @Schema(description = "APK版本号")
     private String appVersion;
+
+    @Schema(description = "维护日期")
+    private LocalDate maintenanceDate;
+
+    @Schema(description = "安装日期")
+    private LocalDate installDate;
+
+    @Schema(description = "到期日期")
+    private LocalDate expireDate;
+
+    @Schema(description = "预警天数(提前N天)")
+    private Integer warningDays;
+
+    @Schema(description = "到期状态: 0正常 1即将到期 2已到期")
+    private Integer expireStatus;
 
     @Schema(description = "校准状态:0未校准 1已校准")
     private Integer calibrationStatus;
