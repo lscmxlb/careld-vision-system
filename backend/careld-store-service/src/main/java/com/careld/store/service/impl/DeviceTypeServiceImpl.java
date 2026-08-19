@@ -17,6 +17,7 @@ import java.util.List;
 public class DeviceTypeServiceImpl implements DeviceTypeService {
 
     private final DeviceTypeMapper deviceTypeMapper;
+    private final com.careld.store.mapper.TvDeviceMapper tvDeviceMapper;
 
     @Override
     public IPage<DeviceType> listDeviceTypes(String keyword, Integer page, Integer size) {
@@ -54,6 +55,11 @@ public class DeviceTypeServiceImpl implements DeviceTypeService {
 
     @Override
     public void deleteDeviceType(Long id) {
+        // 检查是否有设备
+        int deviceCount = tvDeviceMapper.countByTypeId(id);
+        if (deviceCount > 0) {
+            throw new BusinessException(400, "该设备类型下还有" + deviceCount + "台设备，无法删除");
+        }
         deviceTypeMapper.deleteById(id);
     }
 }

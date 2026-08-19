@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
     <div class="login-box">
-      <h2>门店管理系统登录</h2>
+      <h2>医院管理系统登录</h2>
       <el-form :model="form" @keyup.enter="handleLogin">
         <el-form-item>
           <el-radio-group v-model="form.loginType" size="large" class="login-type">

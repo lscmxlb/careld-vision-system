@@ -28,6 +28,18 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public Long createUser(UserCreateRequest request) {
+        // 创建用户时用户名必填
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            throw new BusinessException(400, "用户名不能为空");
+        }
+        // 创建用户时密码必填
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new BusinessException(400, "密码不能为空");
+        }
+        // 创建用户时用户类型必填
+        if (request.getUserType() == null) {
+            throw new BusinessException(400, "用户类型不能为空");
+        }
         // 检查用户名是否存在
         User existUser = userMapper.selectByUsername(request.getUsername());
         if (existUser != null) {
@@ -90,9 +102,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<UserResponse> listUsers(Integer userType, Long storeId, String keyword, Integer page, Integer size) {
+    public Page<UserResponse> listUsers(Integer userType, Long storeId, Long centerId, Long agentId, Integer status, String keyword, Integer page, Integer size) {
         Page<User> pageParam = new Page<>(page, size);
-        Page<User> userPage = userMapper.selectUserPage(pageParam, userType, storeId, keyword);
+        Page<User> userPage = userMapper.selectUserPage(pageParam, userType, storeId, keyword, centerId, agentId, status);
 
         List<UserResponse> records = userPage.getRecords().stream()
                 .map(this::convertToResponse)

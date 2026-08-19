@@ -76,10 +76,10 @@
         <el-form-item label="手机号" required>
           <el-input v-model="childForm.phone" placeholder="请输入手机号" maxlength="11" />
         </el-form-item>
-        <el-form-item label="所属门店" required>
+        <el-form-item label="所属医院" required>
           <el-select
             v-model="childForm.storeId"
-            placeholder="请选择门店"
+            placeholder="请选择医院"
             filterable
             style="width: 100%"
           >
@@ -158,7 +158,7 @@
           <span class="detail-value">{{ detailChild.phone }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">所属门店</span>
+          <span class="detail-label">所属医院</span>
           <span class="detail-value">{{ detailChild.storeName }}</span>
         </div>
         <div class="detail-row">
@@ -261,7 +261,7 @@ const handleAddChild = async () => {
     return
   }
   if (!childForm.storeId) {
-    ElMessage.warning('请选择所属门店')
+    ElMessage.warning('请选择所属医院')
     return
   }
   if (!childForm.birthDate) {
@@ -306,12 +306,12 @@ const viewTrend = (child: Child) => {
   router.push(`/trend?childId=${child.id}`)
 }
 
-// 获取门店列表（添加孩子时选择）
+// 获取医院列表（添加孩子时选择）
 const fetchStoreList = async () => {
   try {
     storeList.value = await storeApi.getStoreList()
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : '获取门店列表失败')
+    ElMessage.error(error instanceof Error ? error.message : '获取医院列表失败')
   }
 }
 

@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>代理商管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button type="primary" @click="handleAdd" v-permission="'organization:agent:create'">
             <el-icon><Plus /></el-icon>新增代理商
           </el-button>
         </div>
@@ -31,7 +31,7 @@
         <el-table-column label="所属运营中心" width="140">
           <template #default="{ row }">{{ row.centerName || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="storeCount" label="门店数量" width="100" align="center">
+        <el-table-column prop="storeCount" label="医院数量" width="100" align="center">
           <template #default="{ row }">
             <el-tag type="success" class="clickable-tag" @click="handleShowStores(row)">{{ row.storeCount ?? 0 }}</el-tag>
           </template>
@@ -47,8 +47,8 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'organization:agent:update'">编辑</el-button>
+            <el-button type="danger" size="small" @click="handleDelete(row)" v-permission="'organization:agent:delete'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -99,11 +99,11 @@
       </template>
     </el-dialog>
 
-    <!-- 门店明细弹窗 -->
+    <!-- 医院明细弹窗 -->
     <el-dialog v-model="storeDialog.visible" :title="storeDialog.title" width="750px" destroy-on-close>
       <el-table :data="storeDialog.data" v-loading="storeDialog.loading" stripe max-height="400">
-        <el-table-column prop="storeCode" label="门店编码" width="120" />
-        <el-table-column prop="storeName" label="门店名称" min-width="150" />
+        <el-table-column prop="storeCode" label="医院编码" width="120" />
+        <el-table-column prop="storeName" label="医院名称" min-width="150" />
         <el-table-column label="省/市/区" width="180">
           <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
@@ -252,7 +252,7 @@ const handleSubmit = async () => {
 
 onMounted(() => { fetchCenters(); fetchData() })
 
-// ===== 门店明细弹窗 =====
+// ===== 医院明细弹窗 =====
 const storeDialog = reactive({
   visible: false,
   title: '',
@@ -262,14 +262,14 @@ const storeDialog = reactive({
 
 const handleShowStores = async (row: Agent) => {
   storeDialog.visible = true
-  storeDialog.title = `${row.agentName} - 门店列表`
+  storeDialog.title = `${row.agentName} - 医院列表`
   storeDialog.loading = true
   storeDialog.data = []
   try {
     const res = await storeApi.getStoreList({ agentId: row.id, page: 1, size: 100 })
     storeDialog.data = res.list
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   } finally {
     storeDialog.loading = false
   }

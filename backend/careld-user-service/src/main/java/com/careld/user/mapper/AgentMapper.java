@@ -13,4 +13,7 @@ public interface AgentMapper extends BaseMapper<Agent> {
 
     @Select("SELECT agent_id, COUNT(*) as cnt FROM store_info WHERE deleted_at IS NULL GROUP BY agent_id")
     List<Map<String, Object>> countStoresGroupByAgent();
+
+    @Select("SELECT COUNT(*) FROM store_info WHERE agent_id = #{agentId} AND deleted_at IS NULL")
+    int countStoresByAgentId(Long agentId);
 }

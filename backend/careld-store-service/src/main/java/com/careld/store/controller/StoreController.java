@@ -2,6 +2,8 @@ package com.careld.store.controller;
 
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
+import com.careld.common.security.RequirePermission;
+import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
 import com.careld.store.entity.Store;
 import com.careld.store.service.StoreService;
@@ -25,12 +27,15 @@ public class StoreController {
 
     @Operation(summary = "门店列表")
     @GetMapping
+    @RequirePermission("store:list:view")
     public Result<PageResult<Store>> list(@RequestParam(value = "status", required = false) Integer status,
                                           @RequestParam(value = "agentId", required = false) Long agentId,
                                           @RequestParam(value = "keyword", required = false) String keyword,
                                           @RequestParam(value = "page", defaultValue = "1") Integer page,
                                           @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        var p = storeService.listStores(status, agentId, keyword, page, size);
+        // 数据权限：代理商用户按 agentId 过滤，门店用户按 storeId 过滤
+        Long effectiveAgentId = DataScopeHelper.resolveAgentId(agentId);
+        var p = storeService.listStores(status, effectiveAgentId, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
@@ -47,22 +52,26 @@ public class StoreController {
     }
 
     @GetMapping("/{id}")
+    @RequirePermission("store:list:view")
     public Result<Store> get(@PathVariable Long id) {
         return Result.success(storeService.getStoreById(id));
     }
 
     @PostMapping
+    @RequirePermission("store:list:create")
     public Result<Long> create(@RequestBody Store store) {
         return Result.success(storeService.createStore(store));
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("store:list:update")
     public Result<Void> update(@PathVariable Long id, @RequestBody Store store) {
         storeService.updateStore(id, store);
         return Result.success();
     }
 
     @PatchMapping("/{id}/status")
+    @RequirePermission("store:list:update")
     public Result<Void> status(@PathVariable Long id, @RequestBody Store store) {
         storeService.updateStatus(id, store.getStatus());
         return Result.success();

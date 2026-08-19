@@ -1,5 +1,7 @@
 package com.careld.common.security;
 
+import java.util.List;
+
 /**
  * 当前登录用户上下文（基于 ThreadLocal）
  *
@@ -45,9 +47,27 @@ public final class UserContext {
         return user == null ? null : user.getStoreId();
     }
 
+    public static Long getCurrentCenterId() {
+        CurrentUser user = HOLDER.get();
+        return user == null ? null : user.getCenterId();
+    }
+
+    public static Long getCurrentAgentId() {
+        CurrentUser user = HOLDER.get();
+        return user == null ? null : user.getAgentId();
+    }
+
     public static Long getCurrentDeptId() {
         CurrentUser user = HOLDER.get();
         return user == null ? null : user.getDeptId();
+    }
+
+    /**
+     * 获取当前用户权限列表（未登录时返回 null）
+     */
+    public static List<String> getPermissions() {
+        CurrentUser user = HOLDER.get();
+        return user == null ? null : user.getPermissions();
     }
 
     /**
@@ -57,15 +77,29 @@ public final class UserContext {
         private final Long userId;
         private final Integer userType;
         private final Long storeId;
+        private final Long centerId;
+        private final Long agentId;
         private final Long deptId;
         private final String username;
+        private final List<String> permissions;
 
         public CurrentUser(Long userId, Integer userType, Long storeId, Long deptId, String username) {
+            this(userId, userType, storeId, null, null, deptId, username, null);
+        }
+
+        public CurrentUser(Long userId, Integer userType, Long storeId, Long deptId, String username, List<String> permissions) {
+            this(userId, userType, storeId, null, null, deptId, username, permissions);
+        }
+
+        public CurrentUser(Long userId, Integer userType, Long storeId, Long centerId, Long agentId, Long deptId, String username, List<String> permissions) {
             this.userId = userId;
             this.userType = userType;
             this.storeId = storeId;
+            this.centerId = centerId;
+            this.agentId = agentId;
             this.deptId = deptId;
             this.username = username;
+            this.permissions = permissions;
         }
 
         public Long getUserId() {
@@ -80,12 +114,24 @@ public final class UserContext {
             return storeId;
         }
 
+        public Long getCenterId() {
+            return centerId;
+        }
+
+        public Long getAgentId() {
+            return agentId;
+        }
+
         public Long getDeptId() {
             return deptId;
         }
 
         public String getUsername() {
             return username;
+        }
+
+        public List<String> getPermissions() {
+            return permissions;
         }
     }
 }

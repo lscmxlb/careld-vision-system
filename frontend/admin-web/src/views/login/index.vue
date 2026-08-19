@@ -3,9 +3,10 @@
     <div class="login-container">
       <div class="login-left">
         <div class="brand">
-          <img src="/src/assets/logo.svg" alt="Careld" class="brand-logo">
+          <img v-if="appStore.systemSettings.logoUrl" :src="appStore.systemSettings.logoUrl" alt="Logo" class="brand-logo">
+          <img v-else src="/src/assets/logo.svg" alt="Careld" class="brand-logo">
           <h1 class="brand-name">Careld</h1>
-          <p class="brand-slogan">可尔欧得视力养护服务系统</p>
+          <p class="brand-slogan">{{ appStore.systemSettings.systemName || '可尔欧得视力养护服务系统' }}</p>
         </div>
         <div class="features">
           <div class="feature-item">
@@ -91,11 +92,13 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Key, Monitor, DataAnalysis, Connection } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { useAppStore } from '@/stores/app'
 import { authApi } from '@/api'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
+const appStore = useAppStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)

@@ -66,6 +66,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:8282',
         changeOrigin: true,
       },
+      '/api/v1/menus': {
+        target: 'http://127.0.0.1:8282',
+        changeOrigin: true,
+      },
+      '/api/v1/roles': {
+        target: 'http://127.0.0.1:8282',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://127.0.0.1:8281',
         changeOrigin: true,

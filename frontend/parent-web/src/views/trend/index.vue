@@ -88,7 +88,7 @@
               <span class="month">{{ record.testTime.substring(5, 7) }}月</span>
             </div>
             <div class="history-info">
-              <p class="store">{{ record.storeName || '门店' }}</p>
+              <p class="store">{{ record.storeName || '医院' }}</p>
               <p class="tech">
                 {{ record.testType === 1 ? '养护前' : '养护后' }} |
                 检测: {{ record.testerName }}

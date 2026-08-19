@@ -5,10 +5,12 @@ import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
 import com.careld.auth.entity.User;
+import com.careld.auth.mapper.PermissionMapper;
 import com.careld.auth.mapper.UserMapper;
 import com.careld.auth.service.AuthService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.security.JwtUtil;
+import com.alibaba.fastjson2.JSON;
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.core.util.IdUtil;
@@ -21,9 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 认证服务实现
@@ -34,6 +34,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
+    private final PermissionMapper permissionMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -159,12 +160,18 @@ public class AuthServiceImpl implements AuthService {
      * 生成Token响应
      */
     private LoginResponse generateTokenResponse(User user) {
+        // 查询用户实际权限列表
+        List<String> permissions = buildPermissionKeys(user.getId());
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("username", user.getUsername());
         claims.put("userType", user.getUserType());
         claims.put("storeId", user.getStoreId());
+        claims.put("centerId", user.getCenterId());
+        claims.put("agentId", user.getAgentId());
         claims.put("deptId", user.getDeptId());
+        claims.put("permissions", permissions);
 
         String accessToken = JwtUtil.generateAccessToken(jwtSecret, claims);
         String refreshToken = JwtUtil.generateRefreshToken(jwtSecret, claims);
@@ -181,12 +188,67 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setRealName(user.getRealName());
         userInfo.setUserType(user.getUserType());
         userInfo.setStoreId(user.getStoreId());
+        userInfo.setCenterId(user.getCenterId());
+        userInfo.setAgentId(user.getAgentId());
         userInfo.setDeptId(user.getDeptId());
         userInfo.setJobTitle(user.getJobTitle());
         userInfo.setRoles(List.of("user"));
-        userInfo.setPermissions(List.of("*"));
+        userInfo.setPermissions(permissions);
         response.setUser(userInfo);
 
         return response;
+    }
+
+    /**
+     * 从数据库构建用户权限标识列表
+     * 逻辑与 user-service 的 PermissionServiceImpl 一致
+     */
+    private List<String> buildPermissionKeys(Long userId) {
+        List<Map<String, Object>> rows = permissionMapper.selectPermissionsByUserId(userId);
+        if (rows == null || rows.isEmpty()) return Collections.emptyList();
+
+        Set<String> permissions = new HashSet<>();
+        for (Map<String, Object> row : rows) {
+            String permKey = (String) row.get("permission_key");
+            if (permKey == null) continue;
+
+            // 添加权限标识本身
+            permissions.add(permKey);
+
+            // 获取菜单类型: 1目录 2菜单 3按钮
+            Object menuTypeObj = row.get("menu_type");
+            int menuType = 0;
+            if (menuTypeObj instanceof Number) {
+                menuType = ((Number) menuTypeObj).intValue();
+            }
+
+            // 按钮级(type=3)权限的permission_key本身就是完整权限（如 organization:center:create），
+            // 不需要从actions派生，直接跳过
+            if (menuType == 3) continue;
+
+            // 菜单级(type=2)权限从actions派生操作权限
+            // 菜单的permission_key以:view结尾，如 organization:center:view
+            String actionsJson = (String) row.get("actions");
+            if (actionsJson != null && !actionsJson.isBlank()) {
+                try {
+                    List<String> actions = JSON.parseArray(actionsJson, String.class);
+                    for (String action : actions) {
+                        if ("view".equals(action)) {
+                            permissions.add(permKey);
+                        } else {
+                            // organization:center:view -> organization:center:create
+                            String actionKey = permKey.replaceAll(":view$", ":" + action);
+                            if (!actionKey.equals(permKey)) {
+                                permissions.add(actionKey);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("解析actions失败: {}", actionsJson);
+                }
+            }
+        }
+
+        return new ArrayList<>(permissions);
     }
 }

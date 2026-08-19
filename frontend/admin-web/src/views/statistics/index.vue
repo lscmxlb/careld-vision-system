@@ -3,8 +3,8 @@
     <!-- 筛选条件 -->
     <el-card class="filter-card">
       <el-form :model="filterForm" inline>
-        <el-form-item label="所属门店">
-          <el-select v-model="filterForm.storeId" placeholder="全部门店" clearable filterable>
+        <el-form-item label="所属医院">
+          <el-select v-model="filterForm.storeId" placeholder="全部医院" clearable filterable>
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -51,7 +51,7 @@
           </div>
           <div class="stat-info">
             <div class="stat-value">{{ summaryData.storeCount }}</div>
-            <div class="stat-label">门店总数</div>
+            <div class="stat-label">医院总数</div>
           </div>
         </el-card>
       </el-col>
@@ -103,7 +103,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>门店客流对比</span>
+            <span>医院客流对比</span>
           </template>
           <div ref="trafficChartRef" class="chart-container" v-loading="trafficLoading" />
         </el-card>
@@ -122,11 +122,11 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>优秀门店排名</span>
+            <span>优秀医院排名</span>
           </template>
           <el-table :data="summaryData.topStores" stripe size="small" max-height="350">
             <el-table-column type="index" label="排名" width="60" />
-            <el-table-column prop="storeName" label="门店名称" />
+            <el-table-column prop="storeName" label="医院名称" />
             <el-table-column prop="visitCount" label="到店次数" width="100" />
             <el-table-column prop="improvementRate" label="改善率" width="100">
               <template #default="{ row }">
@@ -208,13 +208,13 @@ const trendLoading = ref(false)
 const trafficLoading = ref(false)
 const pieLoading = ref(false)
 
-// 获取门店列表
+// 获取医院列表
 const fetchStores = async () => {
   try {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 
@@ -231,7 +231,7 @@ const fetchSummary = async () => {
   }
 }
 
-// 获取门店客流数据并渲染柱状图
+// 获取医院客流数据并渲染柱状图
 const fetchTrafficChart = async () => {
   if (!trafficChartRef.value) return
   trafficLoading.value = true
@@ -239,7 +239,7 @@ const fetchTrafficChart = async () => {
     if (!trafficChart) {
       trafficChart = echarts.init(trafficChartRef.value)
     }
-    // 使用已有门店数据作为演示
+    // 使用已有医院数据作为演示
     const stores = storeOptions.value.slice(0, 8)
     const mockData = stores.map(() => Math.floor(Math.random() * 500 + 100))
 

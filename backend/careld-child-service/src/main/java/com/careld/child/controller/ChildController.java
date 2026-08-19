@@ -4,6 +4,7 @@ import com.careld.child.dto.ChildRequest;
 import com.careld.child.entity.ChildProfile;
 import com.careld.child.service.ChildService;
 import com.careld.common.result.Result;
+import com.careld.common.security.DataScopeHelper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,13 +28,17 @@ public class ChildController {
                                            @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
                                            @RequestParam(value = "parentUserId", required = false) Long parentUserId,
                                            @RequestParam(value = "keyword", required = false) String keyword) {
-        return Result.success(childService.listProfiles(storeId, auditStatus, parentUserId, keyword));
+        // 数据权限：门店用户注入 storeId
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        return Result.success(childService.listProfiles(effectiveStoreId, auditStatus, parentUserId, keyword));
     }
 
     @GetMapping("/pending-count")
     public Result<Long> pendingCount(@RequestParam(value = "storeId", required = false) Long storeId,
                                      @RequestParam(value = "parentUserId", required = false) Long parentUserId) {
-        return Result.success(childService.countPending(storeId, parentUserId));
+        // 数据权限：门店用户注入 storeId
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        return Result.success(childService.countPending(effectiveStoreId, parentUserId));
     }
 
     @GetMapping("/{id}")

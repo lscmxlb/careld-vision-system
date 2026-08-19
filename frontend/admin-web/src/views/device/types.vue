@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>设备类型管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button type="primary" @click="handleAdd" v-permission="'device:type:create'">
             <el-icon><Plus /></el-icon>新增设备类型
           </el-button>
         </div>
@@ -32,8 +32,8 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'device:type:update'">编辑</el-button>
+            <el-button type="danger" size="small" @click="handleDelete(row)" v-permission="'device:type:delete'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

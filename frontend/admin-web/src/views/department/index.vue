@@ -12,8 +12,8 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="所属门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable filterable>
+        <el-form-item label="所属医院">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable>
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -48,7 +48,7 @@
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="deptCode" label="科室编码" width="120" />
         <el-table-column prop="deptName" label="科室名称" min-width="150" />
-        <el-table-column prop="storeName" label="所属门店" min-width="140" />
+        <el-table-column prop="storeName" label="所属医院" min-width="140" />
         <el-table-column prop="deptType" label="科室类型" width="100">
           <template #default="{ row }">
             <el-tag :type="getDeptTypeTag(row.deptType)">
@@ -107,8 +107,8 @@
         :rules="formRules"
         label-width="100px"
       >
-        <el-form-item label="所属门店" prop="storeId">
-          <el-select v-model="formData.storeId" placeholder="选择门店" filterable style="width: 100%">
+        <el-form-item label="所属医院" prop="storeId">
+          <el-select v-model="formData.storeId" placeholder="选择医院" filterable style="width: 100%">
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -202,7 +202,7 @@ const formData = reactive<Partial<Department>>({
 })
 
 const formRules: FormRules = {
-  storeId: [{ required: true, message: '请选择所属门店', trigger: 'change' }],
+  storeId: [{ required: true, message: '请选择所属医院', trigger: 'change' }],
   deptCode: [{ required: true, message: '请输入科室编码', trigger: 'blur' }],
   deptName: [{ required: true, message: '请输入科室名称', trigger: 'blur' }],
   deptType: [{ required: true, message: '请选择科室类型', trigger: 'change' }]
@@ -229,13 +229,13 @@ const getDeptTypeTag = (type: number) => {
   return map[type] || 'info'
 }
 
-// 获取门店列表（下拉用）
+// 获取医院列表（下拉用）
 const fetchStores = async () => {
   try {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 

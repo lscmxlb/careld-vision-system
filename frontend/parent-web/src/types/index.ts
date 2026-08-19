@@ -145,7 +145,7 @@ export interface VisionCompare {
   }
 }
 
-// ==================== 门店相关 ====================
+// ==================== 医院相关 ====================
 export interface Store {
   id: number
   storeCode: string
@@ -199,7 +199,7 @@ export interface Reserve {
   reserveType: number // 1=视力检测 2=养护 3=复查
   parentName: string
   parentPhone: string
-  source?: number // 1=小程序 2=门店 3=电话
+  source?: number // 1=小程序 2=医院 3=电话
   remark?: string
   cancelReason?: string
   status: number // 1=待到店 2=已到店 3=服务中 4=已完成 5=已取消

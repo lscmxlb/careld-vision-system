@@ -3,9 +3,10 @@
     <!-- 侧边栏 -->
     <el-aside :width="appStore.sidebarCollapsed ? '64px' : '220px'" class="sidebar">
       <div class="logo">
-        <img src="/src/assets/logo.svg" alt="Careld" class="logo-img" v-if="!appStore.sidebarCollapsed">
-        <span class="logo-text" v-if="!appStore.sidebarCollapsed">Careld运营中心</span>
-        <el-icon :size="24" v-else><Monitor /></el-icon>
+        <img v-if="appStore.systemSettings.logoUrl" :src="appStore.systemSettings.logoUrl" alt="Logo" class="logo-img" v-show="!appStore.sidebarCollapsed">
+        <img v-else src="/src/assets/logo.svg" alt="Careld" class="logo-img" v-show="!appStore.sidebarCollapsed">
+        <span class="logo-text" v-show="!appStore.sidebarCollapsed">{{ appStore.systemSettings.systemName || 'Careld运营中心' }}</span>
+        <el-icon :size="24" v-if="appStore.sidebarCollapsed"><Monitor /></el-icon>
       </div>
       <el-menu
         :collapse="appStore.sidebarCollapsed"
@@ -16,56 +17,29 @@
         text-color="#fff"
         active-text-color="#1890ff"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><HomeFilled /></el-icon>
-          <template #title>数据看板</template>
-        </el-menu-item>
-
-        <el-sub-menu index="/organization">
-          <template #title>
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>组织架构</span>
-          </template>
-          <el-menu-item index="/organization/centers">运营中心</el-menu-item>
-          <el-menu-item index="/organization/agents">代理商管理</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/store">
-          <template #title>
-            <el-icon><Shop /></el-icon>
-            <span>门店管理</span>
-          </template>
-          <el-menu-item index="/store/list">门店列表</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/device">
-          <template #title>
-            <el-icon><Monitor /></el-icon>
-            <span>设备管理</span>
-          </template>
-          <el-menu-item index="/device/list">设备列表</el-menu-item>
-          <el-menu-item index="/device/types">设备类型</el-menu-item>
-        </el-sub-menu>
-
-        <el-menu-item index="/user">
-          <el-icon><UserFilled /></el-icon>
-          <template #title>用户管理</template>
-        </el-menu-item>
-
-        <el-menu-item index="/statistics">
-          <el-icon><DataAnalysis /></el-icon>
-          <template #title>统计报表</template>
-        </el-menu-item>
-
-        <el-menu-item index="/operation-log">
-          <el-icon><Document /></el-icon>
-          <template #title>操作日志</template>
-        </el-menu-item>
-
-        <el-menu-item index="/settings">
-          <el-icon><Setting /></el-icon>
-          <template #title>系统设置</template>
-        </el-menu-item>
+        <!-- 动态渲染菜单 -->
+        <template v-for="menu in permStore.menus" :key="menu.id">
+          <!-- 目录类型: 有子菜单 -->
+          <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.menuPath || String(menu.id)">
+            <template #title>
+              <el-icon v-if="menu.menuIcon"><component :is="menu.menuIcon" /></el-icon>
+              <span>{{ menu.menuName }}</span>
+            </template>
+            <el-menu-item
+              v-for="child in menu.children"
+              :key="child.id"
+              :index="child.menuPath"
+            >
+              <el-icon v-if="child.menuIcon"><component :is="child.menuIcon" /></el-icon>
+              <template #title>{{ child.menuName }}</template>
+            </el-menu-item>
+          </el-sub-menu>
+          <!-- 菜单类型: 无子菜单 -->
+          <el-menu-item v-else :index="menu.menuPath">
+            <el-icon v-if="menu.menuIcon"><component :is="menu.menuIcon" /></el-icon>
+            <template #title>{{ menu.menuName }}</template>
+          </el-menu-item>
+        </template>
       </el-menu>
     </el-aside>
 
@@ -117,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   HomeFilled,
@@ -134,12 +108,15 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
+import { usePermissionStore } from '@/stores/permission'
 import Breadcrumb from '@/components/Breadcrumb.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
+const permStore = usePermissionStore()
 const pendingCount = ref(0)
+const userType = computed(() => userStore.userInfo?.userType || 1)
 
 const handleCommand = (command: string) => {
   switch (command) {
@@ -150,6 +127,7 @@ const handleCommand = (command: string) => {
       router.push('/settings')
       break
     case 'logout':
+      permStore.clear()
       userStore.logout()
       router.push('/login')
       break

@@ -1,11 +1,11 @@
 /**
- * 门店相关API
+ * 医院相关API
  */
 import request from './request'
 import type { Store } from '@/types'
 
 export const storeApi = {
-  // 获取门店列表
+  // 获取医院列表
   getStoreList: (params?: {
     page?: number
     size?: number
@@ -14,12 +14,12 @@ export const storeApi = {
     return request.get('/stores', { params })
   },
 
-  // 获取门店详情
+  // 获取医院详情
   getStoreDetail: (id: number): Promise<Store> => {
     return request.get(`/stores/${id}`)
   },
 
-  // 获取当前用户所属门店
+  // 获取当前用户所属医院
   getCurrentStore: (): Promise<Store> => {
     return request.get('/stores/current')
   }

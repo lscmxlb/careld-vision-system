@@ -1,6 +1,7 @@
 package com.careld.user.controller;
 
 import com.careld.common.result.Result;
+import com.careld.common.security.DataScopeHelper;
 import com.careld.user.dto.StatisticsDtos;
 import com.careld.user.service.StatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +26,7 @@ public class StatisticsController {
     @Operation(summary = "看板统计")
     @GetMapping("/dashboard")
     public Result<StatisticsDtos.DashboardStats> dashboard(@RequestParam(value = "storeId", required = false) Long storeId) {
-        return Result.success(statisticsService.dashboard(storeId));
+        return Result.success(statisticsService.dashboard(DataScopeHelper.resolveStoreId(storeId)));
     }
 
     @Operation(summary = "门店客流统计")
@@ -37,7 +38,7 @@ public class StatisticsController {
             @RequestParam(value = "groupBy", defaultValue = "day") String groupBy) {
         LocalDate end = endDate != null ? endDate : LocalDate.now();
         LocalDate start = startDate != null ? startDate : end.minusDays(30);
-        return Result.success(statisticsService.storeTraffic(storeId, start, end, groupBy));
+        return Result.success(statisticsService.storeTraffic(DataScopeHelper.resolveStoreId(storeId), start, end, groupBy));
     }
 
     @Operation(summary = "视力改善统计")
@@ -48,7 +49,7 @@ public class StatisticsController {
             @RequestParam(value = "endDate", required = false) LocalDate endDate) {
         LocalDate end = endDate != null ? endDate : LocalDate.now();
         LocalDate start = startDate != null ? startDate : end.minusDays(30);
-        return Result.success(statisticsService.visionImprovement(storeId, start, end));
+        return Result.success(statisticsService.visionImprovement(DataScopeHelper.resolveStoreId(storeId), start, end));
     }
 
     @Operation(summary = "全国门店数据汇总")
@@ -66,7 +67,7 @@ public class StatisticsController {
     public Result<StatisticsDtos.WeeklyTrend> weeklyTrend(
             @RequestParam(value = "storeId", required = false) Long storeId,
             @RequestParam(value = "period", defaultValue = "week") String period) {
-        return Result.success(statisticsService.weeklyTrend(storeId, period));
+        return Result.success(statisticsService.weeklyTrend(DataScopeHelper.resolveStoreId(storeId), period));
     }
 
     @Operation(summary = "视力检测统计")
@@ -77,7 +78,7 @@ public class StatisticsController {
             @RequestParam(value = "endDate", required = false) LocalDate endDate) {
         LocalDate end = endDate != null ? endDate : LocalDate.now();
         LocalDate start = startDate != null ? startDate : end.minusDays(30);
-        return Result.success(statisticsService.visionStats(storeId, start, end));
+        return Result.success(statisticsService.visionStats(DataScopeHelper.resolveStoreId(storeId), start, end));
     }
 
     @Operation(summary = "数据导出")
@@ -85,6 +86,7 @@ public class StatisticsController {
     public Result<StatisticsDtos.ExportResponse> export(@RequestBody Map<String, Object> body) {
         String exportType = body.get("exportType") == null ? null : String.valueOf(body.get("exportType"));
         Long storeId = body.get("storeId") == null ? null : Long.valueOf(body.get("storeId").toString());
+        storeId = DataScopeHelper.resolveStoreId(storeId);
         LocalDate startDate = LocalDate.parse(String.valueOf(body.get("startDate")));
         LocalDate endDate = LocalDate.parse(String.valueOf(body.get("endDate")));
         String format = body.get("format") == null ? "csv" : String.valueOf(body.get("format"));

@@ -64,7 +64,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="userName" label="操作用户" width="100" />
-        <el-table-column prop="storeName" label="所属门店" width="130" show-overflow-tooltip />
+        <el-table-column prop="storeName" label="所属医院" width="130" show-overflow-tooltip />
         <el-table-column prop="module" label="模块" width="100" />
         <el-table-column prop="action" label="操作" min-width="140" show-overflow-tooltip />
         <el-table-column prop="requestMethod" label="请求方式" width="90">
@@ -134,7 +134,7 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="操作用户">{{ currentLog.userName }}</el-descriptions-item>
-        <el-descriptions-item label="所属门店">{{ currentLog.storeName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">{{ currentLog.storeName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="模块">{{ currentLog.module }}</el-descriptions-item>
         <el-descriptions-item label="操作">{{ currentLog.action }}</el-descriptions-item>
         <el-descriptions-item label="请求方式">
@@ -210,7 +210,7 @@ const dateRange = ref<[string, string] | null>(null)
 
 // 模块选项
 const moduleOptions = [
-  '用户管理', '门店管理', '科室管理', '儿童档案',
+  '用户管理', '医院管理', '科室管理', '儿童档案',
   '排班管理', '预约管理', '视力检测', '设备管理',
   '系统设置', '认证授权', '数据统计'
 ]

@@ -14,8 +14,8 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable>
+        <el-form-item label="医院">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable>
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -51,7 +51,7 @@
         </el-table-column>
         <el-table-column prop="age" label="年龄" width="80" />
         <el-table-column prop="phone" label="家长手机号" width="130" />
-        <el-table-column prop="storeName" label="所属门店" />
+        <el-table-column prop="storeName" label="所属医院" />
         <el-table-column prop="eyeCondition" label="视力状况" />
         <el-table-column prop="createdAt" label="提交时间" width="160">
           <template #default="{ row }">
@@ -97,7 +97,7 @@
     >
       <el-descriptions :column="2" border>
         <el-descriptions-item label="档案编号">{{ currentRow?.childCode }}</el-descriptions-item>
-        <el-descriptions-item label="所属门店">{{ currentRow?.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">{{ currentRow?.storeName }}</el-descriptions-item>
         <el-descriptions-item label="儿童姓名">{{ currentRow?.name }}</el-descriptions-item>
         <el-descriptions-item label="性别">{{ currentRow?.gender === 1 ? '男' : '女' }}</el-descriptions-item>
         <el-descriptions-item label="出生日期">{{ currentRow?.birthDate }}</el-descriptions-item>
@@ -177,7 +177,7 @@ const queryForm = reactive({
   keyword: ''
 })
 
-// 门店选项
+// 医院选项
 const storeOptions = ref<Store[]>([])
 
 // 详情弹窗
@@ -190,13 +190,13 @@ const auditForm = reactive({
   auditRemark: ''
 })
 
-// 获取门店列表
+// 获取医院列表
 const fetchStores = async () => {
   try {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 

@@ -9,7 +9,7 @@
           </div>
           <div class="stat-info">
             <div class="stat-value">{{ stats.storeCount }}</div>
-            <div class="stat-label">门店总数</div>
+            <div class="stat-label">医院总数</div>
           </div>
         </el-card>
       </el-col>
@@ -54,7 +54,7 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>全国门店客流趋势</span>
+              <span>全国医院客流趋势</span>
               <el-radio-group v-model="trendTimeRange" size="small">
                 <el-radio-button label="week">本周</el-radio-button>
                 <el-radio-button label="month">本月</el-radio-button>
@@ -69,7 +69,7 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>门店业绩排行</span>
+              <span>医院业绩排行</span>
               <el-link type="primary" @click="$router.push('/store/list')">查看全部</el-link>
             </div>
           </template>
@@ -90,7 +90,7 @@
           </template>
           <el-table :data="pendingAudits" v-loading="loading" stripe>
             <el-table-column prop="name" label="儿童姓名" width="100" />
-            <el-table-column prop="storeName" label="所属门店" />
+            <el-table-column prop="storeName" label="所属医院" />
             <el-table-column prop="age" label="年龄" width="80" />
             <el-table-column prop="createdAt" label="提交时间" width="160">
               <template #default="{ row }">
@@ -114,7 +114,7 @@
             </div>
           </template>
           <el-table :data="deviceStatus" v-loading="loading" stripe>
-            <el-table-column prop="storeName" label="门店" />
+            <el-table-column prop="storeName" label="医院" />
             <el-table-column prop="deviceName" label="设备名称" />
             <el-table-column prop="calibrationStatus" label="校准状态" width="100">
               <template #default="{ row }">
@@ -231,7 +231,7 @@ const initRankChart = () => {
     },
     yAxis: {
       type: 'category',
-      data: ['门店5', '门店4', '门店3', '门店2', '门店1']
+      data: ['医院5', '医院4', '医院3', '医院2', '医院1']
     },
     series: [
       {

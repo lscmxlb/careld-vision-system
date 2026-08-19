@@ -4,36 +4,39 @@
       <template #header>
         <div class="card-header">
           <span>用户管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button type="primary" @click="handleAdd" v-permission="'user:create'">
             <el-icon><Plus /></el-icon>新增用户
           </el-button>
         </div>
       </template>
 
+      <!-- 用户类别Tab -->
+      <el-radio-group v-model="queryForm.userType" @change="handleTabChange" style="margin-bottom: 16px;">
+        <el-radio-button v-for="item in availableUserTypes" :key="item.value" :label="item.label" :value="item.value" />
+      </el-radio-group>
+
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="用户类型">
-          <el-select v-model="queryForm.userType" placeholder="选择类型" clearable>
-            <el-option label="总部" :value="1" />
-            <el-option label="门店维护" :value="2" />
-            <el-option label="家长" :value="3" />
-            <el-option label="运营中心" :value="4" />
-            <el-option label="代理商" :value="5" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="运营中心">
+        <el-form-item label="运营中心" v-if="currentUserType === 1">
           <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange">
             <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="代理商">
+        <el-form-item label="代理商" v-if="currentUserType === 1">
           <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable>
             <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="所属门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable>
+        <el-form-item label="所属医院" v-if="currentUserType === 1">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable>
             <el-option v-for="item in storeOptions" :key="item.id" :label="item.storeName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="queryForm.status" placeholder="选择状态">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+            <el-option label="全部" :value="undefined" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
@@ -60,7 +63,7 @@
         <el-table-column prop="agentName" label="代理商" width="140">
           <template #default="{ row }">{{ row.agentName || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="storeName" label="所属门店">
+        <el-table-column prop="storeName" label="所属医院">
           <template #default="{ row }">{{ row.storeName || '-' }}</template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号" width="130" />
@@ -76,9 +79,9 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" size="small" @click="handleResetPwd(row)">重置密码</el-button>
-            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)">
+            <el-button v-if="canEditUser(row.userType)" type="primary" size="small" @click="handleEdit(row)" v-permission="'user:update'">编辑</el-button>
+            <el-button v-if="canEditUser(row.userType)" type="warning" size="small" @click="handleResetPwd(row)" v-permission="'user:resetPwd'">重置密码</el-button>
+            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'user:toggleStatus'">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
           </template>
@@ -105,11 +108,7 @@
         </el-form-item>
         <el-form-item label="用户类型" prop="userType">
           <el-select v-model="formData.userType" placeholder="选择用户类型" @change="onFormUserTypeChange">
-            <el-option label="总部" :value="1" />
-            <el-option label="门店维护" :value="2" />
-            <el-option label="家长" :value="3" />
-            <el-option label="运营中心" :value="4" />
-            <el-option label="代理商" :value="5" />
+            <el-option v-for="item in addableUserTypes" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="运营中心" prop="centerId" v-if="[2, 4, 5].includes(formData.userType!)">
@@ -122,8 +121,8 @@
             <el-option v-for="item in formAgentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="所属门店" prop="storeId" v-if="formData.userType === 2">
-          <el-select v-model="formData.storeId" placeholder="选择门店">
+        <el-form-item label="所属医院" prop="storeId" v-if="formData.userType === 2">
+          <el-select v-model="formData.storeId" placeholder="选择医院">
             <el-option v-for="item in formStoreOptions" :key="item.id" :label="item.storeName" :value="item.id" />
           </el-select>
         </el-form-item>
@@ -132,6 +131,11 @@
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="!isEdit">
           <el-input v-model="formData.password" type="password" placeholder="请输入初始密码" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="selectedRoleIds" multiple placeholder="选择角色（可多选）" style="width: 100%">
+            <el-option v-for="item in roleOptions" :key="item.id" :label="item.roleName" :value="item.id" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -147,9 +151,68 @@ defineOptions({ name: 'AdminUser' })
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { userApi, storeApi, orgApi } from '@/api'
-import type { User, Store, OpsCenter, Agent } from '@/types'
+import { userApi, storeApi, orgApi, roleApi } from '@/api'
+import { useUserStore } from '@/stores/user'
+import type { User, Store, OpsCenter, Agent, Role } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
+
+const userStore = useUserStore()
+const currentUserType = computed(() => userStore.userInfo?.userType || 1)
+
+// 用户类型层级（数字越大级别越高）
+const userTypeLevel = (type: number): number => {
+  const levelMap: Record<number, number> = { 1: 5, 4: 4, 5: 3, 2: 2, 3: 1 }
+  return levelMap[type] || 0
+}
+
+// 所有用户类型（按级别从高到低）
+const ALL_USER_TYPES = [
+  { label: '总部', value: 1 },
+  { label: '运营中心', value: 4 },
+  { label: '代理商', value: 5 },
+  { label: '医院维护', value: 2 },
+  { label: '家长', value: 3 }
+]
+
+// Tab可切换的用户类别：平级及下级
+const availableUserTypes = computed(() => {
+  const currentLevel = userTypeLevel(currentUserType.value)
+  return ALL_USER_TYPES.filter(t => userTypeLevel(t.value) <= currentLevel)
+})
+
+// 新增用户表单可选类型：平级及下级
+const addableUserTypes = computed(() => {
+  const currentLevel = userTypeLevel(currentUserType.value)
+  return ALL_USER_TYPES.filter(t => userTypeLevel(t.value) <= currentLevel)
+})
+
+// 默认查询下级用户类型（首个下级）
+const getDefaultUserType = () => {
+  const currentLevel = userTypeLevel(currentUserType.value)
+  const lowerTypes = availableUserTypes.value.filter(t => userTypeLevel(t.value) < currentLevel)
+  if (lowerTypes.length > 0) return lowerTypes[0].value
+  return availableUserTypes.value[0]?.value
+}
+
+// 判断当前用户是否可以编辑/重置密码目标用户（只能操作严格下级）
+const canEditUser = (rowUserType: number): boolean => {
+  return userTypeLevel(rowUserType) < userTypeLevel(currentUserType.value)
+}
+
+// 根据当前用户类型自动设置筛选条件
+const applyDefaultFilters = () => {
+  const type = currentUserType.value
+  if (type === 4) {
+    // 运营中心用户：自动设置centerId
+    queryForm.centerId = userStore.userInfo?.centerId
+  } else if (type === 5) {
+    // 代理商用户：自动设置agentId
+    queryForm.agentId = userStore.userInfo?.agentId
+  } else if (type === 2) {
+    // 医院维护用户：自动设置storeId
+    queryForm.storeId = userStore.userInfo?.storeId
+  }
+}
 
 const loading = ref(false)
 const tableData = ref<User[]>([])
@@ -158,6 +221,8 @@ const agentOptions = ref<Agent[]>([])
 const storeOptions = ref<Store[]>([])
 const formAgentOptions = ref<Agent[]>([])
 const formStoreOptions = ref<Store[]>([])
+const roleOptions = ref<Role[]>([])
+const selectedRoleIds = ref<number[]>([])
 const pagination = reactive({ page: 1, size: 10, total: 0 })
 
 const queryForm = reactive({
@@ -165,6 +230,7 @@ const queryForm = reactive({
   centerId: undefined as number | undefined,
   agentId: undefined as number | undefined,
   storeId: undefined as number | undefined,
+  status: 1 as number | undefined,
   keyword: ''
 })
 
@@ -196,25 +262,25 @@ const formRules = computed<FormRules>(() => {
       { required: true, message: '请输入手机号', trigger: 'blur' },
       { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
     ],
-    password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+    password: isEdit.value ? [] : [{ required: true, message: '请输入密码', trigger: 'blur' }]
   }
-  // 运营中心: 门店维护(2)、运营中心(4)、代理商(5)需要选运营中心
+  // 运营中心: 医院维护(2)、运营中心(4)、代理商(5)需要选运营中心
   if (ut && [2, 4, 5].includes(ut)) {
     rules.centerId = [{ required: true, message: '请选择运营中心', trigger: 'change' }]
   }
-  // 代理商: 门店维护(2)、代理商(5)需要选代理商
+  // 代理商: 医院维护(2)、代理商(5)需要选代理商
   if (ut && [2, 5].includes(ut)) {
     rules.agentId = [{ required: true, message: '请选择代理商', trigger: 'change' }]
   }
-  // 门店: 只有门店维护(2)需要选门店
+  // 医院: 只有医院维护(2)需要选医院
   if (ut === 2) {
-    rules.storeId = [{ required: true, message: '请选择门店', trigger: 'change' }]
+    rules.storeId = [{ required: true, message: '请选择医院', trigger: 'change' }]
   }
   return rules
 })
 
 const getUserTypeLabel = (type: number) => {
-  const map: Record<number, string> = { 1: '总部', 2: '门店维护', 3: '家长', 4: '运营中心', 5: '代理商' }
+  const map: Record<number, string> = { 1: '总部', 2: '医院维护', 3: '家长', 4: '运营中心', 5: '代理商' }
   return map[type] || '未知'
 }
 
@@ -232,7 +298,7 @@ const fetchAgents = async (centerId?: number) => {
 }
 
 const fetchStores = async () => {
-  try { storeOptions.value = await storeApi.getAllStores() } catch (e) { console.error('获取门店列表失败', e) }
+  try { storeOptions.value = await storeApi.getAllStores() } catch (e) { console.error('获取医院列表失败', e) }
 }
 
 const onCenterChange = async (val: number | undefined) => {
@@ -263,7 +329,7 @@ const onFormAgentChange = async (val: number | undefined) => {
     try {
       const res = await storeApi.getStoreList({ agentId: val, page: 1, size: 1000 })
       formStoreOptions.value = res.list
-    } catch (e) { console.error('获取门店列表失败', e) }
+    } catch (e) { console.error('获取医院列表失败', e) }
   } else {
     formStoreOptions.value = []
   }
@@ -275,6 +341,9 @@ const fetchData = async () => {
     const res = await userApi.getUserList({
       userType: queryForm.userType,
       storeId: queryForm.storeId,
+      centerId: queryForm.centerId,
+      agentId: queryForm.agentId,
+      status: queryForm.status,
       keyword: queryForm.keyword,
       page: pagination.page,
       size: pagination.size
@@ -288,13 +357,22 @@ const fetchData = async () => {
   }
 }
 
+const handleTabChange = () => {
+  // Tab切换时重置分页并查询
+  pagination.page = 1
+  fetchData()
+}
+
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleReset = () => {
-  queryForm.userType = undefined
+  // 重置为默认状态
+  queryForm.userType = getDefaultUserType()
   queryForm.centerId = undefined
   queryForm.agentId = undefined
   queryForm.storeId = undefined
+  queryForm.status = 1
   queryForm.keyword = ''
+  applyDefaultFilters()
   pagination.page = 1
   fetchData()
 }
@@ -304,9 +382,10 @@ const handleCurrentChange = (val: number) => { pagination.page = val; fetchData(
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增用户'
-  Object.assign(formData, { username: '', realName: '', userType: 2, centerId: undefined, agentId: undefined, storeId: undefined, phone: '', password: '' })
+  Object.assign(formData, { username: '', realName: '', userType: addableUserTypes.value[0]?.value || 2, centerId: undefined, agentId: undefined, storeId: undefined, phone: '', password: '' })
   formAgentOptions.value = []
   formStoreOptions.value = []
+  selectedRoleIds.value = []
   currentId.value = null
   dialogVisible.value = true
 }
@@ -326,7 +405,7 @@ const handleEdit = async (row: User) => {
   } else {
     formAgentOptions.value = []
   }
-  // 再加载门店列表（根据代理商）
+  // 再加载医院列表（根据代理商）
   if (savedAgentId) {
     try {
       const res = await storeApi.getStoreList({ agentId: savedAgentId, page: 1, size: 1000 })
@@ -339,6 +418,11 @@ const handleEdit = async (row: User) => {
   formData.centerId = savedCenterId
   formData.agentId = savedAgentId
   formData.storeId = savedStoreId
+  // 加载用户已有角色
+  try {
+    const roles = await roleApi.getUserRoles(row.id)
+    selectedRoleIds.value = roles.map((r: any) => r.id)
+  } catch { selectedRoleIds.value = [] }
   dialogVisible.value = true
 }
 
@@ -374,10 +458,18 @@ const handleSubmit = async () => {
       submitLoading.value = true
       try {
         if (isEdit.value && currentId.value) {
-          await userApi.updateUser(currentId.value, formData)
+          // 编辑时不传password字段
+          const { password, ...editData } = formData
+          await userApi.updateUser(currentId.value, editData)
+          // 分配角色
+          await roleApi.assignUserRoles(currentId.value, selectedRoleIds.value)
           ElMessage.success('更新成功')
         } else {
-          await userApi.createUser(formData)
+          const newUserId = await userApi.createUser(formData)
+          // 分配角色
+          if (selectedRoleIds.value.length > 0) {
+            await roleApi.assignUserRoles(newUserId, selectedRoleIds.value)
+          }
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
@@ -397,9 +489,18 @@ const formatDate = (date: string) => {
   })
 }
 
-onMounted(() => {
+const fetchRoles = async () => {
+  try { roleOptions.value = await roleApi.getRoleList() } catch (e) { console.error('获取角色列表失败', e) }
+}
+
+onMounted(async () => {
+  await userStore.fetchUserInfo()
   fetchCenters()
   fetchStores()
+  fetchRoles()
+  // 设置默认用户类型和筛选条件
+  queryForm.userType = getDefaultUserType()
+  applyDefaultFilters()
   fetchData()
 })
 </script>

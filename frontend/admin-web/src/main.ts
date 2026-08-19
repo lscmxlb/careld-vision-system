@@ -7,8 +7,12 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
 import App from './App.vue'
 import router from './router'
+import permissionDirective from './directives/permission'
 
 const app = createApp(App)
+
+// 注册 v-permission 指令
+app.directive('permission', permissionDirective)
 
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

@@ -33,13 +33,18 @@ public interface UserMapper extends BaseMapper<User> {
             "WHERE u.deleted_at IS NULL " +
             "<if test='userType != null'> AND u.user_type = #{userType} </if>" +
             "<if test='storeId != null'> AND u.store_id = #{storeId} </if>" +
+            "<if test='centerId != null'> AND u.center_id = #{centerId} </if>" +
+            "<if test='agentId != null'> AND u.agent_id = #{agentId} </if>" +
+            "<if test='status != null'> AND u.status = #{status} </if>" +
             "<if test='keyword != null and keyword != \"\"'> " +
             "AND (u.username LIKE CONCAT('%',#{keyword},'%') OR u.real_name LIKE CONCAT('%',#{keyword},'%')) " +
             "</if>" +
             "ORDER BY u.created_at DESC" +
             "</script>")
     Page<User> selectUserPage(Page<User> page, @Param("userType") Integer userType,
-                              @Param("storeId") Long storeId, @Param("keyword") String keyword);
+                              @Param("storeId") Long storeId, @Param("keyword") String keyword,
+                              @Param("centerId") Long centerId, @Param("agentId") Long agentId,
+                              @Param("status") Integer status);
 
     /**
      * 查询门店用户

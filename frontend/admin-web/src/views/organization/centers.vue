@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>运营中心管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button type="primary" @click="handleAdd" v-permission="'organization:center:create'">
             <el-icon><Plus /></el-icon>新增运营中心
           </el-button>
         </div>
@@ -29,7 +29,7 @@
             <el-tag type="primary" class="clickable-tag" @click="handleShowAgents(row)">{{ row.agentCount ?? 0 }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="storeCount" label="门店数量" width="100" align="center">
+        <el-table-column prop="storeCount" label="医院数量" width="100" align="center">
           <template #default="{ row }">
             <el-tag type="success" class="clickable-tag" @click="handleShowStores(row)">{{ row.storeCount ?? 0 }}</el-tag>
           </template>
@@ -44,8 +44,8 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'organization:center:update'">编辑</el-button>
+            <el-button type="danger" size="small" @click="handleDelete(row)" v-permission="'organization:center:delete'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -100,7 +100,7 @@
           <el-table-column prop="region" label="区域" width="100" />
           <el-table-column prop="contactName" label="负责人" width="100" />
           <el-table-column prop="contactPhone" label="联系电话" width="130" />
-          <el-table-column prop="storeCount" label="门店数" width="80" align="center" />
+          <el-table-column prop="storeCount" label="医院数" width="80" align="center" />
           <el-table-column label="状态" width="80">
             <template #default="{ row }">
               <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
@@ -108,8 +108,8 @@
           </el-table-column>
         </template>
         <template v-else>
-          <el-table-column prop="storeCode" label="门店编码" width="120" />
-          <el-table-column prop="storeName" label="门店名称" min-width="150" />
+          <el-table-column prop="storeCode" label="医院编码" width="120" />
+          <el-table-column prop="storeName" label="医院名称" min-width="150" />
           <el-table-column label="省/市/区" width="180">
             <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
           </el-table-column>
@@ -268,7 +268,7 @@ const handleShowAgents = async (row: OpsCenter) => {
 
 const handleShowStores = async (row: OpsCenter) => {
   detailDialog.visible = true
-  detailDialog.title = `${row.centerName} - 门店列表`
+  detailDialog.title = `${row.centerName} - 医院列表`
   detailDialog.type = 'stores'
   detailDialog.loading = true
   detailDialog.data = []
@@ -279,12 +279,12 @@ const handleShowStores = async (row: OpsCenter) => {
     if (agentIds.length === 0) {
       detailDialog.data = []
     } else {
-      // 获取所有门店，前端按 agentId 过滤
+      // 获取所有医院，前端按 agentId 过滤
       const allStores = await storeApi.getAllStores()
       detailDialog.data = allStores.filter(s => s.agentId && agentIds.includes(s.agentId))
     }
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   } finally {
     detailDialog.loading = false
   }

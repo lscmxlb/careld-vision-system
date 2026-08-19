@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <!-- Step 1: 选择门店 -->
+    <!-- Step 1: 选择医院 -->
     <div v-show="currentStep === 0" class="step-content">
       <div v-if="storeLoading" class="loading-placeholder">
         <el-skeleton :rows="5" animated />
@@ -39,7 +39,7 @@
             <span>联系电话: {{ store.contactPhone }}</span>
           </div>
         </div>
-        <el-empty v-if="stores.length === 0" description="暂无可用门店" />
+        <el-empty v-if="stores.length === 0" description="暂无可用医院" />
       </div>
     </div>
 
@@ -119,7 +119,7 @@
       <div class="confirm-card">
         <h4>预约确认</h4>
         <div class="confirm-row">
-          <span class="label">门店</span>
+          <span class="label">医院</span>
           <span class="value">{{ selectedStore?.storeName }}</span>
         </div>
         <div class="confirm-row">
@@ -186,7 +186,7 @@ import { Location, UserFilled, CircleCheckFilled } from '@element-plus/icons-vue
 import type { Store, Child, Schedule } from '@/types'
 import { storeApi, childApi, scheduleApi, reserveApi } from '@/api'
 
-const steps = ['选择门店', '选择孩子', '选择时间', '确认预约']
+const steps = ['选择医院', '选择孩子', '选择时间', '确认预约']
 const currentStep = ref(0)
 const submitLoading = ref(false)
 
@@ -220,7 +220,7 @@ const canNext = computed(() => {
   }
 })
 
-// 选择门店
+// 选择医院
 const selectStore = (store: Store) => {
   selectedStore.value = store
 }
@@ -246,13 +246,13 @@ const selectTimeSlot = (slot: Schedule) => {
   selectedSchedule.value = slot
 }
 
-// 获取门店列表
+// 获取医院列表
 const fetchStores = async () => {
   storeLoading.value = true
   try {
     stores.value = await storeApi.getStoreList()
   } catch {
-    ElMessage.error('获取门店列表失败')
+    ElMessage.error('获取医院列表失败')
   } finally {
     storeLoading.value = false
   }
@@ -466,7 +466,7 @@ watch(currentStep, (step) => {
     padding: 20px;
   }
 
-  // 门店列表
+  // 医院列表
   .store-list {
     .store-card {
       background: #fff;

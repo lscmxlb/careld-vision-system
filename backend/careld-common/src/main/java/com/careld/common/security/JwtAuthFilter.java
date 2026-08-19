@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JWT 鉴权过滤器
@@ -35,6 +37,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     public static final String ATTR_USER_ID = "userId";
     public static final String ATTR_USER_TYPE = "userType";
     public static final String ATTR_STORE_ID = "storeId";
+    public static final String ATTR_CENTER_ID = "centerId";
+    public static final String ATTR_AGENT_ID = "agentId";
     public static final String ATTR_DEPT_ID = "deptId";
     public static final String ATTR_USERNAME = "username";
 
@@ -58,11 +62,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Long userId = claims.get("userId") == null ? null : Long.valueOf(claims.get("userId").toString());
                 Integer userType = claims.get("userType") == null ? null : Integer.valueOf(claims.get("userType").toString());
                 Long storeId = claims.get("storeId") == null ? null : Long.valueOf(claims.get("storeId").toString());
+                Long centerId = claims.get("centerId") == null ? null : Long.valueOf(claims.get("centerId").toString());
+                Long agentId = claims.get("agentId") == null ? null : Long.valueOf(claims.get("agentId").toString());
                 Long deptId = claims.get("deptId") == null ? null : Long.valueOf(claims.get("deptId").toString());
                 String username = claims.get("username") == null ? null : claims.get("username").toString();
 
+                // 解析权限列表
+                List<String> permissions = new ArrayList<>();
+                Object permsObj = claims.get("permissions");
+                if (permsObj instanceof List) {
+                    for (Object p : (List<?>) permsObj) {
+                        if (p != null) permissions.add(p.toString());
+                    }
+                }
+
                 if (userId != null) {
-                    UserContext.CurrentUser user = new UserContext.CurrentUser(userId, userType, storeId, deptId, username);
+                    UserContext.CurrentUser user = new UserContext.CurrentUser(userId, userType, storeId, centerId, agentId, deptId, username, permissions);
                     UserContext.set(user);
 
                     request.setAttribute(ATTR_USER_ID, userId);
@@ -71,6 +86,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     }
                     if (storeId != null) {
                         request.setAttribute(ATTR_STORE_ID, storeId);
+                    }
+                    if (centerId != null) {
+                        request.setAttribute(ATTR_CENTER_ID, centerId);
+                    }
+                    if (agentId != null) {
+                        request.setAttribute(ATTR_AGENT_ID, agentId);
                     }
                     if (deptId != null) {
                         request.setAttribute(ATTR_DEPT_ID, deptId);

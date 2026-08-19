@@ -41,7 +41,7 @@ export interface LoginResponse {
   user: User
 }
 
-// ==================== 门店相关 ====================
+// ==================== 医院相关 ====================
 export interface Store {
   id: number
   storeCode: string
@@ -165,7 +165,7 @@ export interface Reserve {
   reserveType: number // 1=视力检测 2=养护 3=复查
   parentName: string
   parentPhone: string
-  source?: number // 1=小程序 2=门店 3=电话
+  source?: number // 1=小程序 2=医院 3=电话
   remark?: string
   cancelReason?: string
   status: number // 1=待到店 2=已到店 3=服务中 4=已完成 5=已取消
@@ -428,6 +428,73 @@ export interface OperationLogQuery {
   endDate?: string
   page?: number
   size?: number
+}
+
+// ==================== 菜单相关 ====================
+export interface MenuItem {
+  id: number
+  parentId: number
+  menuName: string
+  menuType: number // 1=目录 2=菜单 3=按钮
+  menuPath?: string
+  menuIcon?: string
+  permissionKey?: string
+  sortOrder: number
+  visible: number
+  status: number
+  children?: MenuItem[]
+}
+
+export interface MenuRequest {
+  parentId: number
+  menuName: string
+  menuType: number
+  menuPath?: string
+  menuIcon?: string
+  permissionKey?: string
+  sortOrder: number
+  visible: number
+  status: number
+}
+
+// ==================== 角色相关 ====================
+export interface Role {
+  id: number
+  roleCode: string
+  roleName: string
+  roleDesc?: string
+  userType: number
+  dataScope: number
+  sortOrder: number
+  status: number
+  createdAt?: string
+}
+
+export interface RoleRequest {
+  roleCode: string
+  roleName: string
+  roleDesc?: string
+  userType: number
+  dataScope: number
+  sortOrder: number
+  status: number
+}
+
+export interface RoleMenu {
+  id: number
+  roleId: number
+  menuId: number
+  actions: string // JSON array string
+  menuName?: string
+  menuType?: number
+  permissionKey?: string
+}
+
+export interface RolePermissionRequest {
+  roleMenus: Array<{
+    menuId: number
+    actions: string[]
+  }>
 }
 
 // ==================== 通用分页 ====================

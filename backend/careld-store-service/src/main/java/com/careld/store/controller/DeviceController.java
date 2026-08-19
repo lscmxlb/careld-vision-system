@@ -3,6 +3,8 @@ package com.careld.store.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
+import com.careld.common.security.RequirePermission;
+import com.careld.common.security.DataScopeHelper;
 import com.careld.store.dto.CalibrationRequest;
 import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
@@ -27,30 +29,36 @@ public class DeviceController {
 
     @Operation(summary = "设备分页列表")
     @GetMapping
+    @RequirePermission("device:list:view")
     public Result<PageResult<DeviceResponse>> list(
             @RequestParam(value = "storeId", required = false) Long storeId,
             @RequestParam(value = "status", required = false) Integer status,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        IPage<DeviceResponse> p = deviceService.pageDevices(storeId, status, keyword, page, size);
+        // 数据权限：门店用户注入 storeId
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        IPage<DeviceResponse> p = deviceService.pageDevices(effectiveStoreId, status, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
     @Operation(summary = "设备详情")
     @GetMapping("/{id}")
+    @RequirePermission("device:list:view")
     public Result<DeviceResponse> get(@PathVariable Long id) {
         return Result.success(deviceService.getDeviceById(id));
     }
 
     @Operation(summary = "新增设备")
     @PostMapping
+    @RequirePermission("device:list:create")
     public Result<Long> create(@RequestBody TvDevice device) {
         return Result.success(deviceService.createDevice(device));
     }
 
     @Operation(summary = "更新设备")
     @PutMapping("/{id}")
+    @RequirePermission("device:list:update")
     public Result<Void> update(@PathVariable Long id, @RequestBody TvDevice device) {
         deviceService.updateDevice(id, device);
         return Result.success();
@@ -58,6 +66,7 @@ public class DeviceController {
 
     @Operation(summary = "删除设备")
     @DeleteMapping("/{id}")
+    @RequirePermission("device:list:delete")
     public Result<Void> delete(@PathVariable Long id) {
         deviceService.deleteDevice(id);
         return Result.success();
@@ -87,6 +96,14 @@ public class DeviceController {
     @PostMapping("/{id}/unbind")
     public Result<Void> unbind(@PathVariable Long id) {
         deviceService.unbindDevice(id);
+        return Result.success();
+    }
+
+    @Operation(summary = "释放设备（设为空闲）")
+    @PostMapping("/{id}/release")
+    @RequirePermission("device:list:release")
+    public Result<Void> release(@PathVariable Long id) {
+        deviceService.releaseDevice(id);
         return Result.success();
     }
 }

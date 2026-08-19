@@ -57,4 +57,7 @@ public class UserResponse {
 
     @Schema(description = "角色列表")
     private List<String> roles;
+
+    @Schema(description = "权限列表")
+    private List<String> permissions;
 }

@@ -46,6 +46,11 @@ export const deviceApi = {
     return request.post(`/devices/${id}/unbind`)
   },
 
+  // 释放设备（设为空闲）
+  releaseDevice: (id: number): Promise<void> => {
+    return request.post(`/devices/${id}/release`)
+  },
+
   // 更新设备校准数据
   updateCalibration: (id: number, data: {
     calibrationStatus: number

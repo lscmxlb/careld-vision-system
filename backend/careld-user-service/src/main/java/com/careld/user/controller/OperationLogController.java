@@ -3,6 +3,7 @@ package com.careld.user.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
+import com.careld.common.security.RequirePermission;
 import com.careld.user.dto.OperationLogResponse;
 import com.careld.user.service.OperationLogService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ public class OperationLogController {
 
     @Operation(summary = "操作日志分页列表")
     @GetMapping
+    @RequirePermission("operationlog:view")
     public Result<PageResult<OperationLogResponse>> list(
             @RequestParam(value = "logType", required = false) Integer logType,
             @RequestParam(value = "module", required = false) String module,
@@ -39,6 +41,7 @@ public class OperationLogController {
 
     @Operation(summary = "操作日志详情")
     @GetMapping("/{id}")
+    @RequirePermission("operationlog:view")
     public Result<OperationLogResponse> get(@PathVariable Long id) {
         return Result.success(operationLogService.getLogById(id));
     }

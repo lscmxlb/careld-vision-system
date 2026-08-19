@@ -41,6 +41,12 @@ public class User extends BaseEntity {
     @Schema(description = "所属门店ID")
     private Long storeId;
 
+    @Schema(description = "所属运营中心ID")
+    private Long centerId;
+
+    @Schema(description = "所属代理商ID")
+    private Long agentId;
+
     @Schema(description = "所属科室ID")
     private Long deptId;
 

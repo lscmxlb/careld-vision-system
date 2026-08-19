@@ -52,7 +52,7 @@
             </div>
           </div>
           <div class="report-info">
-            <p>检测门店: {{ record.storeName || '--' }}</p>
+            <p>检测医院: {{ record.storeName || '--' }}</p>
             <p>检测人员: {{ record.testerName }}</p>
           </div>
         </div>
@@ -73,7 +73,7 @@
             <span class="value">{{ detailRecord.testType === 1 ? '养护前检测' : '养护后检测' }}</span>
           </div>
           <div class="detail-row">
-            <span class="label">检测门店</span>
+            <span class="label">检测医院</span>
             <span class="value">{{ detailRecord.storeName || '--' }}</span>
           </div>
           <div class="detail-row">

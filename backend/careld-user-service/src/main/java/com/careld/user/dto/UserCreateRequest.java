@@ -1,25 +1,21 @@
 package com.careld.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
 
 /**
- * 用户创建请求
+ * 用户创建/更新请求
  */
 @Data
-@Schema(description = "用户创建请求")
+@Schema(description = "用户创建/更新请求")
 public class UserCreateRequest {
 
-    @NotBlank(message = "用户名不能为空")
-    @Schema(description = "用户名", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "用户名（创建时必填）")
     private String username;
 
-    @NotBlank(message = "密码不能为空")
-    @Schema(description = "密码", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "密码（创建时必填，更新时忽略）")
     private String password;
 
     @Schema(description = "真实姓名")
@@ -31,8 +27,7 @@ public class UserCreateRequest {
     @Schema(description = "邮箱")
     private String email;
 
-    @NotNull(message = "用户类型不能为空")
-    @Schema(description = "用户类型:1总部 2门店维护 3家长 4运营中心 5代理商", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "用户类型:1总部 2门店维护 3家长 4运营中心 5代理商")
     private Integer userType;
 
     @Schema(description = "运营中心ID")

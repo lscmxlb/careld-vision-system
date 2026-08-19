@@ -5,7 +5,7 @@ import request from './request'
 import type { StoreTraffic, VisionImprovement, NationalSummary } from '@/types'
 
 export const statisticsApi = {
-  // 门店客流统计
+  // 医院客流统计
   getStoreTraffic: (params: {
     storeId: number
     startDate: string
@@ -24,7 +24,7 @@ export const statisticsApi = {
     return request.get('/statistics/vision-improvement', { params })
   },
 
-  // 全国门店数据汇总
+  // 全国医院数据汇总
   getNationalSummary: (params: {
     startDate: string
     endDate: string

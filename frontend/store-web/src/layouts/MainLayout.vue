@@ -2,7 +2,7 @@
   <el-container class="main-layout">
     <el-aside width="200px" class="sidebar">
       <div class="logo">
-        <span>门店管理系统</span>
+        <span>医院管理系统</span>
       </div>
       <el-menu
         :default-active="$route.path"
@@ -40,7 +40,7 @@
 
     <el-container>
       <el-header class="header">
-        <div class="header-left">{{ $route.meta?.title || '门店管理' }}</div>
+        <div class="header-left">{{ $route.meta?.title || '医院管理' }}</div>
         <div class="header-right">
           <span class="store-name">{{ userStore.userInfo?.storeName }}</span>
           <el-dropdown @command="handleCommand">

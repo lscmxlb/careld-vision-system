@@ -45,6 +45,12 @@ public class LoginResponse {
         @Schema(description = "门店ID")
         private Long storeId;
 
+        @Schema(description = "运营中心ID")
+        private Long centerId;
+
+        @Schema(description = "代理商ID")
+        private Long agentId;
+
         @Schema(description = "科室ID")
         private Long deptId;
 

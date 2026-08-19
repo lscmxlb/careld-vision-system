@@ -40,7 +40,7 @@ public interface UserService {
     /**
      * 用户列表
      */
-    Page<UserResponse> listUsers(Integer userType, Long storeId, String keyword, Integer page, Integer size);
+    Page<UserResponse> listUsers(Integer userType, Long storeId, Long centerId, Long agentId, Integer status, String keyword, Integer page, Integer size);
 
     /**
      * 重置密码

@@ -5,8 +5,8 @@ import Breadcrumb from '../Breadcrumb.vue'
 // Mock vue-router
 const mockRoute = {
   matched: [
-    { path: '/store', meta: { title: '门店管理' } },
-    { path: '/store/list', meta: { title: '门店列表' } },
+    { path: '/store', meta: { title: '医院管理' } },
+    { path: '/store/list', meta: { title: '医院列表' } },
   ],
 }
 
@@ -48,8 +48,8 @@ describe('Breadcrumb', () => {
     const items = wrapper.findAll('.breadcrumb-item')
     // home + 2 matched routes
     expect(items.length).toBe(3)
-    expect(wrapper.text()).toContain('门店管理')
-    expect(wrapper.text()).toContain('门店列表')
+    expect(wrapper.text()).toContain('医院管理')
+    expect(wrapper.text()).toContain('医院列表')
   })
 
   it('does not render undefined titles', () => {

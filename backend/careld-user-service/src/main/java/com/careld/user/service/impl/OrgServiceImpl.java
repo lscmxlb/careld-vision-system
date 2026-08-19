@@ -144,6 +144,13 @@ public class OrgServiceImpl implements OrgService {
 
     @Override
     public void deleteCenter(Long id) {
+        // 检查是否有代理商
+        LambdaQueryWrapper<Agent> agentWrapper = new LambdaQueryWrapper<>();
+        agentWrapper.eq(Agent::getCenterId, id);
+        long agentCount = agentMapper.selectCount(agentWrapper);
+        if (agentCount > 0) {
+            throw new BusinessException(400, "该运营中心下还有" + agentCount + "个代理商，无法删除");
+        }
         opsCenterMapper.deleteById(id);
     }
 
@@ -210,6 +217,11 @@ public class OrgServiceImpl implements OrgService {
 
     @Override
     public void deleteAgent(Long id) {
+        // 检查是否有关联的医院
+        int storeCount = agentMapper.countStoresByAgentId(id);
+        if (storeCount > 0) {
+            throw new BusinessException(400, "该代理商下还有" + storeCount + "家医院，无法删除");
+        }
         agentMapper.deleteById(id);
     }
 }

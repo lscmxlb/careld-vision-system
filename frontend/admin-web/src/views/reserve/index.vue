@@ -12,8 +12,8 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="所属门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable filterable>
+        <el-form-item label="所属医院">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable>
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -62,7 +62,7 @@
         <el-table-column prop="childName" label="儿童姓名" width="100" />
         <el-table-column prop="parentName" label="家长姓名" width="100" />
         <el-table-column prop="parentPhone" label="联系电话" width="130" />
-        <el-table-column prop="storeName" label="所属门店" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="storeName" label="所属医院" min-width="130" show-overflow-tooltip />
         <el-table-column prop="scheduleDate" label="预约日期" width="110" />
         <el-table-column label="预约时段" width="130">
           <template #default="{ row }">
@@ -128,8 +128,8 @@
         :rules="addFormRules"
         label-width="100px"
       >
-        <el-form-item label="所属门店" prop="storeId">
-          <el-select v-model="addFormData.storeId" placeholder="选择门店" filterable style="width: 100%">
+        <el-form-item label="所属医院" prop="storeId">
+          <el-select v-model="addFormData.storeId" placeholder="选择医院" filterable style="width: 100%">
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -209,7 +209,7 @@
         <el-descriptions-item label="儿童姓名">{{ currentReserve.childName }}</el-descriptions-item>
         <el-descriptions-item label="家长姓名">{{ currentReserve.parentName }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ currentReserve.parentPhone }}</el-descriptions-item>
-        <el-descriptions-item label="所属门店">{{ currentReserve.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">{{ currentReserve.storeName }}</el-descriptions-item>
         <el-descriptions-item label="预约日期">{{ currentReserve.scheduleDate }}</el-descriptions-item>
         <el-descriptions-item label="预约时段">{{ currentReserve.timeSlotStart }}-{{ currentReserve.timeSlotEnd }}</el-descriptions-item>
         <el-descriptions-item label="预约类型">{{ getReserveTypeLabel(currentReserve.reserveType) }}</el-descriptions-item>
@@ -278,7 +278,7 @@ const addFormData = reactive<Partial<Reserve>>({
 })
 
 const addFormRules: FormRules = {
-  storeId: [{ required: true, message: '请选择所属门店', trigger: 'change' }],
+  storeId: [{ required: true, message: '请选择所属医院', trigger: 'change' }],
   childName: [{ required: true, message: '请输入儿童姓名', trigger: 'blur' }],
   parentName: [{ required: true, message: '请输入家长姓名', trigger: 'blur' }],
   parentPhone: [
@@ -332,7 +332,7 @@ const getReserveTypeLabel = (type: number) => {
 const getSourceLabel = (source?: number) => {
   const map: Record<number, string> = {
     1: '小程序',
-    2: '门店',
+    2: '医院',
     3: '电话'
   }
   return source ? (map[source] || '其他') : '-'
@@ -349,13 +349,13 @@ const formatDateTime = (date: string) => {
   })
 }
 
-// 获取门店列表
+// 获取医院列表
 const fetchStores = async () => {
   try {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 

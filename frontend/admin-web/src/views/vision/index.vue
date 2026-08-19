@@ -9,8 +9,8 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="所属门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable filterable>
+        <el-form-item label="所属医院">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable>
             <el-option
               v-for="item in storeOptions"
               :key="item.id"
@@ -57,7 +57,7 @@
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="recordCode" label="记录编号" width="140" />
         <el-table-column prop="childName" label="儿童姓名" width="100" />
-        <el-table-column prop="storeName" label="所属门店" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="storeName" label="所属医院" min-width="130" show-overflow-tooltip />
         <el-table-column prop="eyeType" label="眼别" width="80">
           <template #default="{ row }">
             <el-tag :type="getEyeTypeTag(row.eyeType)" size="small">
@@ -111,7 +111,7 @@
       <el-descriptions :column="2" border v-if="currentRecord">
         <el-descriptions-item label="记录编号">{{ currentRecord.recordCode }}</el-descriptions-item>
         <el-descriptions-item label="儿童姓名">{{ currentRecord.childName }}</el-descriptions-item>
-        <el-descriptions-item label="所属门店">{{ currentRecord.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">{{ currentRecord.storeName }}</el-descriptions-item>
         <el-descriptions-item label="检测类型">
           <el-tag :type="currentRecord.testType === 1 ? 'info' : 'success'" size="small">
             {{ currentRecord.testType === 1 ? '检测前' : '检测后' }}
@@ -266,13 +266,13 @@ const handleDateChange = (value: [string, string] | null) => {
   }
 }
 
-// 获取门店列表
+// 获取医院列表
 const fetchStores = async () => {
   try {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 

@@ -46,4 +46,9 @@ public interface DeviceService {
      * 删除设备
      */
     void deleteDevice(Long id);
+
+    /**
+     * 释放设备（清除医院绑定，设为空闲）
+     */
+    void releaseDevice(Long id);
 }

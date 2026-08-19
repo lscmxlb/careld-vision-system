@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import com.careld.common.exception.GlobalExceptionHandler;
 import com.careld.common.security.AuthenticationSetter;
 import com.careld.common.security.JwtAuthFilter;
+import com.careld.common.security.PermissionAspect;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 
 /**
@@ -18,7 +20,8 @@ import org.springframework.context.annotation.Import;
  * 自动注册到所有引用此模块的服务中
  */
 @Configuration
-@Import({GlobalExceptionHandler.class, CareldMetaObjectHandler.class})
+@EnableAspectJAutoProxy
+@Import({GlobalExceptionHandler.class, CareldMetaObjectHandler.class, PermissionAspect.class})
 public class CareldCommonAutoConfiguration {
 
     /**

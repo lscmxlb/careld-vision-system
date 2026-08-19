@@ -3,33 +3,34 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>门店管理</span>
-          <el-button type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon>新增门店
+          <span>医院管理</span>
+          <el-button type="primary" @click="handleAdd" v-permission="'store:list:create'">
+            <el-icon><Plus /></el-icon>新增医院
           </el-button>
         </div>
       </template>
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="运营中心">
+        <el-form-item label="运营中心" v-if="isHqUser">
           <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange">
             <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="代理商">
+        <el-form-item label="代理商" v-if="isHqUser">
           <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch">
             <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="选择状态" clearable>
+          <el-select v-model="queryForm.status" placeholder="选择状态">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
+            <el-option label="全部" :value="undefined" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="queryForm.keyword" placeholder="门店名称/编码" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="queryForm.keyword" placeholder="医院名称/编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch"><el-icon><Search /></el-icon>搜索</el-button>
@@ -39,8 +40,8 @@
 
       <!-- 数据表格 -->
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="storeCode" label="门店编码" width="120" />
-        <el-table-column prop="storeName" label="门店名称" min-width="150" />
+        <el-table-column prop="storeCode" label="医院编码" width="120" />
+        <el-table-column prop="storeName" label="医院名称" min-width="150" />
         <el-table-column label="省/市/区" width="180">
           <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
@@ -75,9 +76,9 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
             <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
-            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)">
+            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'store:list:update'">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
           </template>
@@ -95,12 +96,22 @@
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="650px" destroy-on-close>
-      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
-        <el-form-item label="门店编码" prop="storeCode">
-          <el-input v-model="formData.storeCode" placeholder="请输入门店编码" />
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="120px">
+        <el-form-item label="医院编码" prop="storeCode">
+          <el-input v-model="formData.storeCode" placeholder="请输入医院编码" />
         </el-form-item>
-        <el-form-item label="门店名称" prop="storeName">
-          <el-input v-model="formData.storeName" placeholder="请输入门店名称" />
+        <el-form-item label="所属运营中心" prop="centerId">
+          <el-select v-model="formData.centerId" placeholder="选择运营中心" @change="onFormCenterChange">
+            <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属代理商" prop="agentId">
+          <el-select v-model="formData.agentId" placeholder="选择代理商" filterable>
+            <el-option v-for="item in formAgentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="医院名称" prop="storeName">
+          <el-input v-model="formData.storeName" placeholder="请输入医院名称" />
         </el-form-item>
         <el-form-item label="所在地区" prop="regionCodes">
           <el-cascader
@@ -112,26 +123,14 @@
             @change="onRegionChange"
           />
         </el-form-item>
-        <el-form-item label="机构性质" prop="institutionType">
-          <el-radio-group v-model="formData.institutionType">
-            <el-radio :label="1">公立医疗机构</el-radio>
-            <el-radio :label="2">民营医疗机构</el-radio>
-            <el-radio :label="3">其他</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="代理商" prop="agentId">
-          <el-select v-model="formData.agentId" placeholder="选择代理商" filterable>
-            <el-option v-for="item in allAgents" :key="item.id" :label="item.agentName" :value="item.id" />
-          </el-select>
+        <el-form-item label="详细地址" prop="address">
+          <el-input v-model="formData.address" placeholder="请输入详细地址" />
         </el-form-item>
         <el-form-item label="加盟时间" prop="joinDate">
           <el-date-picker v-model="formData.joinDate" type="date" value-format="YYYY-MM-DD" placeholder="选择加盟时间" />
         </el-form-item>
-        <el-form-item label="床位数" prop="bedCount">
-          <el-input-number v-model="formData.bedCount" :min="0" placeholder="请输入床位数" />
-        </el-form-item>
-        <el-form-item label="详细地址" prop="address">
-          <el-input v-model="formData.address" placeholder="请输入详细地址" />
+        <el-form-item label="床位数量" prop="bedCount">
+          <el-input-number v-model="formData.bedCount" :min="0" placeholder="请输入床位数量" />
         </el-form-item>
         <el-form-item label="联系人" prop="contactName">
           <el-input v-model="formData.contactName" placeholder="请输入联系人姓名" />
@@ -139,14 +138,11 @@
         <el-form-item label="联系电话" prop="contactPhone">
           <el-input v-model="formData.contactPhone" placeholder="请输入联系电话" />
         </el-form-item>
-        <el-form-item label="营业时间" prop="businessHours">
-          <el-input v-model="formData.businessHours" placeholder="如：09:00-18:00" />
-        </el-form-item>
-        <el-form-item label="网络类型" prop="networkType">
-          <el-radio-group v-model="formData.networkType">
-            <el-radio :label="1">有线网络</el-radio>
-            <el-radio :label="2">无线网络</el-radio>
-            <el-radio :label="3">混合网络</el-radio>
+        <el-form-item label="机构性质" prop="institutionType">
+          <el-radio-group v-model="formData.institutionType">
+            <el-radio :label="1">公立医疗机构</el-radio>
+            <el-radio :label="2">民营医疗机构</el-radio>
+            <el-radio :label="3">其他</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -181,35 +177,40 @@ import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { storeApi, orgApi, deviceApi } from '@/api'
+import { useUserStore } from '@/stores/user'
 import type { Store, StoreQuery, OpsCenter, Agent, Device } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
 import { regionData } from 'element-china-area-data'
 
 const loading = ref(false)
+const userStore = useUserStore()
+const isHqUser = computed(() => userStore.userInfo?.userType === 1)
 const tableData = ref<Store[]>([])
 const centerOptions = ref<OpsCenter[]>([])
 const agentOptions = ref<Agent[]>([])
 const allAgents = ref<Agent[]>([])
+const formAgentOptions = ref<Agent[]>([])
 const pagination = reactive({ page: 1, size: 10, total: 0 })
 
 const queryForm = reactive<StoreQuery & { centerId?: number }>({
   page: 1,
   size: 10,
-  status: undefined,
+  status: 1,
   agentId: undefined,
   centerId: undefined,
   keyword: ''
 })
 
 const dialogVisible = ref(false)
-const dialogTitle = ref('新增门店')
+const dialogTitle = ref('新增医院')
 const formRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const isEdit = ref(false)
 const currentId = ref<number | null>(null)
 
-const formData = reactive<Partial<Store> & { regionCodes?: string[] }>({
+const formData = reactive<Partial<Store> & { regionCodes?: string[]; centerId?: number }>({
   storeCode: '',
+  centerId: undefined,
   storeName: '',
   agentId: undefined,
   provinceCode: '',
@@ -221,8 +222,6 @@ const formData = reactive<Partial<Store> & { regionCodes?: string[] }>({
   address: '',
   contactName: '',
   contactPhone: '',
-  businessHours: '',
-  networkType: 1,
   joinDate: '',
   bedCount: 0,
   institutionType: undefined,
@@ -230,17 +229,18 @@ const formData = reactive<Partial<Store> & { regionCodes?: string[] }>({
 })
 
 const formRules: FormRules = {
-  storeCode: [{ required: true, message: '请输入门店编码', trigger: 'blur' }],
-  storeName: [{ required: true, message: '请输入门店名称', trigger: 'blur' }],
+  storeCode: [{ required: true, message: '请输入医院编码', trigger: 'blur' }],
+  centerId: [{ required: true, message: '请选择运营中心', trigger: 'change' }],
+  storeName: [{ required: true, message: '请输入医院名称', trigger: 'blur' }],
   regionCodes: [{ required: true, message: '请选择所在地区', trigger: 'change' }],
-  institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }],
   agentId: [{ required: true, message: '请选择代理商', trigger: 'change' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
   contactName: [{ required: true, message: '请输入联系人姓名', trigger: 'blur' }],
   contactPhone: [
     { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-  ]
+  ],
+  institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }]
 }
 
 const institutionTypeLabel = (type?: number) => {
@@ -330,7 +330,7 @@ const fetchData = async () => {
     tableData.value = res.list
     pagination.total = res.pagination.total
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   } finally {
     loading.value = false
   }
@@ -338,7 +338,7 @@ const fetchData = async () => {
 
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleReset = () => {
-  queryForm.status = undefined
+  queryForm.status = 1
   queryForm.agentId = undefined
   queryForm.centerId = undefined
   queryForm.keyword = ''
@@ -349,10 +349,20 @@ const handleReset = () => {
 const handleSizeChange = (val: number) => { pagination.size = val; fetchData() }
 const handleCurrentChange = (val: number) => { pagination.page = val; fetchData() }
 
+const onFormCenterChange = async (val: number | undefined) => {
+  formData.agentId = undefined
+  if (val) {
+    formAgentOptions.value = await orgApi.getAllAgents(val)
+  } else {
+    formAgentOptions.value = []
+  }
+}
+
 const handleAdd = () => {
   isEdit.value = false
-  dialogTitle.value = '新增门店'
-  Object.assign(formData, { storeCode: '', storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', businessHours: '', networkType: 1, joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [] })
+  dialogTitle.value = '新增医院'
+  Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [] })
+  formAgentOptions.value = []
   currentId.value = null
   dialogVisible.value = true
 }
@@ -408,11 +418,22 @@ const findRegionCodes = (row: Store): string[] => {
   return []
 }
 
-const handleEdit = (row: Store) => {
+const handleEdit = async (row: Store) => {
   isEdit.value = true
-  dialogTitle.value = '编辑门店'
+  dialogTitle.value = '编辑医院'
   currentId.value = row.id
   Object.assign(formData, row)
+  // 保存原始值
+  const savedCenterId = row.centerId ? Number(row.centerId) : undefined
+  const savedAgentId = row.agentId
+  // 根据运营中心加载代理商列表
+  if (savedCenterId) {
+    formAgentOptions.value = await orgApi.getAllAgents(savedCenterId)
+  } else {
+    formAgentOptions.value = []
+  }
+  formData.centerId = savedCenterId
+  formData.agentId = savedAgentId
   // 先清空再设置，确保级联选择器正确回显
   formData.regionCodes = []
   dialogVisible.value = true
@@ -437,7 +458,7 @@ const handleViewDevices = async (row: Store) => {
 
 const handleToggleStatus = async (row: Store) => {
   try {
-    await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}门店"${row.storeName}"吗？`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}医院"${row.storeName}"吗？`, '提示', { type: 'warning' })
     await storeApi.updateStoreStatus(row.id, row.status === 1 ? 0 : 1)
     ElMessage.success('操作成功')
     fetchData()

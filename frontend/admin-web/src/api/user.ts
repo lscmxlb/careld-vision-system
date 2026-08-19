@@ -16,6 +16,9 @@ export const userApi = {
     size?: number
     userType?: number
     storeId?: number
+    centerId?: number
+    agentId?: number
+    status?: number
     keyword?: string
   }): Promise<PageResponse<User>> => {
     return request.get('/users', { params })

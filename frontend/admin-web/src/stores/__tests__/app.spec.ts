@@ -56,7 +56,7 @@ describe('AppStore', () => {
     const store = useAppStore()
     const crumbs = [
       { title: '首页', path: '/' },
-      { title: '门店管理', path: '/store' },
+      { title: '医院管理', path: '/store' },
     ]
     store.setBreadcrumbs(crumbs)
     expect(store.breadcrumbs).toEqual(crumbs)

@@ -1,5 +1,5 @@
 /**
- * Careld Vision System - 门店Web端类型定义
+ * Careld Vision System - 医院Web端类型定义
  */
 
 // ==================== 通用响应 ====================
@@ -39,7 +39,7 @@ export interface LoginResponse {
   user: User
 }
 
-// ==================== 门店相关 ====================
+// ==================== 医院相关 ====================
 export interface Store {
   id: number
   storeCode: string

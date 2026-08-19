@@ -3,6 +3,7 @@ package com.careld.store.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
+import com.careld.common.security.RequirePermission;
 import com.careld.store.entity.DeviceType;
 import com.careld.store.service.DeviceTypeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ public class DeviceTypeController {
 
     @Operation(summary = "设备类型列表")
     @GetMapping
+    @RequirePermission("device:type:view")
     public Result<PageResult<DeviceType>> list(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
@@ -41,18 +43,21 @@ public class DeviceTypeController {
 
     @Operation(summary = "设备类型详情")
     @GetMapping("/{id}")
+    @RequirePermission("device:type:view")
     public Result<DeviceType> get(@PathVariable Long id) {
         return Result.success(deviceTypeService.getDeviceTypeById(id));
     }
 
     @Operation(summary = "新增设备类型")
     @PostMapping
+    @RequirePermission("device:type:create")
     public Result<Long> create(@RequestBody DeviceType deviceType) {
         return Result.success(deviceTypeService.createDeviceType(deviceType));
     }
 
     @Operation(summary = "编辑设备类型")
     @PutMapping("/{id}")
+    @RequirePermission("device:type:update")
     public Result<Void> update(@PathVariable Long id, @RequestBody DeviceType deviceType) {
         deviceTypeService.updateDeviceType(id, deviceType);
         return Result.success();
@@ -60,6 +65,7 @@ public class DeviceTypeController {
 
     @Operation(summary = "删除设备类型")
     @DeleteMapping("/{id}")
+    @RequirePermission("device:type:delete")
     public Result<Void> delete(@PathVariable Long id) {
         deviceTypeService.deleteDeviceType(id);
         return Result.success();

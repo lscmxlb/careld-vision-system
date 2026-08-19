@@ -3,9 +3,9 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>全门店排班监控</span>
+          <span>全医院排班监控</span>
           <div class="header-actions">
-            <el-select v-model="selectedStore" placeholder="选择门店" clearable style="width: 200px; margin-right: 10px;">
+            <el-select v-model="selectedStore" placeholder="选择医院" clearable style="width: 200px; margin-right: 10px;">
               <el-option
                 v-for="item in storeOptions"
                 :key="item.id"
@@ -68,7 +68,7 @@
 
       <!-- 排班表格 -->
       <el-table :data="scheduleData" v-loading="loading" stripe>
-        <el-table-column prop="storeName" label="门店" min-width="150" />
+        <el-table-column prop="storeName" label="医院" min-width="150" />
         <el-table-column prop="technicianName" label="技师" width="100" />
         <el-table-column prop="timeSlot" label="时段" width="120">
           <template #default="{ row }">
@@ -117,7 +117,7 @@
     <!-- 详情弹窗 -->
     <el-dialog v-model="detailVisible" title="排班详情" width="800px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="门店">{{ currentSchedule?.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="医院">{{ currentSchedule?.storeName }}</el-descriptions-item>
         <el-descriptions-item label="技师">{{ currentSchedule?.technicianName }}</el-descriptions-item>
         <el-descriptions-item label="日期">{{ currentSchedule?.scheduleDate }}</el-descriptions-item>
         <el-descriptions-item label="时段">{{ currentSchedule?.timeSlotStart }} - {{ currentSchedule?.timeSlotEnd }}</el-descriptions-item>
@@ -184,7 +184,7 @@ const fetchStores = async () => {
     const res = await storeApi.getAllStores()
     storeOptions.value = res
   } catch (error) {
-    console.error('获取门店列表失败', error)
+    console.error('获取医院列表失败', error)
   }
 }
 
@@ -205,7 +205,7 @@ const fetchData = async () => {
         reservedCount: Math.floor(Math.random() * 4),
         availableCount: 3 - Math.floor(Math.random() * 4),
         status: 1,
-        storeName: `门店${(i % 10) + 1}`
+        storeName: `医院${(i % 10) + 1}`
       })
     }
     scheduleData.value = mockData

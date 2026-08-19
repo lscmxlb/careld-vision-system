@@ -176,7 +176,22 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     public void deleteDevice(Long id) {
         TvDevice device = getEntityById(id);
+        // 非空闲状态不可删除
+        if (device.getStoreId() != null) {
+            throw new BusinessException(400, "设备已分配给医院，请先设为空闲后再删除");
+        }
         tvDeviceMapper.deleteById(id);
+    }
+
+    /**
+     * 释放设备：清除医院绑定，设为空闲状态
+     */
+    @Override
+    public void releaseDevice(Long id) {
+        TvDevice device = getEntityById(id);
+        device.setStoreId(null);
+        device.setStatus(0);
+        tvDeviceMapper.updateById(device);
     }
 
     /**

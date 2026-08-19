@@ -3,6 +3,7 @@ package com.careld.schedule.controller;
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.UserContext;
+import com.careld.common.security.DataScopeHelper;
 import com.careld.schedule.dto.BatchScheduleRequest;
 import com.careld.schedule.entity.ReserveOrder;
 import com.careld.schedule.entity.Schedule;
@@ -32,7 +33,9 @@ public class ScheduleController {
     public Result<List<Schedule>> calendar(@RequestParam("storeId") Long storeId,
                                            @RequestParam("startDate") LocalDate startDate,
                                            @RequestParam("endDate") LocalDate endDate) {
-        return Result.success(scheduleService.getCalendar(storeId, startDate, endDate));
+        // 数据权限：门店用户注入 storeId
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        return Result.success(scheduleService.getCalendar(effectiveStoreId, startDate, endDate));
     }
 
     @Operation(summary = "创建排班")
@@ -74,7 +77,9 @@ public class ScheduleController {
             @RequestParam(value = "date", required = false) LocalDate date,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        var p = scheduleService.listReserves(storeId, childId, status, date, page, size);
+        // 数据权限：门店用户注入 storeId
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        var p = scheduleService.listReserves(effectiveStoreId, childId, status, date, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 

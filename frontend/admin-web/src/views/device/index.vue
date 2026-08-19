@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>设备管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <el-button type="primary" @click="handleAdd" v-permission="'device:list:create'">
             <el-icon><Plus /></el-icon>新增设备
           </el-button>
         </div>
@@ -12,8 +12,8 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
-        <el-form-item label="门店">
-          <el-select v-model="queryForm.storeId" placeholder="选择门店" clearable filterable>
+        <el-form-item label="医院">
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable>
             <el-option v-for="item in storeOptions" :key="item.id" :label="item.storeName" :value="item.id" />
           </el-select>
         </el-form-item>
@@ -39,7 +39,7 @@
         <el-table-column prop="deviceName" label="设备名称" width="130" />
         <el-table-column prop="deviceTypeName" label="设备类型" width="120" />
         <el-table-column prop="deviceSn" label="设备SN" width="140" />
-        <el-table-column prop="storeName" label="所属门店" min-width="120" />
+        <el-table-column prop="storeName" label="所属医院" min-width="120" />
         <el-table-column label="在线状态" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '在线' : '离线' }}</el-tag>
@@ -52,11 +52,12 @@
         </el-table-column>
         <el-table-column prop="installDate" label="安装日期" width="120" />
         <el-table-column prop="maintenanceDate" label="维护日期" width="120" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'device:list:update'">编辑</el-button>
             <el-button type="warning" size="small" @click="handleCalibrate(row)">校准</el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="row.storeId" type="info" size="small" @click="handleRelease(row)" v-permission="'device:list:release'">设为空闲</el-button>
+            <el-button type="danger" size="small" @click="handleDelete(row)" v-permission="'device:list:delete'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -87,8 +88,8 @@
         <el-form-item label="设备SN" prop="deviceSn">
           <el-input v-model="formData.deviceSn" placeholder="请手动输入设备SN号" />
         </el-form-item>
-        <el-form-item label="所属门店" prop="storeId">
-          <el-select v-model="formData.storeId" placeholder="选择门店" filterable>
+        <el-form-item label="所属医院" prop="storeId">
+          <el-select v-model="formData.storeId" placeholder="选择医院" filterable>
             <el-option v-for="item in storeOptions" :key="item.id" :label="item.storeName" :value="item.id" />
           </el-select>
         </el-form-item>
@@ -154,7 +155,7 @@ const formRules: FormRules = {
   deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
   deviceTypeId: [{ required: true, message: '请选择设备类型', trigger: 'change' }],
   deviceSn: [{ required: true, message: '请输入设备SN', trigger: 'blur' }],
-  storeId: [{ required: true, message: '请选择门店', trigger: 'change' }]
+  storeId: [{ required: true, message: '请选择医院', trigger: 'change' }]
 }
 
 const expireStatusLabel = (status?: number) => {
@@ -172,7 +173,7 @@ const onTypeChange = (val: number | undefined) => {
 }
 
 const fetchStores = async () => {
-  try { storeOptions.value = await storeApi.getAllStores() } catch (e) { console.error('获取门店列表失败', e) }
+  try { storeOptions.value = await storeApi.getAllStores() } catch (e) { console.error('获取医院列表失败', e) }
 }
 
 const fetchDeviceTypes = async () => {
@@ -235,6 +236,15 @@ const handleDelete = async (row: Device) => {
     await ElMessageBox.confirm(`确定要删除设备"${row.deviceName}"吗？`, '提示', { type: 'warning' })
     await deviceApi.deleteDevice(row.id)
     ElMessage.success('删除成功')
+    fetchData()
+  } catch { /* 取消 */ }
+}
+
+const handleRelease = async (row: Device) => {
+  try {
+    await ElMessageBox.confirm(`确定要将设备"${row.deviceName}"设为空闲吗？`, '提示', { type: 'warning' })
+    await deviceApi.releaseDevice(row.id)
+    ElMessage.success('已设为空闲')
     fetchData()
   } catch { /* 取消 */ }
 }
