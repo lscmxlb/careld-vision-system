@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { title: '我的预约', icon: 'List' }
         },
         {
+          path: 'care-record',
+          name: 'CareRecord',
+          component: () => import('@/views/care-record/index.vue'),
+          meta: { title: '养护记录', icon: 'FirstAidKit' }
+        },
+        {
           path: 'mine',
           name: 'Mine',
           component: () => import('@/views/mine/index.vue'),

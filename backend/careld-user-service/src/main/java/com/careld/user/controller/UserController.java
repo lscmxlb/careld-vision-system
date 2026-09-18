@@ -1,10 +1,12 @@
 package com.careld.user.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.careld.common.exception.BusinessException;
 import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.RequirePermission;
 import com.careld.common.security.DataScopeHelper;
+import com.careld.common.security.UserContext;
 import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
 import com.careld.user.service.PermissionService;
@@ -36,7 +38,12 @@ public class UserController {
 
     @Operation(summary = "获取当前用户信息")
     @GetMapping("/me")
-    public Result<UserResponse> getCurrentUser(@RequestAttribute("userId") Long userId) {
+    public Result<UserResponse> getCurrentUser(@RequestAttribute("userId") Long userId,
+                                               @RequestAttribute(value = "userType", required = false) Integer userType) {
+        // 医务人员（userType=6）的 userId 是 medical_staff 主键，与 sys_user 无关联，需单独返回本人身份
+        if (userType != null && userType == 6) {
+            return Result.success(userService.getMedicalStaffCurrentUser(userId));
+        }
         UserResponse userResp = userService.getCurrentUser(userId);
         // 注入实际权限列表
         List<String> perms = permissionService.getPermissionKeysByUserId(userId);
@@ -47,8 +54,40 @@ public class UserController {
     @Operation(summary = "修改本人密码")
     @PostMapping("/me/password")
     public Result<Void> changeMyPassword(@RequestAttribute("userId") Long userId,
+                                          @RequestAttribute(value = "userType", required = false) Integer userType,
                                           @RequestBody Map<String, String> params) {
+        // 医务人员（userType=6）的 userId 是 medical_staff 主键，与 sys_user 无关联，需按医务人员处理
+        if (userType != null && userType == 6) {
+            userService.changeMyStaffPassword(userId, params.get("oldPassword"), params.get("newPassword"));
+            return Result.success();
+        }
         userService.changeMyPassword(userId, params.get("oldPassword"), params.get("newPassword"));
+        return Result.success();
+    }
+
+    @Operation(summary = "修改本人手机号（医务人员登录账号）")
+    @PutMapping("/me/phone")
+    public Result<Void> updateMyPhone(@RequestAttribute("userId") Long userId,
+                                      @RequestAttribute(value = "userType", required = false) Integer userType,
+                                      @RequestBody Map<String, String> params) {
+        // 医务人员（userType=6）的 userId 为 medical_staff 主键，与 sys_user 无关联，不在此维护
+        if (userType == null || userType != 6) {
+            throw new BusinessException(400, "当前身份不支持此操作");
+        }
+        userService.updateMyStaffPhone(userId, params.get("phone"));
+        return Result.success();
+    }
+
+    @Operation(summary = "修改本人姓名（家长建档时自动同步真实姓名）")
+    @PutMapping("/me")
+    public Result<Void> updateMyRealName(@RequestAttribute("userId") Long userId,
+                                         @RequestAttribute(value = "userType", required = false) Integer userType,
+                                         @RequestBody Map<String, String> params) {
+        // 医务人员（userType=6）的 userId 为 medical_staff 主键，与 sys_user 无关联，不在此维护
+        if (userType != null && userType == 6) {
+            throw new BusinessException(400, "当前身份不支持此操作");
+        }
+        userService.updateMyRealName(userId, params.get("realName"));
         return Result.success();
     }
 
@@ -64,11 +103,56 @@ public class UserController {
             @Parameter(description = "关键词") @RequestParam(value = "keyword", required = false) String keyword,
             @Parameter(description = "页码") @RequestParam(value = "page", defaultValue = "1") Integer page,
             @Parameter(description = "每页大小") @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：根据当前用户类型自动注入组织过滤条件
-        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
-        Long effectiveCenterId = DataScopeHelper.resolveCenterId(centerId);
-        Long effectiveAgentId = DataScopeHelper.resolveAgentId(agentId);
-        Page<UserResponse> result = userService.listUsers(userType, effectiveStoreId, effectiveCenterId, effectiveAgentId, status, keyword, page, size);
+        // 数据权限：沿组织绑定链严格向下过滤
+        Integer currentType = UserContext.getCurrentUserType();
+        Long currentUserId = UserContext.getCurrentUserId();
+        boolean superAdmin = DataScopeHelper.isSuperAdmin();
+
+        Long effectiveStoreId = storeId;
+        Long effectiveCenterId = centerId;
+        Long effectiveAgentId = agentId;
+        // 排除平级用户类型（仅保留自己）
+        Integer excludePeerType = null;
+        // 非总部角色完全排除总部用户
+        boolean excludeHq = false;
+        // 家长只能看自己
+        Long onlyUserId = null;
+
+        if (!superAdmin && currentType != null) {
+            switch (currentType) {
+                case 1:
+                    // 总部非admin用户：下级全可见，但排除平级总部用户
+                    excludePeerType = 1;
+                    break;
+                case 4:
+                    // 运营中心用户：仅本中心及下属数据
+                    effectiveCenterId = UserContext.getCurrentCenterId();
+                    excludePeerType = 4;
+                    excludeHq = true;
+                    break;
+                case 5:
+                    // 代理商用户：仅本代理商及下属数据
+                    effectiveAgentId = UserContext.getCurrentAgentId();
+                    excludePeerType = 5;
+                    excludeHq = true;
+                    break;
+                case 2:
+                    // 医院维护用户：仅本院数据
+                    effectiveStoreId = UserContext.getCurrentStoreId();
+                    excludePeerType = 2;
+                    excludeHq = true;
+                    break;
+                case 3:
+                    // 家长：仅自己
+                    onlyUserId = currentUserId;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        Page<UserResponse> result = userService.listUsers(userType, effectiveStoreId, effectiveCenterId, effectiveAgentId,
+                status, keyword, page, size, excludePeerType, currentUserId, excludeHq, onlyUserId);
         return Result.success(PageResult.of(result.getRecords(), result.getCurrent(), result.getSize(), result.getTotal()));
     }
 

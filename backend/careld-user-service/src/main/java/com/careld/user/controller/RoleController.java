@@ -29,7 +29,6 @@ public class RoleController {
 
     @Operation(summary = "角色列表")
     @GetMapping
-    @RequirePermission("settings:role:view")
     public Result<List<Role>> listRoles() {
         return Result.success(roleService.listRoles());
     }

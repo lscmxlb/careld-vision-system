@@ -5,6 +5,8 @@ import com.careld.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 /**
  * 门店科室实体
  */
@@ -32,6 +34,11 @@ public class Department extends BaseEntity {
      * 科室类型:1门诊 2养护 3检测 4其他
      */
     private Integer deptType;
+
+    /**
+     * 收费标准(元)
+     */
+    private BigDecimal chargeStandard;
 
     /**
      * 排序

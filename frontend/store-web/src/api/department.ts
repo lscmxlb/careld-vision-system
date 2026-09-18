@@ -2,13 +2,13 @@
  * 科室管理相关API
  */
 import request from './request'
-import type { Department } from '@/types'
+import type { Department, PageResult } from '@/types'
 
 export const departmentApi = {
   // 获取科室列表
   getDepartmentList: async (storeId: number): Promise<Department[]> => {
     const res = await request.get('/departments', { params: { storeId } })
-    return res?.list ?? []
+    return (res as unknown as PageResult<Department>)?.list ?? []
   },
 
   // 获取科室详情

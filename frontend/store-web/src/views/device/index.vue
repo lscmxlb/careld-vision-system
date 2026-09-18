@@ -10,7 +10,7 @@
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" stripe scrollbar-always-on>
         <el-table-column prop="deviceCode" label="设备编码" width="160" />
         <el-table-column prop="deviceName" label="设备名称" />
         <el-table-column prop="status" label="状态" width="100">

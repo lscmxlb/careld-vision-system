@@ -4,15 +4,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
 import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
+import com.careld.user.entity.MedicalStaff;
 import com.careld.user.entity.User;
+import com.careld.user.mapper.MedicalStaffMapper;
 import com.careld.user.mapper.UserMapper;
 import com.careld.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -23,7 +28,31 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final MedicalStaffMapper medicalStaffMapper;
+    private final JdbcTemplate jdbcTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    /**
+     * 绑定医院时自动补全组织链（agentId/centerId），保证数据完整性和列表展示
+     */
+    private void enrichOrgChain(User user) {
+        if (user.getStoreId() == null || (user.getAgentId() != null && user.getCenterId() != null)) {
+            return;
+        }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT s.agent_id AS agentId, a.center_id AS centerId FROM store_info s " +
+                        "LEFT JOIN agent a ON s.agent_id = a.id " +
+                        "WHERE s.id = ? AND s.deleted_at IS NULL", user.getStoreId());
+        if (!rows.isEmpty()) {
+            Map<String, Object> row = rows.get(0);
+            if (user.getAgentId() == null && row.get("agentId") != null) {
+                user.setAgentId(((Number) row.get("agentId")).longValue());
+            }
+            if (user.getCenterId() == null && row.get("centerId") != null) {
+                user.setCenterId(((Number) row.get("centerId")).longValue());
+            }
+        }
+    }
 
     @Override
     @Transactional
@@ -56,6 +85,8 @@ public class UserServiceImpl implements UserService {
         user.setCenterId(request.getCenterId());
         user.setAgentId(request.getAgentId());
         user.setStoreId(request.getStoreId());
+        // 绑定医院时自动补全组织链
+        enrichOrgChain(user);
         user.setStatus(1);
 
         userMapper.insert(user);
@@ -77,6 +108,8 @@ public class UserServiceImpl implements UserService {
         user.setCenterId(request.getCenterId());
         user.setAgentId(request.getAgentId());
         user.setStoreId(request.getStoreId());
+        // 绑定医院时自动补全组织链
+        enrichOrgChain(user);
 
         userMapper.updateById(user);
     }
@@ -98,13 +131,51 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getCurrentUser(Long userId) {
-        return getUserById(userId);
+        UserResponse response = getUserById(userId);
+        // 详情查询不含门店名（非表字段），补齐供前端抬头展示
+        if (response != null && response.getStoreName() == null && response.getStoreId() != null) {
+            response.setStoreName(selectStoreName(response.getStoreId()));
+        }
+        return response;
     }
 
     @Override
-    public Page<UserResponse> listUsers(Integer userType, Long storeId, Long centerId, Long agentId, Integer status, String keyword, Integer page, Integer size) {
+    public UserResponse getMedicalStaffCurrentUser(Long staffId) {
+        MedicalStaff staff = medicalStaffMapper.selectById(staffId);
+        if (staff == null) {
+            throw new BusinessException(404, "医务人员不存在");
+        }
+        UserResponse response = new UserResponse();
+        response.setId(staff.getId());
+        response.setUsername(staff.getPhone());
+        response.setRealName(staff.getName());
+        response.setPhone(staff.getPhone());
+        response.setUserType(6);
+        response.setStaffRole(staff.getStaffRole());
+        response.setStoreId(staff.getStoreId());
+        response.setStoreName(selectStoreName(staff.getStoreId()));
+        response.setStatus(staff.getStatus());
+        response.setCreatedAt(staff.getCreatedAt());
+        response.setRoles(List.of("medical_staff"));
+        response.setPermissions(Collections.emptyList());
+        return response;
+    }
+
+    private String selectStoreName(Long storeId) {
+        if (storeId == null) {
+            return null;
+        }
+        List<String> names = jdbcTemplate.queryForList(
+                "SELECT store_name FROM store_info WHERE id = ? AND deleted_at IS NULL", String.class, storeId);
+        return names.isEmpty() ? null : names.get(0);
+    }
+
+    @Override
+    public Page<UserResponse> listUsers(Integer userType, Long storeId, Long centerId, Long agentId, Integer status, String keyword, Integer page, Integer size,
+                                        Integer excludePeerType, Long currentUserId, boolean excludeHq, Long onlyUserId) {
         Page<User> pageParam = new Page<>(page, size);
-        Page<User> userPage = userMapper.selectUserPage(pageParam, userType, storeId, keyword, centerId, agentId, status);
+        Page<User> userPage = userMapper.selectUserPage(pageParam, userType, storeId, keyword, centerId, agentId, status,
+                excludePeerType, currentUserId, excludeHq, onlyUserId);
 
         List<UserResponse> records = userPage.getRecords().stream()
                 .map(this::convertToResponse)
@@ -161,6 +232,65 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "新密码至少6位");
         }
         user.setPassword(passwordEncoder.encode(newPassword));
+        userMapper.updateById(user);
+    }
+
+    @Override
+    @Transactional
+    public void changeMyStaffPassword(Long staffId, String oldPassword, String newPassword) {
+        MedicalStaff staff = medicalStaffMapper.selectById(staffId);
+        if (staff == null) {
+            throw new BusinessException(404, "医务人员不存在");
+        }
+        if (oldPassword == null || !passwordEncoder.matches(oldPassword, staff.getLoginPassword())) {
+            throw new BusinessException(4003, "原密码错误");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new BusinessException(400, "新密码至少6位");
+        }
+        staff.setLoginPassword(passwordEncoder.encode(newPassword));
+        medicalStaffMapper.updateById(staff);
+    }
+
+    @Override
+    @Transactional
+    public void updateMyStaffPhone(Long staffId, String phone) {
+        if (phone == null || !phone.matches("^1\\d{10}$")) {
+            throw new BusinessException(400, "手机号格式不正确");
+        }
+        MedicalStaff staff = medicalStaffMapper.selectById(staffId);
+        if (staff == null) {
+            throw new BusinessException(404, "医务人员不存在");
+        }
+        if (phone.equals(staff.getPhone())) {
+            return;
+        }
+        MedicalStaff dup = medicalStaffMapper.selectByStoreAndPhone(staff.getStoreId(), phone);
+        if (dup != null && !dup.getId().equals(staffId)) {
+            throw new BusinessException(400, "该手机号已存在于本院医务人员中");
+        }
+        // 与普通账号撞号会导致登录串号（登录按手机号先查 sys_user）
+        if (userMapper.selectByPhone(phone) != null) {
+            throw new BusinessException(400, "该手机号已被其他账号使用");
+        }
+        staff.setPhone(phone);
+        medicalStaffMapper.updateById(staff);
+    }
+
+    @Override
+    public void updateMyRealName(Long userId, String realName) {
+        if (realName == null || realName.isBlank()) {
+            throw new BusinessException(400, "姓名不能为空");
+        }
+        String name = realName.trim();
+        if (name.length() > 20) {
+            throw new BusinessException(400, "姓名不能超过20个字");
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        user.setRealName(name);
         userMapper.updateById(user);
     }
 

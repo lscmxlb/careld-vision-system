@@ -50,7 +50,9 @@ public class SecurityConfig {
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/device-login",
-                    "/api/v1/auth/captcha"
+                    "/api/v1/auth/captcha",
+                    "/api/v1/auth/sms/send",
+                    "/api/v1/auth/sms/login"
                 ).permitAll()
                 .requestMatchers(
                     "/doc.html",

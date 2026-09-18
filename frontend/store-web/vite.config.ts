@@ -38,6 +38,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:8284',
         changeOrigin: true,
       },
+      '/api/v1/schedule-rules': {
+        target: 'http://127.0.0.1:8285',
+        changeOrigin: true,
+      },
+      '/api/v1/appointment-config': {
+        target: 'http://127.0.0.1:8285',
+        changeOrigin: true,
+      },
       '/api/v1/schedules': {
         target: 'http://127.0.0.1:8285',
         changeOrigin: true,
@@ -48,6 +56,14 @@ export default defineConfig({
       },
       '/api/v1/sync': {
         target: 'http://127.0.0.1:8287',
+        changeOrigin: true,
+      },
+      '/api/v1/medical-staff': {
+        target: 'http://127.0.0.1:8282',
+        changeOrigin: true,
+      },
+      '/api/v1/care-records': {
+        target: 'http://127.0.0.1:8286',
         changeOrigin: true,
       },
       '/api/v1/operation-logs': {

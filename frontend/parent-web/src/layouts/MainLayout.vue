@@ -39,16 +39,16 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  User, Document, TrendCharts, Calendar, Avatar
+  User, Document, TrendCharts, Calendar, Avatar, FirstAidKit
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 
 const navItems = [
   { path: '/profile', label: '档案', icon: User },
-  { path: '/report', label: '报告', icon: Document },
   { path: '/appointment', label: '预约', icon: Calendar },
-  { path: '/trend', label: '趋势', icon: TrendCharts },
+  { path: '/care-record', label: '养护', icon: FirstAidKit },
+  { path: '/report', label: '报告', icon: Document },
   { path: '/mine', label: '我的', icon: Avatar }
 ]
 
@@ -59,6 +59,7 @@ const currentTitle = computed(() => {
     '/trend': '视力趋势',
     '/appointment': '预约养护',
     '/appointment/list': '我的预约',
+    '/care-record': '养护记录',
     '/mine': '个人中心'
   }
   return titles[route.path] || 'Careld家长端'

@@ -6,6 +6,7 @@
       </div>
       <el-menu
         :default-active="$route.path"
+        :default-openeds="['archive', 'appointment', 'system']"
         router
         background-color="#001529"
         text-color="#fff"
@@ -15,26 +16,32 @@
           <el-icon><DataBoard /></el-icon>
           <span>数据看板</span>
         </el-menu-item>
-        <el-menu-item index="/child">
-          <el-icon><User /></el-icon>
-          <span>儿童档案</span>
-        </el-menu-item>
-        <el-menu-item index="/schedule">
-          <el-icon><Calendar /></el-icon>
-          <span>排班预约</span>
-        </el-menu-item>
-        <el-menu-item index="/vision">
-          <el-icon><View /></el-icon>
-          <span>视力记录</span>
-        </el-menu-item>
-        <el-menu-item index="/device" v-if="isManager">
-          <el-icon><Monitor /></el-icon>
-          <span>设备管理</span>
-        </el-menu-item>
-        <el-menu-item index="/department" v-if="isManager">
-          <el-icon><OfficeBuilding /></el-icon>
-          <span>科室管理</span>
-        </el-menu-item>
+        <el-sub-menu index="archive">
+          <template #title>
+            <el-icon><Folder /></el-icon>
+            <span>档案管理</span>
+          </template>
+          <el-menu-item index="/child">儿童档案</el-menu-item>
+          <el-menu-item index="/care-record">养护记录</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="appointment">
+          <template #title>
+            <el-icon><Calendar /></el-icon>
+            <span>预约管理</span>
+          </template>
+          <el-menu-item index="/appointment-record">预约记录</el-menu-item>
+          <el-menu-item index="/schedule">预约管理</el-menu-item>
+          <el-menu-item index="/schedule-rule">排班设置</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="system" v-if="isManager">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </template>
+          <el-menu-item index="/basic-info">基础信息</el-menu-item>
+          <el-menu-item index="/medical-staff">医务人员</el-menu-item>
+          <el-menu-item index="/device">设备管理</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -67,13 +74,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  User,
   Calendar,
-  View,
-  Monitor,
   ArrowDown,
-  OfficeBuilding,
-  DataBoard
+  DataBoard,
+  Folder,
+  Setting
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 

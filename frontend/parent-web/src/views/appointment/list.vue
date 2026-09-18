@@ -59,7 +59,7 @@
           </el-button>
         </div>
 
-        <div class="cancel-reason" v-if="reserve.status === 5 && reserve.cancelReason">
+        <div class="cancel-reason" v-if="reserve.status === 4 && reserve.cancelReason">
           取消原因: {{ reserve.cancelReason }}
         </div>
       </div>
@@ -139,25 +139,23 @@ const confirmCancel = async () => {
   }
 }
 
-// 状态映射
+// 状态映射（新状态机：1=已预约 2=养护中 3=已完成 4=已取消）
 const getStatusType = (status: number) => {
   const map: Record<number, string> = {
-    1: 'warning',  // 待到店
-    2: '',         // 已到店
-    3: 'primary',  // 服务中
-    4: 'success',  // 已完成
-    5: 'info'      // 已取消
+    1: 'warning',  // 已预约
+    2: 'primary',  // 养护中
+    3: 'success',  // 已完成
+    4: 'info'      // 已取消
   }
   return map[status] || 'info'
 }
 
 const getStatusText = (status: number) => {
   const map: Record<number, string> = {
-    1: '待到店',
-    2: '已到店',
-    3: '服务中',
-    4: '已完成',
-    5: '已取消'
+    1: '已预约',
+    2: '养护中',
+    3: '已完成',
+    4: '已取消'
   }
   return map[status] || '未知'
 }

@@ -44,6 +44,15 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
+  /** 短信验证码登录 */
+  const loginBySms = async (phone: string, code: string) => {
+    const res = await authApi.smsLogin(phone, code)
+    setToken(res.accessToken)
+    userInfo.value = res.user
+    permissions.value = res.user.permissions || []
+    return res
+  }
+
   const logout = async () => {
     try {
       await authApi.logout()
@@ -68,6 +77,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     hasPermission,
     login,
+    loginBySms,
     logout,
     initAuth,
     setToken,

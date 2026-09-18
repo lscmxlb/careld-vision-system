@@ -35,13 +35,23 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public Store getStoreByCode(String storeCode) { return storeMapper.selectByStoreCode(storeCode); }
     @Override
-    public IPage<Store> listStores(Integer status, Long agentId, String keyword, Integer page, Integer size) {
+    public IPage<Store> listStores(Integer status, Long agentId, Long centerId, Long storeId, String keyword, Integer page, Integer size) {
         LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(Store::getStatus, status);
         }
+        if (storeId != null) {
+            wrapper.eq(Store::getId, storeId);
+        }
         if (agentId != null) {
             wrapper.eq(Store::getAgentId, agentId);
+        }
+        if (centerId != null) {
+            List<Long> agentIds = getAgentIdsByCenter(centerId);
+            if (agentIds.isEmpty()) {
+                return new Page<>(page, size);
+            }
+            wrapper.in(Store::getAgentId, agentIds);
         }
         if (keyword != null && !keyword.isBlank()) {
             wrapper.and(w -> w.like(Store::getStoreName, keyword).or().like(Store::getStoreCode, keyword));
@@ -51,6 +61,20 @@ public class StoreServiceImpl implements StoreService {
         enrichStoresWithOrgNames(result.getRecords());
         return result;
     }
+
+    /**
+     * 查询指定运营中心下的所有代理商ID
+     */
+    private List<Long> getAgentIdsByCenter(Long centerId) {
+        return storeMapper.selectAgentCenterMapping().stream()
+                .filter(r -> {
+                    Object cid = r.get("center_id");
+                    return cid != null && ((Number) cid).longValue() == centerId;
+                })
+                .map(r -> ((Number) r.get("id")).longValue())
+                .collect(Collectors.toList());
+    }
+
     @Override
     public void updateStatus(Long id, Integer status) {
         Store store = new Store(); store.setId(id); store.setStatus(status);
@@ -58,8 +82,24 @@ public class StoreServiceImpl implements StoreService {
     }
 
     @Override
-    public List<Store> listAllStores() {
-        List<Store> stores = storeMapper.selectList(null);
+    public List<Store> listAllStores(Long centerId, Long agentId, Long storeId) {
+        LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
+        // 下拉选择只返回启用状态的医院，禁用医院不显示
+        wrapper.eq(Store::getStatus, 1);
+        if (storeId != null) {
+            wrapper.eq(Store::getId, storeId);
+        }
+        if (agentId != null) {
+            wrapper.eq(Store::getAgentId, agentId);
+        }
+        if (centerId != null) {
+            List<Long> agentIds = getAgentIdsByCenter(centerId);
+            if (agentIds.isEmpty()) {
+                return List.of();
+            }
+            wrapper.in(Store::getAgentId, agentIds);
+        }
+        List<Store> stores = storeMapper.selectList(wrapper);
         enrichStoresWithOrgNames(stores);
         return stores;
     }

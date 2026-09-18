@@ -1,197 +1,182 @@
 <template>
   <div class="schedule-page">
-    <el-card>
+    <!-- 顶部：预约查询汇总 -->
+    <el-card class="summary-card">
       <template #header>
         <div class="card-header">
-          <span>排班管理</span>
-          <el-button type="primary" @click="handleBatchCreate">
-            <el-icon><Plus /></el-icon>批量排班
-          </el-button>
+          <span>预约查询</span>
+          <el-form inline class="header-form">
+            <el-form-item label="日期范围">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                :clearable="false"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="fetchSummary">查询</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </template>
+      <el-row :gutter="20" class="summary-row">
+        <el-col :span="8">
+          <div class="summary-item">
+            <div class="summary-value">{{ summary.total }}</div>
+            <div class="summary-label">预约总数</div>
+          </div>
+        </el-col>
+        <el-col :span="8">
+          <div class="summary-item success">
+            <div class="summary-value">{{ summary.completed }}</div>
+            <div class="summary-label">完成数</div>
+          </div>
+        </el-col>
+        <el-col :span="8">
+          <div class="summary-item danger">
+            <div class="summary-value">{{ summary.cancelled }}</div>
+            <div class="summary-label">取消数</div>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- 预约日历 -->
+    <el-card class="calendar-card">
+      <template #header>
+        <div class="card-header">
+          <span>预约日历 - {{ currentMonthLabel }}</span>
+          <div class="header-actions">
+            <el-button size="small" @click="handlePrevMonth">上个月</el-button>
+            <el-button size="small" @click="handleToday">今天</el-button>
+            <el-button size="small" @click="handleNextMonth">下个月</el-button>
+          </div>
         </div>
       </template>
 
-      <!-- 日历 -->
-      <el-calendar v-model="currentDate" @change="handleDateChange">
+      <el-calendar v-model="currentDate" @change="fetchCalendar">
         <template #date-cell="{ data }">
           <div class="calendar-cell">
             <div class="date-number">{{ data.day.split('-')[2] }}</div>
-            <div class="schedule-info" v-if="getScheduleCount(data.day) > 0">
-              <el-tag size="small" type="success">
-                {{ getScheduleCount(data.day) }}个时段
-              </el-tag>
+            <div v-if="data.type === 'current-month'" class="reserve-info">
+              <span class="ab-text" :class="{ 'ab-text--muted': isDayEmpty(data.day) }">{{ getDayAbText(data.day) }}</span>
+            </div>
+            <div class="cell-actions">
+              <el-button
+                link
+                size="small"
+                :class="{ 'detail-btn--muted': isDayEmpty(data.day) }"
+                @click.stop="handleDetail(data.day)"
+              >预约详情</el-button>
+              <el-button
+                v-if="!isPast(data.day) && isDayFull(data.day)"
+                link
+                type="info"
+                size="small"
+                disabled
+              >预约已满</el-button>
+              <el-button
+                v-else-if="!isPast(data.day)"
+                link
+                type="warning"
+                size="small"
+                @click.stop="handleAdd(data.day)"
+              >添加预约</el-button>
             </div>
           </div>
         </template>
       </el-calendar>
     </el-card>
 
-    <!-- 预约管理 -->
-    <el-card style="margin-top: 20px;">
-      <template #header>
-        <div class="card-header">
-          <span>预约管理</span>
-          <div class="reserve-actions">
-            <el-radio-group v-model="reserveFilter.status" size="small" @change="fetchReserves">
-              <el-radio-button :label="undefined">全部</el-radio-button>
-              <el-radio-button :label="0">待服务</el-radio-button>
-              <el-radio-button :label="1">已完成</el-radio-button>
-              <el-radio-button :label="2">已取消</el-radio-button>
-            </el-radio-group>
-            <el-button type="primary" size="small" @click="handleCreateReserve" style="margin-left: 10px;">
-              <el-icon><Plus /></el-icon>新建预约
-            </el-button>
-          </div>
-        </div>
-      </template>
-
-      <el-table :data="reserveList" v-loading="reserveLoading" stripe>
-        <el-table-column prop="scheduleDate" label="日期" width="120" />
-        <el-table-column prop="timeSlot" label="时段" width="120">
-          <template #default="{ row }">{{ row.timeSlotStart }}-{{ row.timeSlotEnd }}</template>
+    <!-- 预约详情弹窗 -->
+    <el-dialog v-model="detailVisible" :title="`${detailDate} 预约详情`" width="920px">
+      <el-table :data="detailList" v-loading="detailLoading" stripe scrollbar-always-on>
+        <el-table-column prop="scheduleDate" label="日期" width="110" />
+        <el-table-column label="时段" width="130">
+          <template #default="{ row }">{{ formatHm(row.timeSlotStart) }}-{{ formatHm(row.timeSlotEnd) }}</template>
         </el-table-column>
-        <el-table-column prop="technicianName" label="技师" width="100" />
         <el-table-column prop="childName" label="儿童姓名" width="100" />
         <el-table-column prop="parentPhone" label="家长电话" width="130" />
-        <el-table-column prop="reserveType" label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small">{{ getReserveTypeText(row.reserveType) }}</el-tag>
-          </template>
+        <el-table-column prop="operatorName" label="预约人" width="100">
+          <template #default="{ row }">{{ row.operatorName || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="executorName" label="养护人" width="100">
+          <template #default="{ row }">{{ row.executorName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getReserveStatusType(row.status)">
+            <el-tag size="small" :type="getReserveStatusType(row.status)">
               {{ getReserveStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              v-if="row.status === 0"
-              type="primary"
-              size="small"
-              @click="handleRecord(row)"
-            >录入视力</el-button>
-            <el-button
-              v-if="row.status === 0"
-              type="danger"
-              size="small"
-              @click="handleCancelReserve(row)"
-            >取消</el-button>
-          </template>
-        </el-table-column>
       </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="reservePagination.page"
-          v-model:page-size="reservePagination.size"
-          :total="reservePagination.total"
-          layout="total, prev, pager, next"
-          @current-change="handleReservePageChange"
-        />
-      </div>
-    </el-card>
-
-    <!-- 批量排班弹窗 -->
-    <el-dialog v-model="batchVisible" title="批量排班" width="600px">
-      <el-form :model="batchForm" label-width="100px">
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="batchForm.dateRange"
-            type="daterange"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <el-form-item label="选择技师">
-          <el-select v-model="batchForm.technicianId" placeholder="请选择技师">
-            <el-option label="技师A" :value="1" />
-            <el-option label="技师B" :value="2" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="时段设置">
-          <div v-for="(slot, index) in batchForm.timeSlots" :key="index" class="time-slot-row">
-            <el-time-picker
-              v-model="slot.start"
-              placeholder="开始时间"
-              format="HH:mm"
-            />
-            <span style="margin: 0 10px;">至</span>
-            <el-time-picker
-              v-model="slot.end"
-              placeholder="结束时间"
-              format="HH:mm"
-            />
-            <el-input-number v-model="slot.capacity" :min="1" :max="10" style="width: 100px; margin-left: 10px;" />
-            <el-button type="danger" size="small" @click="removeSlot(index)" style="margin-left: 10px;">删除</el-button>
-          </div>
-          <el-button type="primary" size="small" @click="addSlot" style="margin-top: 10px;">添加时段</el-button>
-        </el-form-item>
-        <el-form-item label="重复星期">
-          <el-checkbox-group v-model="batchForm.weekDays">
-            <el-checkbox :label="1">周一</el-checkbox>
-            <el-checkbox :label="2">周二</el-checkbox>
-            <el-checkbox :label="3">周三</el-checkbox>
-            <el-checkbox :label="4">周四</el-checkbox>
-            <el-checkbox :label="5">周五</el-checkbox>
-            <el-checkbox :label="6">周六</el-checkbox>
-            <el-checkbox :label="7">周日</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="batchVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchLoading" @click="handleBatchSubmit">确定</el-button>
-      </template>
+      <div v-if="!detailLoading && detailList.length === 0" class="detail-empty">该日期暂无预约记录</div>
     </el-dialog>
 
-    <!-- 新建预约弹窗 -->
-    <el-dialog v-model="reserveDialogVisible" title="新建预约" width="500px">
+    <!-- 新建预约弹窗（选儿童 + 可约时段） -->
+    <el-dialog
+      v-model="reserveDialogVisible"
+      title="添加预约"
+      width="520px"
+      :before-close="handleReserveDialogBeforeClose"
+    >
       <el-form :model="reserveForm" :rules="reserveRules" ref="reserveFormRef" label-width="100px">
-        <el-form-item label="儿童姓名" prop="childName">
-          <el-input v-model="reserveForm.childName" placeholder="请输入儿童姓名" />
-        </el-form-item>
-        <el-form-item label="家长电话" prop="parentPhone">
-          <el-input v-model="reserveForm.parentPhone" placeholder="请输入家长手机号" />
-        </el-form-item>
-        <el-form-item label="预约日期" prop="scheduleDate">
-          <el-date-picker v-model="reserveForm.scheduleDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" />
-        </el-form-item>
-        <el-form-item label="预约时段" prop="timeSlotStart">
-          <el-time-picker v-model="reserveForm.timeSlotStart" format="HH:mm" placeholder="开始时间" />
-          <span style="margin: 0 8px;">至</span>
-          <el-time-picker v-model="reserveForm.timeSlotEnd" format="HH:mm" placeholder="结束时间" />
-        </el-form-item>
-        <el-form-item label="预约类型" prop="reserveType">
-          <el-select v-model="reserveForm.reserveType" placeholder="选择类型">
-            <el-option label="初次检测" :value="1" />
-            <el-option label="复查" :value="2" />
-            <el-option label="养护" :value="3" />
+        <el-form-item label="儿童" prop="childId">
+          <el-select
+            v-model="reserveForm.childId"
+            filterable
+            remote
+            :remote-method="searchChildren"
+            :loading="childSearchLoading"
+            placeholder="输入姓名/手机号搜索已审核儿童"
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="child in childOptions"
+              :key="child.id"
+              :label="`${child.name}[${child.phone}]（剩余${child.remainingCount || 0}次）`"
+              :value="child.id"
+              :disabled="(child.remainingCount || 0) <= 0"
+            >
+              <span>{{ child.name }}[{{ child.phone }}]（剩余{{ child.remainingCount || 0 }}次）</span>
+            </el-option>
           </el-select>
+        </el-form-item>
+        <el-form-item label="预约日期" prop="date">
+          <el-date-picker
+            v-model="reserveForm.date"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择日期"
+            :disabled-date="addDisabledDate"
+            @change="loadSlots"
+          />
+        </el-form-item>
+        <el-form-item label="可约时段" prop="slotId">
+          <el-select v-model="reserveForm.slotId" placeholder="请先选择日期" style="width: 100%;" :loading="slotLoading">
+            <el-option
+              v-for="slot in slotOptions"
+              :key="slot.id"
+              :label="`${slot.slotStartTime}-${slot.slotEndTime}（剩余${slot.maxCapacity - slot.bookedCount}人）`"
+              :value="slot.id"
+              :disabled="slot.maxCapacity - slot.bookedCount <= 0"
+            />
+          </el-select>
+          <div v-if="reserveForm.date && slotOptions.length === 0 && !slotLoading" class="slot-empty-tip">
+            该日期无可约时段，请先在「排班设置」中配置排班规则
+          </div>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="reserveForm.remark" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="reserveDialogVisible = false">取消</el-button>
+        <el-button @click="handleReserveDialogCancel">取消</el-button>
         <el-button type="primary" :loading="reserveSubmitLoading" @click="handleReserveSubmit">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 取消预约弹窗 -->
-    <el-dialog v-model="cancelVisible" title="取消预约" width="400px">
-      <el-form :model="cancelForm" label-width="80px">
-        <el-form-item label="取消原因">
-          <el-input v-model="cancelForm.cancelReason" type="textarea" :rows="3" placeholder="请输入取消原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="cancelVisible = false">返回</el-button>
-        <el-button type="danger" :loading="cancelLoading" @click="handleCancelSubmit">确认取消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -199,158 +184,297 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'StoreSchedule' })
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import type { Reserve } from '@/types'
-import { scheduleApi, reserveApi } from '@/api'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import type { Reserve, ReserveDailyStatistics, ScheduleSlot, Child } from '@/types'
+import { scheduleApi, reserveApi, scheduleRuleApi, childApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
-const router = useRouter()
 const userStore = useUserStore()
 
-// ==================== 日历 ====================
-const currentDate = ref(new Date())
-const scheduleData = reactive<Record<string, number>>({})
+// ==================== 顶部：日期范围汇总统计 ====================
+const dateRange = ref<string[]>([])
+const summaryLoading = ref(false)
+const summary = reactive({ total: 0, completed: 0, cancelled: 0 })
 
-const getScheduleCount = (day: string) => {
-  return scheduleData[day] || 0
-}
-
-const handleDateChange = (date: Date) => {
-  currentDate.value = date
-  fetchScheduleCalendar()
-  // 切换日期后重新加载预约
-  reserveFilter.status = undefined
-  reservePagination.page = 1
-  fetchReserves()
-}
-
-const fetchScheduleCalendar = async () => {
-  if (!userStore.storeId) return
+const fetchSummary = async () => {
+  if (!dateRange.value || dateRange.value.length < 2) return
+  summaryLoading.value = true
   try {
-    const date = currentDate.value
-    const startDate = new Date(date.getFullYear(), date.getMonth(), 1)
-    const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-    const formatDate = (d: Date): string => {
-      const y = d.getFullYear()
-      const m = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${y}-${m}-${day}`
-    }
-
-    const res = await scheduleApi.getScheduleCalendar({
-      storeId: userStore.storeId,
-      startDate: formatDate(startDate),
-      endDate: formatDate(endDate)
-    })
-    // 清空并更新日历数据
-    Object.keys(scheduleData).forEach(key => delete scheduleData[key])
-    if (res) {
-      Object.entries(res).forEach(([date, schedules]) => {
-        scheduleData[date] = schedules.length
-      })
-    }
+    const list = await reserveApi.getStatistics(dateRange.value[0] as string, dateRange.value[1] as string)
+    summary.total = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.total || 0), 0)
+    summary.completed = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.completed || 0), 0)
+    summary.cancelled = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.cancelled || 0), 0)
   } catch {
     // 错误已在拦截器处理
+  } finally {
+    summaryLoading.value = false
   }
 }
 
-// ==================== 预约列表 ====================
-const reserveLoading = ref(false)
-const reserveList = ref<Reserve[]>([])
-const reservePagination = reactive({ page: 1, size: 10, total: 0 })
-const reserveFilter = reactive({
-  status: undefined as number | undefined
-})
+// ==================== 预约日历 ====================
+const currentDate = ref(new Date())
+/** 当月每日统计：date -> 统计 */
+const statMap = reactive<Record<string, ReserveDailyStatistics>>({})
+/** 当月每日剩余可约名额：date -> 剩余可约数 */
+const dayRemainMap = reactive<Record<string, number>>({})
+/** 当月每日总可约人数：date -> Σ时段容量（固定不变） */
+const dayCapacityMap = reactive<Record<string, number>>({})
+/** 当月每日名额状态：date -> 是否已满（无可约时段或全部约满） */
+const dayFullMap = reactive<Record<string, boolean>>({})
+/** 已查询过名额状态的月份，避免重复请求 */
+const loadedMonths = new Set<string>()
 
-const getReserveTypeText = (type: number) => {
-  const map: Record<number, string> = { 1: '初次检测', 2: '复查', 3: '养护' }
-  return map[type] || '未知'
+const formatDate = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+
+/** A：当日实际预约数（不含已取消/爽约） */
+const getDayBooked = (day: string) => {
+  const stat = statMap[day]
+  return stat ? (stat.total || 0) - (stat.cancelled || 0) : 0
+}
+
+/** 日历单元格显示：A/B（已约人数 / 当日总可约人数，如 1/4），无时段显示 -/- */
+const getDayAbText = (day: string) => {
+  const capacity = dayCapacityMap[day] || 0
+  return capacity === 0 ? '-/-' : `${getDayBooked(day)}/${capacity}`
+}
+
+const isPast = (day: string) => day < formatDate(new Date())
+
+const isDayFull = (day: string) => dayFullMap[day] === true
+
+/** 无时段（-/-）或总量为 0（0/0）的日单元格：数值与"预约详情"置灰 */
+const isDayEmpty = (day: string) => {
+  const text = getDayAbText(day)
+  return text === '-/-' || text === '0/0'
+}
+
+/** 查询单日名额（Σ时段容量 与 Σ剩余；无可约时段均为 0） */
+const loadDaySlotStats = async (day: string): Promise<{ capacity: number; remain: number }> => {
+  try {
+    const slots: ScheduleSlot[] = await scheduleRuleApi.getSlots(day, userStore.storeId || undefined)
+    return {
+      capacity: slots.reduce((sum, s) => sum + (s.maxCapacity || 0), 0),
+      remain: slots.reduce((sum, s) => sum + (s.maxCapacity - s.bookedCount), 0)
+    }
+  } catch {
+    return { capacity: 0, remain: 0 }
+  }
+}
+
+const fetchCalendar = async () => {
+  if (!userStore.storeId) return
+  const date = currentDate.value
+  const start = new Date(date.getFullYear(), date.getMonth(), 1)
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  const startDate = formatDate(start)
+  const endDate = formatDate(end)
+  try {
+    const list = await reserveApi.getStatistics(startDate, endDate, userStore.storeId)
+    Object.keys(statMap).forEach(key => delete statMap[key])
+    list.forEach(item => { statMap[item.statDate] = item })
+  } catch {
+    // 错误已在拦截器处理
+  }
+  // 名额状态按月加载一次
+  const mKey = monthKey(date)
+  if (loadedMonths.has(mKey)) return
+  loadedMonths.add(mKey)
+  const days: string[] = []
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    days.push(formatDate(d))
+  }
+  const results = await Promise.all(days.map(day => loadDaySlotStats(day)))
+  days.forEach((day, i) => {
+    const { capacity, remain } = results[i] as { capacity: number; remain: number }
+    dayCapacityMap[day] = capacity
+    dayRemainMap[day] = remain
+    dayFullMap[day] = remain <= 0
+  })
+}
+
+// ==================== 预约详情弹窗 ====================
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detailDate = ref('')
+const detailList = ref<Reserve[]>([])
+
+/** 时段显示统一为 HH:mm（后端返回 HH:mm:ss 时去掉秒） */
+const formatHm = (t?: string) => (t ? t.slice(0, 5) : '')
+
+const currentMonthLabel = computed(() => `${currentDate.value.getFullYear()}年${currentDate.value.getMonth() + 1}月`)
+
+const goToMonth = (offset: number) => {
+  const d = currentDate.value
+  currentDate.value = new Date(d.getFullYear(), d.getMonth() + offset, 1)
+  fetchCalendar()
+}
+
+const handlePrevMonth = () => goToMonth(-1)
+const handleNextMonth = () => goToMonth(1)
+const handleToday = () => {
+  currentDate.value = new Date()
+  fetchCalendar()
 }
 
 const getReserveStatusType = (status: number) => {
-  const map: Record<number, string> = { 0: 'warning', 1: 'success', 2: 'info' }
+  const map: Record<number, string> = { 1: 'warning', 2: 'primary', 3: 'success', 4: 'info' }
   return map[status] || 'info'
 }
 
 const getReserveStatusText = (status: number) => {
-  const map: Record<number, string> = { 0: '待服务', 1: '已完成', 2: '已取消' }
+  const map: Record<number, string> = { 1: '已预约', 2: '养护中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
-const fetchReserves = async () => {
-  reserveLoading.value = true
+const handleDetail = async (day: string) => {
+  detailDate.value = day
+  detailVisible.value = true
+  detailLoading.value = true
+  detailList.value = []
   try {
-    const dateStr = formatDate(currentDate.value)
     const res = await reserveApi.getReserveList({
       storeId: userStore.storeId,
-      status: reserveFilter.status,
-      date: dateStr,
-      page: reservePagination.page,
-      size: reservePagination.size
+      date: day,
+      page: 1,
+      size: 100
     })
-    reserveList.value = res.list
-    reservePagination.total = res.pagination.total
+    detailList.value = res.list
   } catch {
     // 错误已在拦截器处理
   } finally {
-    reserveLoading.value = false
+    detailLoading.value = false
   }
 }
 
-const handleReservePageChange = (val: number) => {
-  reservePagination.page = val
-  fetchReserves()
-}
-
-const formatDate = (date: Date) => {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-// ==================== 新建预约 ====================
+// ==================== 新建预约（选儿童 + 可约时段） ====================
 const reserveDialogVisible = ref(false)
 const reserveSubmitLoading = ref(false)
 const reserveFormRef = ref<FormInstance>()
 const reserveForm = reactive({
-  childName: '',
-  parentPhone: '',
-  scheduleDate: '',
-  timeSlotStart: null as Date | null,
-  timeSlotEnd: null as Date | null,
-  reserveType: 1,
+  childId: undefined as number | undefined,
+  date: '',
+  slotId: undefined as string | undefined,
   remark: ''
 })
+/** 打开弹窗时的表单快照：与当前表单不一致视为有未保存数据 */
+const reserveFormSnapshot = ref('')
+const childOptions = ref<Child[]>([])
+const childSearchLoading = ref(false)
+const slotOptions = ref<ScheduleSlot[]>([])
+const slotLoading = ref(false)
 
 const reserveRules = {
-  childName: [{ required: true, message: '请输入儿童姓名', trigger: 'blur' }],
-  parentPhone: [{ required: true, message: '请输入家长电话', trigger: 'blur' }],
-  scheduleDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
-  reserveType: [{ required: true, message: '请选择类型', trigger: 'change' }]
+  childId: [{ required: true, message: '请选择儿童', trigger: 'change' }],
+  date: [{ required: true, message: '请选择预约日期', trigger: 'change' }],
+  slotId: [{ required: true, message: '请选择可约时段', trigger: 'change' }]
 }
 
-const handleCreateReserve = () => {
+const searchChildren = async (keyword: string) => {
+  if (!keyword || !keyword.trim()) return
+  childSearchLoading.value = true
+  try {
+    const res = await childApi.pickOptions({
+      storeId: userStore.storeId,
+      keyword: keyword.trim()
+    })
+    childOptions.value = res
+  } catch {
+    // 错误已在拦截器处理
+  } finally {
+    childSearchLoading.value = false
+  }
+}
+
+const loadSlots = async () => {
+  reserveForm.slotId = undefined
+  slotOptions.value = []
+  if (!reserveForm.date) return
+  slotLoading.value = true
+  try {
+    slotOptions.value = await scheduleRuleApi.getSlots(reserveForm.date, userStore.storeId || undefined)
+    if (slotOptions.value.length === 0) {
+      ElMessage.warning('该日期无可约时段，请重新选择')
+      reserveForm.date = ''
+    }
+  } catch {
+    // 错误已在拦截器处理
+  } finally {
+    slotLoading.value = false
+  }
+}
+
+/** 近30天有可约时段的日期集合（打开添加弹窗时拉取，禁选其余日期） */
+const availableDays = ref<Set<string>>(new Set())
+const daysLoading = ref(false)
+
+const loadAvailability = async () => {
+  daysLoading.value = true
+  availableDays.value = new Set()
+  try {
+    const now = new Date()
+    const start = formatDate(now)
+    const end = formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 29))
+    const dates = await scheduleRuleApi.getAvailableDates(start, end, userStore.storeId || undefined)
+    availableDays.value = new Set(dates)
+  } catch {
+    // 拉取失败不禁选，选中后由时段查询兜底校验
+  } finally {
+    daysLoading.value = false
+  }
+}
+
+const addDisabledDate = (d: Date) => {
+  if (d.getTime() < Date.now() - 86400000) return true
+  // 可用日期加载完成前不禁用（选中后仍由时段查询兜底校验）
+  if (daysLoading.value) return false
+  return !availableDays.value.has(formatDate(d))
+}
+
+const handleAdd = async (day: string) => {
   Object.assign(reserveForm, {
-    childName: '',
-    parentPhone: '',
-    scheduleDate: '',
-    timeSlotStart: null,
-    timeSlotEnd: null,
-    reserveType: 1,
+    childId: undefined,
+    date: day,
+    slotId: undefined,
     remark: ''
   })
+  reserveFormSnapshot.value = JSON.stringify(reserveForm)
+  childOptions.value = []
+  loadAvailability()
   reserveDialogVisible.value = true
+  await loadSlots()
+  // 时段加载可能清空日期（无可约时段），以最终结果作为未改动基线
+  reserveFormSnapshot.value = JSON.stringify(reserveForm)
 }
 
-const formatTime = (d: Date | null) => {
-  if (!d) return ''
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
+/** 有未保存数据时弹确认框；返回 true 表示可以关闭 */
+const confirmReserveClose = async (): Promise<boolean> => {
+  if (JSON.stringify(reserveForm) === reserveFormSnapshot.value) return true
+  try {
+    await ElMessageBox.confirm('确认关闭吗？已填写的数据将不会保存', '关闭确认', {
+      confirmButtonText: '确认关闭',
+      cancelButtonText: '继续填写',
+      type: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+const handleReserveDialogCancel = async () => {
+  if (await confirmReserveClose()) reserveDialogVisible.value = false
+}
+
+const handleReserveDialogBeforeClose = async (done: () => void) => {
+  if (await confirmReserveClose()) done()
 }
 
 const handleReserveSubmit = async () => {
@@ -358,18 +482,17 @@ const handleReserveSubmit = async () => {
   await reserveFormRef.value.validate()
   reserveSubmitLoading.value = true
   try {
-    await reserveApi.createReserve({
-      childName: reserveForm.childName,
-      parentPhone: reserveForm.parentPhone,
-      scheduleDate: reserveForm.scheduleDate,
-      timeSlotStart: formatTime(reserveForm.timeSlotStart),
-      timeSlotEnd: formatTime(reserveForm.timeSlotEnd),
-      reserveType: reserveForm.reserveType,
+    await reserveApi.createReserveV2({
+      childId: reserveForm.childId!,
+      slotId: reserveForm.slotId!,
       remark: reserveForm.remark || undefined
     })
-    ElMessage.success('预约创建成功')
+    ElMessage.success('预约创建成功，已扣减1次可约次数')
     reserveDialogVisible.value = false
-    fetchReserves()
+    // 刷新日历统计与名额状态
+    loadedMonths.delete(monthKey(currentDate.value))
+    fetchCalendar()
+    fetchSummary()
   } catch {
     // 错误已在拦截器处理
   } finally {
@@ -377,112 +500,69 @@ const handleReserveSubmit = async () => {
   }
 }
 
-// ==================== 取消预约 ====================
-const cancelVisible = ref(false)
-const cancelLoading = ref(false)
-const cancelingReserveId = ref<number | null>(null)
-const cancelForm = reactive({ cancelReason: '' })
-
-const handleCancelReserve = (row: Reserve) => {
-  cancelingReserveId.value = row.id
-  cancelForm.cancelReason = ''
-  cancelVisible.value = true
-}
-
-const handleCancelSubmit = async () => {
-  if (!cancelingReserveId.value) return
-  cancelLoading.value = true
-  try {
-    await reserveApi.cancelReserve(cancelingReserveId.value, cancelForm.cancelReason)
-    ElMessage.success('预约已取消')
-    cancelVisible.value = false
-    fetchReserves()
-  } catch {
-    // 错误已在拦截器处理
-  } finally {
-    cancelLoading.value = false
-  }
-}
-
-// ==================== 录入视力 ====================
-const handleRecord = (row: Reserve) => {
-  router.push({ path: '/vision', query: { childId: String(row.childId), reserveId: String(row.id) } })
-}
-
-// ==================== 批量排班 ====================
-const batchVisible = ref(false)
-const batchLoading = ref(false)
-
-const batchForm = reactive({
-  dateRange: [] as string[],
-  technicianId: undefined as number | undefined,
-  timeSlots: [{ start: null as Date | null, end: null as Date | null, capacity: 3 }],
-  weekDays: [1, 2, 3, 4, 5]
-})
-
-const handleBatchCreate = () => {
-  batchForm.dateRange = []
-  batchForm.technicianId = undefined
-  batchForm.timeSlots = [{ start: null, end: null, capacity: 3 }]
-  batchForm.weekDays = [1, 2, 3, 4, 5]
-  batchVisible.value = true
-}
-
-const addSlot = () => {
-  batchForm.timeSlots.push({ start: null, end: null, capacity: 3 })
-}
-
-const removeSlot = (index: number) => {
-  batchForm.timeSlots.splice(index, 1)
-}
-
-const handleBatchSubmit = async () => {
-  if (!batchForm.dateRange || batchForm.dateRange.length < 2) {
-    ElMessage.warning('请选择日期范围')
-    return
-  }
-  if (!batchForm.technicianId) {
-    ElMessage.warning('请选择技师')
-    return
-  }
-  batchLoading.value = true
-  try {
-    await scheduleApi.batchCreateSchedule({
-      startDate: batchForm.dateRange[0] as string,
-      endDate: batchForm.dateRange[1] as string,
-      technicianId: batchForm.technicianId,
-      timeSlots: batchForm.timeSlots
-        .filter(s => s.start && s.end)
-        .map(s => ({
-          start: formatTime(s.start),
-          end: formatTime(s.end),
-          capacity: s.capacity
-        })),
-      weekDays: batchForm.weekDays
-    })
-    ElMessage.success('批量排班成功')
-    batchVisible.value = false
-    fetchScheduleCalendar()
-  } catch {
-    // 错误已在拦截器处理
-  } finally {
-    batchLoading.value = false
-  }
-}
-
 // ==================== 初始化 ====================
 onMounted(() => {
-  fetchScheduleCalendar()
-  fetchReserves()
+  // 默认统计当月
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  dateRange.value = [formatDate(start), formatDate(end)]
+  fetchSummary()
+  fetchCalendar()
 })
 </script>
 
 <style scoped lang="scss">
 .schedule-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    .header-form {
+      :deep(.el-form-item) {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .calendar-card {
+    :deep(.el-calendar__header) {
+      display: none;
+    }
+  }
+
+  .summary-row {
+    .summary-item {
+      background: #f0f5ff;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+
+      &.success {
+        background: #f0f9eb;
+      }
+
+      &.danger {
+        background: #fef0f0;
+      }
+
+      .summary-value {
+        font-size: 26px;
+        font-weight: bold;
+        color: #303133;
+      }
+
+      .summary-label {
+        color: #909399;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+    }
   }
 
   .calendar-cell {
@@ -492,29 +572,51 @@ onMounted(() => {
 
     .date-number {
       font-size: 14px;
-      margin-bottom: 5px;
     }
 
-    .schedule-info {
+    .reserve-info {
+      margin: 4px 0;
+      text-align: center;
+
+      .ab-text {
+        font-size: 18px;
+        font-weight: 700;
+        color: #409eff;
+
+        &.ab-text--muted {
+          color: #c0c4cc;
+        }
+      }
+    }
+
+    .cell-actions {
       margin-top: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 4px;
+
+      :deep(.el-button + .el-button) {
+        margin-left: 0;
+      }
+
+      :deep(.el-button.detail-btn--muted) {
+        --el-button-text-color: #c0c4cc;
+        --el-button-hover-text-color: #c0c4cc;
+        --el-button-active-text-color: #c0c4cc;
+      }
     }
   }
 
-  .time-slot-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+  .detail-empty {
+    text-align: center;
+    color: #909399;
+    padding: 24px 0;
   }
 
-  .reserve-actions {
-    display: flex;
-    align-items: center;
-  }
-
-  .pagination-wrapper {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
+  .slot-empty-tip {
+    color: #e6a23c;
+    font-size: 12px;
+    margin-top: 4px;
   }
 }
 </style>

@@ -16,7 +16,7 @@ export const storeApi = {
   },
 
   // 创建医院
-  createStore: (data: Partial<Store>): Promise<Store> => {
+  createStore: (data: Partial<Store>): Promise<number> => {
     return request.post('/stores', data)
   },
 

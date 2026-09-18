@@ -260,11 +260,11 @@ const fetchData = async () => {
 
     // 获取待审核档案
     const pendingRes = await childApi.getChildList({ auditStatus: 0, size: 5 })
-    pendingAudits.value = pendingRes.data.list
+    pendingAudits.value = pendingRes.list
 
     // 获取设备状态
     const deviceRes = await deviceApi.getDeviceList({ size: 5 })
-    deviceStatus.value = deviceRes.data.list
+    deviceStatus.value = deviceRes.list
   } catch (error) {
     console.error('获取数据失败', error)
   } finally {

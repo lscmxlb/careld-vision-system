@@ -93,12 +93,14 @@ import { ElMessage } from 'element-plus'
 import { User, Lock, Key, Monitor, DataAnalysis, Connection } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
+import { usePermissionStore } from '@/stores/permission'
 import { authApi } from '@/api'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
+const permStore = usePermissionStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -143,10 +145,14 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
+        // 先清除旧权限状态
+        permStore.clear()
         await userStore.login({
           ...formData,
           captchaKey: captchaKey.value
         })
+        // 主动加载权限菜单，避免路由守卫中权限为空导致无限重定向
+        await permStore.loadPermissions()
         ElMessage.success('登录成功')
         router.push('/dashboard')
       } catch (error) {

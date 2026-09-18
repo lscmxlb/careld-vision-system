@@ -80,17 +80,21 @@ public class OrgController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：运营中心用户只能看自己的中心
-        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 4
-                && UserContext.getCurrentCenterId() != null) {
+        Integer currentType = UserContext.getCurrentUserType();
+        // 数据权限：非总部用户只能看自己所属的运营中心
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && currentType != 1) {
+            Long ownCenterId = UserContext.getCurrentCenterId();
             try {
-                OpsCenter ownCenter = orgService.getCenterById(UserContext.getCurrentCenterId());
-                Page<OpsCenter> singlePage = new Page<>(page, size, 1);
-                singlePage.setRecords(List.of(ownCenter));
-                return Result.success(PageResult.of(singlePage.getRecords(), singlePage.getCurrent(), singlePage.getSize(), singlePage.getTotal()));
+                if (ownCenterId != null) {
+                    OpsCenter ownCenter = orgService.getCenterById(ownCenterId);
+                    Page<OpsCenter> singlePage = new Page<>(page, size, 1);
+                    singlePage.setRecords(List.of(ownCenter));
+                    return Result.success(PageResult.of(singlePage.getRecords(), singlePage.getCurrent(), singlePage.getSize(), singlePage.getTotal()));
+                }
             } catch (Exception e) {
-                return Result.success(PageResult.of(List.of(), 1L, 20L, 0L));
+                // 中心不存在时返回空
             }
+            return Result.success(PageResult.of(List.of(), 1L, 20L, 0L));
         }
         Page<OpsCenter> result = (Page<OpsCenter>) orgService.listCenters(hqId, keyword, page, size);
         return Result.success(PageResult.of(result.getRecords(), result.getCurrent(), result.getSize(), result.getTotal()));
@@ -99,8 +103,9 @@ public class OrgController {
     @Operation(summary = "全部运营中心（下拉）")
     @GetMapping("/centers/all")
     public Result<List<OpsCenter>> listAllCenters(@RequestParam(value = "hqId", required = false) Long hqId) {
-        // 数据权限：运营中心用户只返回自己的中心
-        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 4) {
+        Integer currentType = UserContext.getCurrentUserType();
+        // 数据权限：非总部用户只返回自己所属的运营中心
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && currentType != 1) {
             Long currentCenterId = UserContext.getCurrentCenterId();
             if (currentCenterId != null) {
                 try {
@@ -110,6 +115,7 @@ public class OrgController {
                     return Result.success(List.of());
                 }
             }
+            return Result.success(List.of());
         }
         return Result.success(orgService.listAllCenters(hqId));
     }
@@ -153,8 +159,9 @@ public class OrgController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：代理商用户只看自己的代理商
-        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 5
+        // 数据权限：代理商/医院维护用户只看自己绑定的代理商
+        Integer currentType = UserContext.getCurrentUserType();
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && (currentType == 5 || currentType == 2)
                 && UserContext.getCurrentAgentId() != null) {
             try {
                 Agent ownAgent = orgService.getAgentById(UserContext.getCurrentAgentId());
@@ -165,7 +172,7 @@ public class OrgController {
                 return Result.success(PageResult.of(List.of(), 1L, 20L, 0L));
             }
         }
-        // 运营中心用户只能看本中心的代理商
+        // 运营中心用户强制按自己的中心过滤（resolveCenterId 已处理）；代理商/医院用户已在上方早退
         Long effectiveCenterId = DataScopeHelper.resolveCenterId(centerId);
         Page<Agent> result = (Page<Agent>) orgService.listAgents(effectiveCenterId, keyword, page, size);
         return Result.success(PageResult.of(result.getRecords(), result.getCurrent(), result.getSize(), result.getTotal()));
@@ -174,8 +181,9 @@ public class OrgController {
     @Operation(summary = "全部代理商（下拉）")
     @GetMapping("/agents/all")
     public Result<List<Agent>> listAllAgents(@RequestParam(value = "centerId", required = false) Long centerId) {
-        // 数据权限：代理商用户只返回自己的代理商
-        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 5) {
+        Integer currentType = UserContext.getCurrentUserType();
+        // 数据权限：代理商/医院维护用户只返回自己绑定的代理商
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && (currentType == 5 || currentType == 2)) {
             Long currentAgentId = UserContext.getCurrentAgentId();
             if (currentAgentId != null) {
                 try {
@@ -185,15 +193,11 @@ public class OrgController {
                     return Result.success(List.of());
                 }
             }
+            return Result.success(List.of());
         }
-        // 运营中心用户只能看本中心的代理商
-        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 4) {
-            Long currentCenterId = UserContext.getCurrentCenterId();
-            if (currentCenterId != null) {
-                return Result.success(orgService.listAllAgents(currentCenterId));
-            }
-        }
-        return Result.success(orgService.listAllAgents(centerId));
+        // 非总部用户强制按自己的中心过滤
+        Long effectiveCenterId = DataScopeHelper.resolveCenterId(centerId);
+        return Result.success(orgService.listAllAgents(effectiveCenterId));
     }
 
     @Operation(summary = "代理商详情")

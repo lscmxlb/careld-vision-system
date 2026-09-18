@@ -24,8 +24,8 @@ export const userApi = {
     return request.get('/users', { params })
   },
 
-  // 创建用户
-  createUser: (data: Partial<User>): Promise<User> => {
+  // 创建用户（后端返回新用户ID）
+  createUser: (data: Partial<User>): Promise<number> => {
     return request.post('/users', data)
   },
 
@@ -47,5 +47,10 @@ export const userApi = {
   // 启用/禁用用户
   updateUserStatus: (id: number, status: number): Promise<void> => {
     return request.patch(`/users/${id}/status`, { status })
+  },
+
+  // 修改本人密码
+  changeMyPassword: (oldPassword: string, newPassword: string): Promise<void> => {
+    return request.post('/users/me/password', { oldPassword, newPassword })
   }
 }

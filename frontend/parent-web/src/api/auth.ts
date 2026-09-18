@@ -18,5 +18,15 @@ export const authApi = {
   /** 登出 */
   logout: (): Promise<void> => {
     return request.post('/auth/logout')
+  },
+
+  /** 发送短信验证码 */
+  sendSmsCode: (phone: string): Promise<void> => {
+    return request.post('/auth/sms/send', { phone })
+  },
+
+  /** 短信验证码登录（未注册自动创建家长账号） */
+  smsLogin: (phone: string, code: string): Promise<LoginResponse> => {
+    return request.post('/auth/sms/login', { phone, code })
   }
 }

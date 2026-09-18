@@ -39,6 +39,15 @@ jwt:
   access-token-expire: 7200
   refresh-token-expire: 604800
 
+# 敏感信息加密密钥（与 child-service 保持一致）
+encryption:
+  key: ${ENCRYPTION_KEY:careld-vision-encrypt-key-32byte}
+
+careld:
+  sms:
+    # 未启用真实发送时是否允许 mock 验证码 123456；生产环境应设为 false
+    mock: ${CARELD_SMS_MOCK:true}
+
 logging:
   level:
     com.careld.auth: DEBUG

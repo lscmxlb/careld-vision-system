@@ -90,7 +90,7 @@
           <el-button type="primary" text @click="$router.push('/schedule')">查看全部</el-button>
         </div>
       </template>
-      <el-table :data="recentReserves" v-loading="reserveLoading" stripe>
+      <el-table :data="recentReserves" v-loading="reserveLoading" stripe scrollbar-always-on>
         <el-table-column prop="scheduleDate" label="日期" width="120" />
         <el-table-column label="时段" width="120">
           <template #default="{ row }">{{ row.timeSlotStart }}-{{ row.timeSlotEnd }}</template>

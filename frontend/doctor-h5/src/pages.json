@@ -1,0 +1,138 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/reserve/index",
+      "style": {
+        "navigationBarTitleText": "预约管理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/child/index",
+      "style": {
+        "navigationBarTitleText": "儿童档案",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/reserve/create",
+      "style": {
+        "navigationBarTitleText": "预约"
+      }
+    },
+    {
+      "path": "pages/reserve/detail",
+      "style": {
+        "navigationBarTitleText": "预约详情"
+      }
+    },
+    {
+      "path": "pages/reserve/care",
+      "style": {
+        "navigationBarTitleText": "养护操作"
+      }
+    },
+    {
+      "path": "pages/child/detail",
+      "style": {
+        "navigationBarTitleText": "档案详情"
+      }
+    },
+    {
+      "path": "pages/child/form",
+      "style": {
+        "navigationBarTitleText": "儿童档案"
+      }
+    },
+    {
+      "path": "pages/child/grant",
+      "style": {
+        "navigationBarTitleText": "次数授权"
+      }
+    },
+    {
+      "path": "pages/care-record/index",
+      "style": {
+        "navigationBarTitleText": "养护记录",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/care-record/detail",
+      "style": {
+        "navigationBarTitleText": "养护详情"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Careld 医生端",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F4F6F9"
+  },
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#2563eb",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "height": "54px",
+    "fontSize": "11px",
+    "iconWidth": "22px",
+    "spacing": "3px",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "工作台",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/reserve/index",
+        "text": "预约记录",
+        "iconPath": "static/tabbar/reserve.png",
+        "selectedIconPath": "static/tabbar/reserve-active.png"
+      },
+      {
+        "pagePath": "pages/child/index",
+        "text": "儿童档案",
+        "iconPath": "static/tabbar/child.png",
+        "selectedIconPath": "static/tabbar/child-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-active.png"
+      }
+    ]
+  }
+}

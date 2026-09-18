@@ -58,8 +58,15 @@
         >
           <el-avatar :size="48" :icon="UserFilled" />
           <div class="child-info">
-            <div class="child-name">{{ child.nameMask || child.name }}</div>
-            <div class="child-detail">{{ calcAge(child.birthDate) }}岁 | {{ child.eyeCondition || '暂无记录' }}</div>
+            <div class="child-name">
+              {{ child.nameMask || child.name }}
+              <el-tag v-if="child.auditStatus === 0" size="small" type="warning">待审核</el-tag>
+              <el-tag v-else-if="child.auditStatus === 2" size="small" type="danger">已驳回</el-tag>
+            </div>
+            <div class="child-detail">
+              {{ calcAge(child.birthDate) }}岁 | {{ child.eyeCondition || '暂无记录' }}
+              | 剩余{{ child.remainingCount || 0 }}次
+            </div>
           </div>
           <el-icon v-if="selectedChild?.id === child.id" class="check-icon"><CircleCheckFilled /></el-icon>
         </div>
@@ -101,11 +108,11 @@
               v-for="slot in timeSlots"
               :key="slot.id"
               class="time-item"
-              :class="{ selected: selectedSchedule?.id === slot.id, disabled: (slot.availableCount ?? 0) <= 0 }"
+              :class="{ selected: selectedSchedule?.id === slot.id, disabled: (slot.maxCapacity - slot.bookedCount) <= 0 }"
               @click="selectTimeSlot(slot)"
             >
-              <span>{{ fmtTime(slot.timeSlotStart) }}-{{ fmtTime(slot.timeSlotEnd) }}</span>
-              <span class="slot-avail">{{ (slot.availableCount ?? 0) > 0 ? `余${slot.availableCount}位` : '已满' }}</span>
+              <span>{{ fmtTime(slot.slotStartTime) }}-{{ fmtTime(slot.slotEndTime) }}</span>
+              <span class="slot-avail">{{ (slot.maxCapacity - slot.bookedCount) > 0 ? `余${slot.maxCapacity - slot.bookedCount}位` : '已满' }}</span>
             </div>
           </div>
         </div>
@@ -132,11 +139,11 @@
         </div>
         <div class="confirm-row">
           <span class="label">时间段</span>
-          <span class="value">{{ fmtTime(selectedSchedule?.timeSlotStart) }} - {{ fmtTime(selectedSchedule?.timeSlotEnd) }}</span>
+          <span class="value">{{ fmtTime(selectedSchedule?.slotStartTime) }} - {{ fmtTime(selectedSchedule?.slotEndTime) }}</span>
         </div>
         <div class="confirm-row">
-          <span class="label">技师</span>
-          <span class="value">{{ selectedSchedule?.technicianName }}</span>
+          <span class="label">扣减次数</span>
+          <span class="value">预约成功后将扣减 1 次可约次数</span>
         </div>
 
         <el-form-item label="备注" style="margin-top: 16px;">
@@ -181,10 +188,11 @@
 <script setup lang="ts">
 defineOptions({ name: 'ParentAppointment' })
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Location, UserFilled, CircleCheckFilled } from '@element-plus/icons-vue'
-import type { Store, Child, Schedule } from '@/types'
-import { storeApi, childApi, scheduleApi, reserveApi } from '@/api'
+import type { Store, Child, ScheduleSlot } from '@/types'
+import { storeApi, childApi, scheduleRuleApi, reserveApi } from '@/api'
 
 const steps = ['选择医院', '选择孩子', '选择时间', '确认预约']
 const currentStep = ref(0)
@@ -203,12 +211,14 @@ const selectedChild = ref<Child | null>(null)
 // Step 3
 const scheduleLoading = ref(false)
 const availableDates = ref<string[]>([])
-const timeSlots = ref<Schedule[]>([])
+const timeSlots = ref<ScheduleSlot[]>([])
 const selectedDate = ref('')
-const selectedSchedule = ref<Schedule | null>(null)
+const selectedSchedule = ref<ScheduleSlot | null>(null)
 
 // Step 4
 const remark = ref('')
+
+const route = useRoute()
 
 // 是否可以进入下一步
 const canNext = computed(() => {
@@ -225,8 +235,16 @@ const selectStore = (store: Store) => {
   selectedStore.value = store
 }
 
-// 选择孩子
+// 选择孩子（仅已审核且有次数的孩子可选）
 const selectChild = (child: Child) => {
+  if (child.auditStatus !== 1) {
+    ElMessage.warning('该档案审核通过后方可预约')
+    return
+  }
+  if ((child.remainingCount || 0) <= 0) {
+    ElMessage.warning('该孩子剩余可约次数不足，请联系医生授予')
+    return
+  }
   selectedChild.value = child
 }
 
@@ -238,8 +256,8 @@ const selectDate = async (date: string) => {
 }
 
 // 选择时间段
-const selectTimeSlot = (slot: Schedule) => {
-  if (slot.availableCount <= 0) {
+const selectTimeSlot = (slot: ScheduleSlot) => {
+  if (slot.maxCapacity - slot.bookedCount <= 0) {
     ElMessage.warning('该时段已约满')
     return
   }
@@ -270,7 +288,7 @@ const fetchChildren = async () => {
   }
 }
 
-// 获取可用日期
+// 获取可用日期（新链路：排班规则物化时段）
 const fetchAvailableDates = async () => {
   if (!selectedStore.value) return
 
@@ -283,19 +301,18 @@ const fetchAvailableDates = async () => {
 
   scheduleLoading.value = true
   try {
-    const scheduleMap = await scheduleApi.getAvailableSchedules(
+    availableDates.value = await scheduleRuleApi.getAvailableDates(
       selectedStore.value.id,
       startDateStr,
       endDateStr
     )
-    availableDates.value = Object.keys(scheduleMap).sort()
 
-    // 默认选择第一个有排班的日期
+    // 默认选择第一个可约日期
     if (availableDates.value.length > 0) {
       await selectDate(availableDates.value[0] ?? '')
     }
   } catch {
-    ElMessage.error('获取排班信息失败')
+    ElMessage.error('获取可约日期失败')
   } finally {
     scheduleLoading.value = false
   }
@@ -306,35 +323,29 @@ const fetchTimeSlots = async (date: string) => {
   if (!selectedStore.value) return
 
   try {
-    const scheduleMap = await scheduleApi.getAvailableSchedules(
-      selectedStore.value.id,
-      date,
-      date
-    )
-    timeSlots.value = scheduleMap[date] || []
+    timeSlots.value = await scheduleRuleApi.getSlots(date, selectedStore.value.id)
   } catch {
     ElMessage.error('获取时间段失败')
   }
 }
 
-// 提交预约
+// 提交预约（新链路）
 const handleSubmit = async () => {
-  if (!selectedStore.value || !selectedChild.value || !selectedSchedule.value) {
+  if (!selectedChild.value || !selectedSchedule.value) {
     ElMessage.warning('请填写完整信息')
     return
   }
 
   submitLoading.value = true
   try {
-    await reserveApi.createReservation({
+    await reserveApi.createReservationV2({
       childId: selectedChild.value.id,
-      storeId: selectedStore.value.id,
-      scheduleId: selectedSchedule.value.id,
-      reserveType: 2, // 2=养护
-      remark: remark.value
+      slotId: selectedSchedule.value.id,
+      source: 1,
+      remark: remark.value || undefined
     })
     currentStep.value = 4
-    ElMessage.success('预约成功')
+    ElMessage.success('预约成功，已扣减1次可约次数')
   } catch (error: unknown) {
     ElMessage.error(error instanceof Error ? error.message : '预约失败')
   } finally {
@@ -388,6 +399,17 @@ const formatDate = (date: Date) => {
 
 onMounted(async () => {
   await Promise.all([fetchStores(), fetchChildren()])
+  // 从档案卡片「立即预约」进入时预选孩子
+  const childId = Number(route.query.childId)
+  if (childId > 0) {
+    const target = children.value.find(c => c.id === childId)
+    if (target) {
+      selectChild(target)
+      if (selectedChild.value?.id === childId) {
+        currentStep.value = 0
+      }
+    }
+  }
 })
 
 // 监听步骤变化

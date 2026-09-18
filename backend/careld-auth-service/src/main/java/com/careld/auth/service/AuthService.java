@@ -4,6 +4,7 @@ import com.careld.auth.dto.CaptchaResponse;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
+import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.entity.User;
 
 /**
@@ -40,4 +41,19 @@ public interface AuthService {
      * 生成图形验证码
      */
     CaptchaResponse generateCaptcha();
+
+    /**
+     * 发送短信验证码（60 秒频控，5 分钟有效；启用真实发送时走阿里云短信）
+     */
+    void sendSmsCode(String phone);
+
+    /**
+     * 管理后台测试发送：使用已保存的阿里云配置真实发送一条验证码
+     */
+    void sendTestSms(String phone);
+
+    /**
+     * 家长端手机号+验证码登录（未注册手机号自动注册家长账号）
+     */
+    LoginResponse smsLogin(SmsLoginRequest request);
 }

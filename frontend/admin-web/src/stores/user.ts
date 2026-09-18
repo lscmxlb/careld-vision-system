@@ -39,12 +39,10 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
-  const logout = async () => {
-    try {
-      await authApi.logout()
-    } finally {
-      clearToken()
-    }
+  const logout = () => {
+    // 直接清除本地状态，不调用后端API
+    // （axios拦截器异步执行，先发请求再clearToken仍会导致token丢失）
+    clearToken()
   }
 
   const fetchUserInfo = async () => {

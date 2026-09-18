@@ -14,9 +14,14 @@ import java.util.Map;
  */
 public interface DeviceService {
 
-    IPage<DeviceResponse> pageDevices(Long storeId, Integer status, String keyword, Integer page, Integer size);
+    IPage<DeviceResponse> pageDevices(Long storeId, Long agentId, Long centerId, Integer status, String keyword, Integer page, Integer size);
 
-    List<DeviceResponse> listDevices(Long storeId, Integer status, String keyword);
+    List<DeviceResponse> listDevices(Long storeId, Long agentId, Long centerId, Integer status, String keyword);
+
+    /**
+     * 校验当前登录用户是否有权操作指定设备（按组织链范围）
+     */
+    void assertDeviceInScope(Long id);
 
     DeviceResponse getDeviceById(Long id);
 

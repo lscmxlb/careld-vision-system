@@ -46,6 +46,7 @@ export interface Store {
   id: number
   storeCode: string
   agentId?: number
+  centerId?: number | string
   storeName: string
   provinceCode: string
   provinceName: string
@@ -516,4 +517,30 @@ export interface ApiResponse<T> {
 export interface PageResponse<T> {
   list: T[]
   pagination: Pagination
+}
+
+// ==================== 医务人员 ====================
+export interface MedicalStaff {
+  id?: number
+  storeId?: number
+  storeName?: string
+  name: string
+  /** 手机号即登录账号 */
+  phone: string
+  /** 0未知 1男 2女 */
+  gender: number
+  /** 1=医生 2=医生助理 */
+  staffRole: number
+  loginPassword?: string
+  status: number
+  createdAt?: string
+}
+
+export interface MedicalStaffQuery {
+  storeId?: number
+  keyword?: string
+  staffRole?: number
+  status?: number
+  page: number
+  size: number
 }

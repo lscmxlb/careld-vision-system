@@ -21,13 +21,19 @@
           </div>
           <div class="child-info">
             <h3>
-              {{ child.name }}
+              {{ child.nameMask || child.name }}
               <el-tag size="small" :type="child.gender === 1 ? '' : 'danger'">
                 {{ child.gender === 1 ? '男' : '女' }}
               </el-tag>
+              <el-tag v-if="child.auditStatus === 0" size="small" type="warning">待审核</el-tag>
+              <el-tag v-else-if="child.auditStatus === 2" size="small" type="danger">已驳回</el-tag>
             </h3>
             <p>{{ child.age }}岁 | {{ child.storeName }}</p>
             <p class="eye-condition">视力状况: {{ child.eyeCondition }}</p>
+          </div>
+          <div class="remain-count">
+            <span class="num">{{ child.remainingCount || 0 }}</span>
+            <span class="txt">剩余次数</span>
           </div>
         </div>
 
@@ -49,8 +55,13 @@
         </div>
 
         <div class="action-btns">
-          <el-button type="primary" @click.stop="viewReports(child)">查看报告</el-button>
-          <el-button @click.stop="viewTrend(child)">视力趋势</el-button>
+          <el-button
+            type="primary"
+            :disabled="child.auditStatus !== 1 || (child.remainingCount || 0) <= 0"
+            @click.stop="goReserve(child)"
+          >立即预约</el-button>
+          <el-button type="success" @click.stop="viewCareRecords(child)">养护记录</el-button>
+          <el-button @click.stop="viewReports(child)">查看报告</el-button>
         </div>
       </div>
 
@@ -108,14 +119,33 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="视力状况" required>
-          <el-select v-model="childForm.eyeCondition" placeholder="请选择" style="width: 100%">
+          <el-select
+            v-model="eyeConditions"
+            multiple
+            collapse-tags
+            placeholder="可选择多项；“正常”不可与其他项同选"
+            style="width: 100%"
+            @change="handleEyeConditionChange"
+          >
             <el-option label="正常" value="正常" />
             <el-option label="轻度近视" value="轻度近视" />
             <el-option label="中度近视" value="中度近视" />
             <el-option label="高度近视" value="高度近视" />
-            <el-option label="散光" value="散光" />
+            <el-option label="斜视" value="斜视" />
             <el-option label="弱视" value="弱视" />
+            <el-option label="散光" value="散光" />
+            <el-option label="远视" value="远视" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="裸眼视力">
+          <div class="naked-vision-row">
+            <span class="naked-vision-label">双眼</span>
+            <el-input v-model="childForm.nakedVisionBoth" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+            <span class="naked-vision-label">左眼</span>
+            <el-input v-model="childForm.nakedVisionLeft" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+            <span class="naked-vision-label">右眼</span>
+            <el-input v-model="childForm.nakedVisionRight" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+          </div>
         </el-form-item>
         <el-form-item label="既往病史">
           <el-input v-model="childForm.medicalHistory" type="textarea" :rows="2" placeholder="选填" />
@@ -165,6 +195,14 @@
           <span class="detail-label">视力状况</span>
           <span class="detail-value">{{ detailChild.eyeCondition }}</span>
         </div>
+        <div class="detail-row" v-if="detailChild.nakedVisionBoth || detailChild.nakedVisionLeft || detailChild.nakedVisionRight">
+          <span class="detail-label">裸眼视力</span>
+          <span class="detail-value">
+            双眼 {{ detailChild.nakedVisionBoth || '--' }} |
+            左眼 {{ detailChild.nakedVisionLeft || '--' }} |
+            右眼 {{ detailChild.nakedVisionRight || '--' }}
+          </span>
+        </div>
         <div class="detail-row" v-if="detailChild.medicalHistory">
           <span class="detail-label">既往病史</span>
           <span class="detail-value">{{ detailChild.medicalHistory }}</span>
@@ -213,9 +251,22 @@ const childForm = reactive<CreateChildRequest>({
   birthDate: '',
   gender: 1,
   eyeCondition: '',
+  nakedVisionBoth: '',
+  nakedVisionLeft: '',
+  nakedVisionRight: '',
   medicalHistory: '',
   allergyInfo: ''
 })
+
+// 视力状况多选（提交时以“、”拼接为字符串）
+const eyeConditions = ref<string[]>([])
+
+// “正常”与其他项互斥：选中“正常”清空其他；选其他时去掉“正常”
+const handleEyeConditionChange = (val: string[]) => {
+  if (val.includes('正常') && val.length > 1) {
+    eyeConditions.value = val[val.length - 1] === '正常' ? ['正常'] : val.filter((v) => v !== '正常')
+  }
+}
 
 // 获取孩子列表
 const fetchChildren = async () => {
@@ -268,10 +319,11 @@ const handleAddChild = async () => {
     ElMessage.warning('请选择出生日期')
     return
   }
-  if (!childForm.eyeCondition) {
+  if (!eyeConditions.value.length) {
     ElMessage.warning('请选择视力状况')
     return
   }
+  childForm.eyeCondition = eyeConditions.value.join('、')
 
   addLoading.value = true
   try {
@@ -294,8 +346,12 @@ const resetChildForm = () => {
   childForm.birthDate = ''
   childForm.gender = 1
   childForm.eyeCondition = ''
+  childForm.nakedVisionBoth = ''
+  childForm.nakedVisionLeft = ''
+  childForm.nakedVisionRight = ''
   childForm.medicalHistory = ''
   childForm.allergyInfo = ''
+  eyeConditions.value = []
 }
 
 const viewReports = (child: Child) => {
@@ -304,6 +360,24 @@ const viewReports = (child: Child) => {
 
 const viewTrend = (child: Child) => {
   router.push(`/trend?childId=${child.id}`)
+}
+
+// 立即预约（携孩子ID进入预约流程）
+const goReserve = (child: Child) => {
+  if (child.auditStatus !== 1) {
+    ElMessage.warning('档案审核通过后方可预约')
+    return
+  }
+  if ((child.remainingCount || 0) <= 0) {
+    ElMessage.warning('剩余可约次数不足，请联系医生授予')
+    return
+  }
+  router.push(`/appointment?childId=${child.id}`)
+}
+
+// 查看养护记录瀑布流
+const viewCareRecords = (child: Child) => {
+  router.push(`/care-record?childId=${child.id}`)
 }
 
 // 获取医院列表（添加孩子时选择）
@@ -376,6 +450,30 @@ onMounted(() => {
       display: flex;
       gap: 16px;
 
+      .remain-count {
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f0f7ff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        flex-shrink: 0;
+
+        .num {
+          font-size: 22px;
+          font-weight: bold;
+          color: #1890ff;
+        }
+
+        .txt {
+          font-size: 11px;
+          color: #999;
+          margin-top: 2px;
+        }
+      }
+
       .child-info {
         h3 {
           font-size: 18px;
@@ -429,6 +527,8 @@ onMounted(() => {
 
       .el-button {
         flex: 1;
+        padding-left: 0;
+        padding-right: 0;
       }
     }
   }
@@ -458,6 +558,19 @@ onMounted(() => {
 
     &:active {
       transform: scale(0.9);
+    }
+  }
+
+  .naked-vision-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .naked-vision-label {
+      color: #666;
+      font-size: 14px;
+      flex-shrink: 0;
     }
   }
 

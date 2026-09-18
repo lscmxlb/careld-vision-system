@@ -21,6 +21,7 @@ const router = createRouter({
           component: () => import('@/views/dashboard/index.vue'),
           meta: { title: '数据看板', icon: 'DataBoard' }
         },
+        // 档案管理
         {
           path: 'child',
           name: 'Child',
@@ -28,10 +29,10 @@ const router = createRouter({
           meta: { title: '儿童档案', icon: 'User' }
         },
         {
-          path: 'schedule',
-          name: 'Schedule',
-          component: () => import('@/views/schedule/index.vue'),
-          meta: { title: '排班预约', icon: 'Calendar' }
+          path: 'care-record',
+          name: 'CareRecord',
+          component: () => import('@/views/care-record/index.vue'),
+          meta: { title: '养护记录', icon: 'FirstAidKit' }
         },
         {
           path: 'vision',
@@ -39,17 +40,43 @@ const router = createRouter({
           component: () => import('@/views/vision/index.vue'),
           meta: { title: '视力记录', icon: 'View' }
         },
+        // 预约管理
+        {
+          path: 'appointment-record',
+          name: 'AppointmentRecord',
+          component: () => import('@/views/appointment-record/index.vue'),
+          meta: { title: '预约记录', icon: 'Tickets' }
+        },
+        {
+          path: 'schedule',
+          name: 'Schedule',
+          component: () => import('@/views/schedule/index.vue'),
+          meta: { title: '预约管理', icon: 'Calendar' }
+        },
+        // 系统设置
+        {
+          path: 'basic-info',
+          name: 'BasicInfo',
+          component: () => import('@/views/basic-info/index.vue'),
+          meta: { title: '基础信息', icon: 'InfoFilled', managerOnly: true }
+        },
+        {
+          path: 'medical-staff',
+          name: 'MedicalStaff',
+          component: () => import('@/views/medical-staff/index.vue'),
+          meta: { title: '医务人员', icon: 'UserFilled', managerOnly: true }
+        },
+        {
+          path: 'schedule-rule',
+          name: 'ScheduleRule',
+          component: () => import('@/views/schedule-rule/index.vue'),
+          meta: { title: '排班设置', icon: 'Clock' }
+        },
         {
           path: 'device',
           name: 'Device',
           component: () => import('@/views/device/index.vue'),
           meta: { title: '设备管理', icon: 'Monitor', managerOnly: true }
-        },
-        {
-          path: 'department',
-          name: 'Department',
-          component: () => import('@/views/department/index.vue'),
-          meta: { title: '科室管理', icon: 'OfficeBuilding', managerOnly: true }
         }
       ]
     }

@@ -3,6 +3,7 @@ package com.careld.auth.controller;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
+import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.service.AuthService;
 import com.careld.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 认证控制器
@@ -53,5 +56,18 @@ public class AuthController {
     @GetMapping("/captcha")
     public Result<com.careld.auth.dto.CaptchaResponse> captcha() {
         return Result.success(authService.generateCaptcha());
+    }
+
+    @Operation(summary = "发送短信验证码（家长端登录）")
+    @PostMapping("/sms/send")
+    public Result<Void> sendSmsCode(@RequestBody Map<String, String> body) {
+        authService.sendSmsCode(body.get("phone"));
+        return Result.success();
+    }
+
+    @Operation(summary = "手机号+验证码登录（未注册自动注册家长账号）")
+    @PostMapping("/sms/login")
+    public Result<LoginResponse> smsLogin(@Valid @RequestBody SmsLoginRequest request) {
+        return Result.success(authService.smsLogin(request));
     }
 }

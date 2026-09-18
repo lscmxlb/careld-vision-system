@@ -1,0 +1,130 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/child/index",
+      "style": {
+        "navigationBarTitleText": "儿童档案",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/appointment/index",
+      "style": {
+        "navigationBarTitleText": "预约养护"
+      }
+    },
+    {
+      "path": "pages/appointment/list",
+      "style": {
+        "navigationBarTitleText": "我的预约",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/care-record/index",
+      "style": {
+        "navigationBarTitleText": "养护记录",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/care-record/detail",
+      "style": {
+        "navigationBarTitleText": "养护详情"
+      }
+    },
+    {
+      "path": "pages/child/form",
+      "style": {
+        "navigationBarTitleText": "建立儿童档案"
+      }
+    },
+    {
+      "path": "pages/child/detail",
+      "style": {
+        "navigationBarTitleText": "档案详情"
+      }
+    },
+    {
+      "path": "pages/trend/index",
+      "style": {
+        "navigationBarTitleText": "视力趋势"
+      }
+    },
+    {
+      "path": "pages/report/index",
+      "style": {
+        "navigationBarTitleText": "检测报告"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Careld 家长端",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F4F6F9"
+  },
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#14b8a6",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "height": "54px",
+    "fontSize": "11px",
+    "iconWidth": "22px",
+    "spacing": "3px",
+    "list": [
+      {
+        "pagePath": "pages/child/index",
+        "text": "儿童档案",
+        "iconPath": "static/tabbar/child.png",
+        "selectedIconPath": "static/tabbar/child-active.png"
+      },
+      {
+        "pagePath": "pages/appointment/index",
+        "text": "预约养护",
+        "iconPath": "static/tabbar/appointment.png",
+        "selectedIconPath": "static/tabbar/appointment-active.png"
+      },
+      {
+        "pagePath": "pages/appointment/list",
+        "text": "预约记录",
+        "iconPath": "static/tabbar/reserve.png",
+        "selectedIconPath": "static/tabbar/reserve-active.png"
+      },
+      {
+        "pagePath": "pages/care-record/index",
+        "text": "养护记录",
+        "iconPath": "static/tabbar/record.png",
+        "selectedIconPath": "static/tabbar/record-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-active.png"
+      }
+    ]
+  }
+}

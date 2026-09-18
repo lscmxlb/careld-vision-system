@@ -95,6 +95,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Phone, Lock, Message } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { authApi } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -108,20 +109,24 @@ const form = reactive({
   code: ''
 })
 
-const sendCode = () => {
+const sendCode = async () => {
   if (!form.phone || form.phone.length !== 11) {
     ElMessage.warning('请输入正确的手机号')
     return
   }
-  // TODO: 调用发送验证码API
-  countdown.value = 60
-  const timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
-  ElMessage.success('验证码已发送')
+  try {
+    await authApi.sendSmsCode(form.phone)
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+    ElMessage.success('验证码已发送，请查收短信')
+  } catch {
+    // 错误已在拦截器处理
+  }
 }
 
 const handleLogin = async () => {
@@ -142,7 +147,11 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    await userStore.login(form.phone, form.password || form.code)
+    if (loginMode.value === 'sms') {
+      await userStore.loginBySms(form.phone, form.code)
+    } else {
+      await userStore.login(form.phone, form.password)
+    }
     ElMessage.success('登录成功')
     router.push('/profile')
   } catch (error: unknown) {

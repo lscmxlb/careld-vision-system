@@ -71,26 +71,60 @@
 
         <el-row :gutter="20" style="margin-top: 20px;">
           <el-col :span="12">
-            <el-card>
+            <el-card v-loading="smsLoading">
               <template #header>
-                <span>通知配置</span>
+                <span>短信配置</span>
+                <el-tag v-if="smsConfig.enabled" type="success" size="small" style="margin-left: 8px">真实发送</el-tag>
+                <el-tag v-else type="info" size="small" style="margin-left: 8px">未启用</el-tag>
+                <span v-if="!smsConfig.enabled && smsConfig.mockFallback" class="header-hint">
+                  未启用时验证码固定为 123456（仅开发/测试环境）
+                </span>
               </template>
-              <el-form :model="notificationSettings" label-width="150px">
-                <el-form-item label="开启短信通知">
-                  <el-switch v-model="notificationSettings.enableSms" />
+              <el-form :model="smsConfig" label-width="150px">
+                <el-form-item label="启用真实发送">
+                  <el-switch v-model="smsConfig.enabled" />
+                  <span class="unit">开启后验证码通过阿里云短信发送</span>
                 </el-form-item>
                 <el-form-item label="短信服务商">
-                  <el-select v-model="notificationSettings.smsProvider">
-                    <el-option label="阿里云" value="aliyun" />
-                    <el-option label="腾讯云" value="tencent" />
-                  </el-select>
+                  <el-input model-value="阿里云" disabled style="width: 240px" />
+                </el-form-item>
+                <el-form-item label="AccessKey ID">
+                  <el-input v-model="smsConfig.accessKeyId" placeholder="阿里云账号 AccessKey ID" clearable />
+                </el-form-item>
+                <el-form-item label="AccessKey Secret">
+                  <el-input
+                    v-model="smsConfig.accessKeySecret"
+                    type="password"
+                    show-password
+                    clearable
+                    :placeholder="smsConfig.accessKeySecretConfigured
+                      ? `已配置（${smsConfig.accessKeySecretMasked}），留空则不修改`
+                      : '阿里云 AccessKey Secret'"
+                  />
+                </el-form-item>
+                <el-form-item label="短信签名">
+                  <el-input v-model="smsConfig.signName" placeholder="阿里云控制台已审核通过的签名" clearable />
+                </el-form-item>
+                <el-form-item label="模板 Code">
+                  <el-input v-model="smsConfig.templateCode" placeholder="如 SMS_123456789" clearable />
+                </el-form-item>
+                <el-form-item label="模板变量名">
+                  <el-input v-model="smsConfig.templateParam" placeholder="code" style="width: 240px" />
+                </el-form-item>
+                <el-form-item label="开启短信通知">
+                  <el-switch v-model="smsConfig.enableNotice" />
                 </el-form-item>
                 <el-form-item label="预约提醒时间">
-                  <el-input-number v-model="notificationSettings.appointmentReminderHours" :min="1" :max="24" />
+                  <el-input-number v-model="smsConfig.appointmentReminderHours" :min="1" :max="24" />
                   <span class="unit">小时前</span>
                 </el-form-item>
+                <el-form-item label="发送测试">
+                  <el-input v-model="testPhone" placeholder="接收测试短信的手机号" style="width: 200px" clearable />
+                  <el-button type="primary" plain :loading="testSending" style="margin-left: 8px" @click="handleTestSend">发送测试</el-button>
+                  <div class="hint">使用已保存的配置真实发送一条验证码，请先保存配置</div>
+                </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" @click="saveNotificationSettings">保存配置</el-button>
+                  <el-button type="primary" :loading="smsSaving" @click="saveSmsConfig">保存配置</el-button>
                 </el-form-item>
               </el-form>
             </el-card>
@@ -137,11 +171,12 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'AdminSettings' })
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
+import { smsApi } from '@/api'
 import RoleManagement from './role.vue'
 import MenuManagement from './menu.vue'
 import type { UploadRequestOptions } from 'element-plus'
@@ -173,11 +208,75 @@ const syncSettings = reactive({
   retryIntervals: '60,300,900,3600'
 })
 
-const notificationSettings = reactive({
-  enableSms: true,
-  smsProvider: 'aliyun',
+const smsConfig = reactive({
+  enabled: false,
+  accessKeyId: '',
+  accessKeySecret: '',
+  accessKeySecretConfigured: false,
+  accessKeySecretMasked: '',
+  signName: '',
+  templateCode: '',
+  templateParam: 'code',
+  mockFallback: true,
+  enableNotice: true,
   appointmentReminderHours: 2
 })
+const smsLoading = ref(false)
+const smsSaving = ref(false)
+const testPhone = ref('')
+const testSending = ref(false)
+
+const loadSmsConfig = async () => {
+  smsLoading.value = true
+  try {
+    const data = await smsApi.getConfig()
+    Object.assign(smsConfig, data, { accessKeySecret: '' })
+  } catch {
+    // 拦截器已提示错误
+  } finally {
+    smsLoading.value = false
+  }
+}
+
+const saveSmsConfig = async () => {
+  smsSaving.value = true
+  try {
+    await smsApi.saveConfig({
+      enabled: smsConfig.enabled,
+      accessKeyId: smsConfig.accessKeyId,
+      accessKeySecret: smsConfig.accessKeySecret || undefined,
+      signName: smsConfig.signName,
+      templateCode: smsConfig.templateCode,
+      templateParam: smsConfig.templateParam,
+      enableNotice: smsConfig.enableNotice,
+      appointmentReminderHours: smsConfig.appointmentReminderHours
+    })
+    ElMessage.success('短信配置保存成功')
+    await loadSmsConfig()
+  } catch {
+    // 拦截器已提示错误
+  } finally {
+    smsSaving.value = false
+  }
+}
+
+const handleTestSend = async () => {
+  if (!/^1[3-9]\d{9}$/.test(testPhone.value)) {
+    ElMessage.warning('请输入正确的手机号')
+    return
+  }
+  testSending.value = true
+  try {
+    await smsApi.testSend(testPhone.value)
+    ElMessage.success('测试短信已发送，请查收')
+  } catch {
+    // 拦截器已提示错误（含阿里云返回的具体原因）
+  } finally {
+    testSending.value = false
+  }
+}
+
+onMounted(loadSmsConfig)
 
 const securitySettings = reactive({
   minPasswordLength: 6,
@@ -208,10 +307,6 @@ const saveSystemSettings = () => {
 
 const saveSyncSettings = () => {
   ElMessage.success('同步配置保存成功')
-}
-
-const saveNotificationSettings = () => {
-  ElMessage.success('通知配置保存成功')
 }
 
 const saveSecuritySettings = () => {
@@ -254,6 +349,20 @@ const saveSecuritySettings = () => {
   .unit {
     margin-left: 10px;
     color: #999;
+  }
+
+  .header-hint {
+    margin-left: 10px;
+    font-size: 12px;
+    color: #e6a23c;
+  }
+
+  .hint {
+    width: 100%;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.5;
   }
 }
 </style>

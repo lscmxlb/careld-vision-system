@@ -49,6 +49,12 @@ const router = createRouter({
               name: 'StoreList',
               component: () => import('@/views/store/list.vue'),
               meta: { title: '医院列表', icon: 'Shop', permission: 'store:list:view' }
+            },
+            {
+              path: 'medical-staff',
+              name: 'StoreMedicalStaff',
+              component: () => import('@/views/store/medical-staff.vue'),
+              meta: { title: '医务人员', icon: 'UserFilled', permission: 'store:staff:view' }
             }
           ]
         },
@@ -105,6 +111,12 @@ const router = createRouter({
           name: 'MenuManagement',
           component: () => import('@/views/settings/menu.vue'),
           meta: { title: '菜单管理', icon: 'Menu', permission: 'settings:menu:view' }
+        },
+        {
+          path: 'profile',
+          name: 'Profile',
+          component: () => import('@/views/profile/index.vue'),
+          meta: { title: '个人中心' }
         }
       ]
     },
@@ -159,6 +171,11 @@ router.beforeEach(async (to, from, next) => {
   // 检查路由权限
   const requiredPerm = to.meta?.permission as string
   if (requiredPerm && !permStore.hasPermission(requiredPerm)) {
+    // 如果已经是跳转到 dashboard 了，说明权限加载有问题，直接放行避免无限重定向
+    if (to.path === '/dashboard') {
+      next()
+      return
+    }
     // 无权限跳转到看板
     next('/dashboard')
     return

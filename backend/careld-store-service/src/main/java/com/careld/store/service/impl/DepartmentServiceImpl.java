@@ -3,6 +3,7 @@ package com.careld.store.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.careld.common.exception.BusinessException;
 import com.careld.store.entity.Department;
 import com.careld.store.mapper.DepartmentMapper;
 import com.careld.store.service.DepartmentService;
@@ -34,6 +35,15 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public void deleteDepartment(Long id) {
+        Department department = departmentMapper.selectById(id);
+        if (department == null) {
+            return;
+        }
+        Long remain = departmentMapper.selectCount(new LambdaQueryWrapper<Department>()
+                .eq(Department::getStoreId, department.getStoreId()));
+        if (remain != null && remain <= 1) {
+            throw new BusinessException(400, "默认科室长期保留，不可删除");
+        }
         departmentMapper.deleteById(id);
     }
 

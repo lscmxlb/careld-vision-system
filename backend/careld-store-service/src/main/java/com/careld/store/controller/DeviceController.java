@@ -5,6 +5,7 @@ import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.RequirePermission;
 import com.careld.common.security.DataScopeHelper;
+import com.careld.common.security.UserContext;
 import com.careld.store.dto.CalibrationRequest;
 import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
@@ -36,9 +37,36 @@ public class DeviceController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：门店用户注入 storeId
-        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
-        IPage<DeviceResponse> p = deviceService.pageDevices(effectiveStoreId, status, keyword, page, size);
+        // 数据权限：按组织链强制过滤
+        // - 门店用户(type=2)：强制 storeId
+        // - 代理商(type=5)：强制其 agentId 下所有医院的设备
+        // - 运营中心(type=4)：强制其 centerId 下所有医院的设备
+        // - 总部/admin：不限制
+        Long effectiveStoreId = null;
+        Long effectiveAgentId = null;
+        Long effectiveCenterId = null;
+        if (!DataScopeHelper.isSuperAdmin()) {
+            Integer currentType = UserContext.getCurrentUserType();
+            if (currentType != null) {
+                switch (currentType) {
+                    case 2:
+                        effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+                        break;
+                    case 5:
+                        effectiveAgentId = UserContext.getCurrentAgentId();
+                        break;
+                    case 4:
+                        effectiveCenterId = UserContext.getCurrentCenterId();
+                        break;
+                    default:
+                        // 总部用户不限制
+                        break;
+                }
+            }
+        } else {
+            effectiveStoreId = storeId;
+        }
+        IPage<DeviceResponse> p = deviceService.pageDevices(effectiveStoreId, effectiveAgentId, effectiveCenterId, status, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
@@ -46,6 +74,7 @@ public class DeviceController {
     @GetMapping("/{id}")
     @RequirePermission("device:list:view")
     public Result<DeviceResponse> get(@PathVariable Long id) {
+        deviceService.assertDeviceInScope(id);
         return Result.success(deviceService.getDeviceById(id));
     }
 
@@ -60,6 +89,7 @@ public class DeviceController {
     @PutMapping("/{id}")
     @RequirePermission("device:list:update")
     public Result<Void> update(@PathVariable Long id, @RequestBody TvDevice device) {
+        deviceService.assertDeviceInScope(id);
         deviceService.updateDevice(id, device);
         return Result.success();
     }
@@ -68,6 +98,7 @@ public class DeviceController {
     @DeleteMapping("/{id}")
     @RequirePermission("device:list:delete")
     public Result<Void> delete(@PathVariable Long id) {
+        deviceService.assertDeviceInScope(id);
         deviceService.deleteDevice(id);
         return Result.success();
     }
@@ -103,6 +134,7 @@ public class DeviceController {
     @PostMapping("/{id}/release")
     @RequirePermission("device:list:release")
     public Result<Void> release(@PathVariable Long id) {
+        deviceService.assertDeviceInScope(id);
         deviceService.releaseDevice(id);
         return Result.success();
     }

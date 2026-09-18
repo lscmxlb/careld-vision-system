@@ -56,16 +56,37 @@ export interface Child {
   childCode: string
   name: string
   phone: string
+  parentName?: string
+  relation?: string
   birthDate: string
   age: number
   gender: number
+  homeAddress?: string
+  school?: string
+  deliveryType?: string
+  bedtime?: string
+  wakeTime?: string
   eyeCondition: string
+  nakedVisionBoth?: string
+  nakedVisionLeft?: string
+  nakedVisionRight?: string
   medicalHistory?: string
   allergyInfo?: string
   familyHistory?: string
   auditStatus: number // 0=待审核 1=已通过 2=已驳回
   auditRemark?: string
   storeId?: number
+  /** 主治医生ID与姓名快照 */
+  doctorId?: number
+  doctorName?: string
+  /** 来源：1=家长自建 2=医生/医院建档 */
+  sourceType?: number
+  /** 剩余可约次数 */
+  remainingCount?: number
+  /** 养护次数（含养护中，care_record status 1/2 计数） */
+  careCount?: number
+  /** 启用状态：1=启用, 0=禁用 */
+  status: number
   createdAt: string
 }
 
@@ -75,14 +96,33 @@ export interface ChildQuery {
   storeId?: number
   auditStatus?: number
   keyword?: string
+  /** 是否包含已禁用档案（默认 false=仅启用） */
+  includeDisabled?: boolean
+  /** 档案状态：1=正常 0=已禁用；不传时按 includeDisabled 语义过滤 */
+  status?: number
+  /** 仅返回可用次数大于该值的档案 */
+  remainingCountMin?: number
 }
 
 export interface CreateChildRequest {
   name: string
   phone: string
+  storeId?: number
+  parentName?: string
+  relation?: string
+  doctorId?: number
+  doctorName?: string
   birthDate: string
   gender: number
+  homeAddress?: string
+  school?: string
+  deliveryType?: string
+  bedtime?: string
+  wakeTime?: string
   eyeCondition: string
+  nakedVisionBoth?: string
+  nakedVisionLeft?: string
+  nakedVisionRight?: string
   medicalHistory?: string
   allergyInfo?: string
   familyHistory?: string
@@ -106,17 +146,35 @@ export interface Reserve {
   id: number
   childId: number
   childName: string
-  scheduleId: number
+  scheduleId?: number
   scheduleDate: string
   timeSlotStart: string
   timeSlotEnd: string
-  technicianName: string
+  technicianName?: string
   reserveType: number // 1=初次检测 2=复查 3=养护
-  parentName: string
+  parentName?: string
   parentPhone: string
   remark?: string
-  status: number // 0=待服务 1=已完成 2=已取消
+  status: number // 1=已预约 2=养护中 3=已完成 4=已取消
   cancelReason?: string
+  /** 新链路：物化时段ID */
+  slotId?: string
+  /** 开始养护时间 */
+  startTime?: string
+  executorId?: number
+  executorName?: string
+  noShowFlag?: number
+  refundFlag?: number
+  /** 来源：1=家长预约，2=医生/门店预约 */
+  source?: number
+  /** 预约操作人姓名（门店医生/员工） */
+  operatorName?: string
+  /** 取消操作人姓名 */
+  cancelOperatorName?: string
+  /** 是否已调整（1=已调整） */
+  adjustFlag?: number
+  /** 调整操作人姓名 */
+  adjustOperatorName?: string
 }
 
 export interface BatchScheduleRequest {
@@ -190,6 +248,8 @@ export interface Department {
   deptCode: string
   deptName: string
   deptType: number // 1=门诊 2=养护 3=检测 4=其他
+  /** 收费标准(元)：预约授权自动计费用 */
+  chargeStandard?: number
   sortOrder: number
   status: number // 1=启用 0=禁用
   remark?: string
@@ -227,4 +287,139 @@ export interface Pagination {
 export interface PageResult<T> {
   list: T[]
   pagination: Pagination
+}
+
+// ==================== 儿童养护服务扩展 ====================
+/** 排班规则时段：每条规则在周一~五/周六日下可配置多个不重复时段 */
+export interface ScheduleRulePeriod {
+  id?: number
+  ruleId?: number
+  dayType: number // 1=周一~五 2=周六日
+  startTime: string
+  endTime: string
+  capacity: number
+}
+
+/** 排班规则例外日（带备注） */
+export interface ScheduleRuleException {
+  id?: number
+  ruleId?: number
+  exceptionDate: string
+  remark?: string
+}
+
+/** 排班规则（自然日区间 + 多时段 + 例外日） */
+export interface ScheduleRule {
+  id?: number
+  storeId?: number
+  startDate: string
+  endDate: string
+  /** 以下旧单时段字段为兼容保留（取每个日类型第一个时段） */
+  weekdayStartTime?: string
+  weekdayEndTime?: string
+  weekdayCapacity?: number
+  weekendStartTime?: string
+  weekendEndTime?: string
+  weekendCapacity?: number
+  status?: number
+  periods?: ScheduleRulePeriod[]
+  exceptions?: ScheduleRuleException[]
+  exceptionDates?: string[]
+  createdAt?: string
+}
+
+/** 每日可约时段（由排班规则物化生成） */
+export interface ScheduleSlot {
+  id: string
+  storeId: number
+  slotDate: string
+  slotStartTime: string
+  slotEndTime: string
+  maxCapacity: number
+  bookedCount: number
+  status: number // 1=开放 0=关闭
+}
+
+/** 预约规则配置 */
+export interface AppointmentConfig {
+  id?: number
+  storeId?: number
+  parentCancelHours: number
+  doctorCancelHours: number
+  noShowBufferMinutes: number
+  autoNoShowHours: number
+  autoCompleteHours: number
+  /** 预约记录默认显示的状态，逗号分隔（1已预约2养护中3已完成4已取消5已爽约） */
+  defaultShowStatuses?: string
+}
+
+/** 医务人员 */
+export interface MedicalStaff {
+  id?: number
+  storeId?: number
+  name: string
+  phone: string
+  gender: number // 0未知 1男 2女
+  staffRole: number // 1=医生 2=医生助理
+  loginPassword?: string
+  status: number // 1=启用 0=禁用
+  createdAt?: string
+}
+
+/** 养护记录 */
+export interface CareRecord {
+  id: number
+  appointmentId?: number
+  childId: number
+  childName?: string
+  parentName?: string
+  parentPhone?: string
+  storeId?: number
+  careDate: string
+  timeSlot?: string
+  visionBeforeLeft?: string
+  visionBeforeRight?: string
+  visionBeforeBoth?: string
+  visionAfterLeft?: string
+  visionAfterRight?: string
+  visionAfterBoth?: string
+  executorId?: number
+  executorName?: string
+  status: number // 1=养护中 2=已完成
+  /** 儿童性别（1=男 0=女） */
+  childGender?: number
+  /** 儿童手机号（脱敏） */
+  childPhone?: string
+  /** 该儿童累计已完成养护次数 */
+  careCount?: number
+  /** 档案剩余可约次数 */
+  remainingCount?: number
+  /** 建档时裸眼双眼视力 */
+  nakedVisionBoth?: string
+  /** 本次养护对应预约单备注 */
+  remark?: string
+  createdAt?: string
+}
+
+/** 服务次数变更流水 */
+export interface ChildServiceRecord {
+  id: number
+  childId: number
+  changeType: number // 1=预约授权 2=预约扣减 3=取消退还 4=爽约退还 5=爽约不退还
+  changeCount: number
+  remainingAfter?: number
+  paymentAmount?: number
+  paymentMethod?: string // 自费/医保/其他
+  doctorId?: number
+  doctorName?: string
+  remark?: string
+  createdAt: string
+}
+
+/** 预约每日统计 */
+export interface ReserveDailyStatistics {
+  statDate: string
+  total: number
+  completed: number
+  cancelled: number
 }

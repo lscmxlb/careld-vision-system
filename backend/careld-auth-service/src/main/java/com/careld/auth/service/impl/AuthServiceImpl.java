@@ -4,10 +4,16 @@ import com.careld.auth.dto.CaptchaResponse;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
+import com.careld.auth.dto.SmsLoginRequest;
+import com.careld.auth.entity.MedicalStaff;
 import com.careld.auth.entity.User;
+import com.careld.auth.mapper.MedicalStaffMapper;
 import com.careld.auth.mapper.PermissionMapper;
+import com.careld.auth.mapper.SmsCodeMapper;
 import com.careld.auth.mapper.UserMapper;
 import com.careld.auth.service.AuthService;
+import com.careld.auth.service.AliyunSmsClient;
+import com.careld.auth.service.SmsConfigService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.security.JwtUtil;
 import com.alibaba.fastjson2.JSON;
@@ -21,9 +27,12 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 认证服务实现
@@ -34,29 +43,57 @@ import java.util.*;
 public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
+    private final MedicalStaffMapper medicalStaffMapper;
     private final PermissionMapper permissionMapper;
+    private final SmsCodeMapper smsCodeMapper;
+    private final SmsConfigService smsConfigService;
+    private final AliyunSmsClient aliyunSmsClient;
     private final StringRedisTemplate stringRedisTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    private static final int SMS_CODE_EXPIRE_MINUTES = 5;
+    private static final int SMS_DAILY_LIMIT = 10;
+    private static final int SMS_MAX_WRONG_ATTEMPTS = 5;
+    private static final String SMS_FREQ_KEY = "careld:auth:sms:freq";
+    private static final String SMS_DAILY_KEY = "careld:auth:sms:daily";
+    private static final String SMS_FAIL_KEY = "careld:auth:sms:fail";
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     @Override
     public LoginResponse login(LoginRequest request) {
-        // 查询用户
+        // 查询用户；user_info 无匹配时回退医务人员表（医务人员以手机号作为登录账号）
         User user = null;
+        MedicalStaff staff = null;
         if (request.getLoginType() != null && request.getLoginType() == 2) {
             // 手机号登录
             user = userMapper.selectByPhone(request.getPhone());
             if (user == null) {
+                staff = request.getPhone() == null ? null : medicalStaffMapper.selectEnabledByPhone(request.getPhone());
+            }
+            if (user == null && staff == null) {
                 throw new BusinessException(1001, "手机号或密码错误");
             }
         } else {
             // 用户名登录
             user = userMapper.selectByUsername(request.getUsername());
             if (user == null) {
+                staff = request.getUsername() == null ? null : medicalStaffMapper.selectEnabledByPhone(request.getUsername());
+            }
+            if (user == null && staff == null) {
                 throw new BusinessException(1001, "用户名或密码错误");
             }
+        }
+
+        // 医务人员账号：验证密码并签发 userType=6 的门店身份
+        if (staff != null) {
+            if (!passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
+                throw new BusinessException(1001, "用户名或密码错误");
+            }
+            return generateStaffTokenResponse(staff);
         }
 
         // 检查状态
@@ -65,8 +102,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 检查锁定
-        if (user.getLockTime() != null && user.getLockTime().plusMinutes(30).isAfter(LocalDateTime.now())) {
-            throw new BusinessException(1002, "账号已被锁定，请30分钟后重试");
+        if (user.getLockTime() != null && user.getLockTime().plusMinutes(2).isAfter(LocalDateTime.now())) {
+            throw new BusinessException(1002, "账号已被锁定，请2分钟后重试");
         }
 
         // 验证密码
@@ -156,6 +193,160 @@ public class AuthServiceImpl implements AuthService {
         return response;
     }
 
+    @Override
+    public void sendSmsCode(String phone) {
+        doSendSmsCode(phone, false);
+    }
+
+    @Override
+    public void sendTestSms(String phone) {
+        doSendSmsCode(phone, true);
+    }
+
+    /**
+     * @param forceReal 管理后台测试发送：忽略启用开关，直接使用已保存的配置真实发送
+     */
+    private void doSendSmsCode(String phone, boolean forceReal) {
+        if (phone == null || !PHONE_PATTERN.matcher(phone).matches()) {
+            throw new BusinessException(1000, "手机号格式不正确");
+        }
+
+        // 60 秒频控
+        String freqKey = SMS_FREQ_KEY + ":" + phone;
+        Boolean ok = stringRedisTemplate.opsForValue().setIfAbsent(freqKey, "1", Duration.ofSeconds(60));
+        if (ok == null || !ok) {
+            throw new BusinessException(1003, "发送过于频繁，请 60 秒后重试");
+        }
+
+        // 同一手机号每日发送上限
+        String dailyKey = SMS_DAILY_KEY + ":" + phone + ":" + LocalDate.now();
+        Long dailyCount = stringRedisTemplate.opsForValue().increment(dailyKey);
+        if (dailyCount != null && dailyCount == 1) {
+            stringRedisTemplate.expire(dailyKey, Duration.ofHours(24));
+        }
+        if (dailyCount != null && dailyCount > SMS_DAILY_LIMIT) {
+            throw new BusinessException(1003, "该手机号今日验证码发送次数已达上限（" + SMS_DAILY_LIMIT + " 次）");
+        }
+
+        SmsConfigService.SmsRuntimeConfig runtime = smsConfigService.loadRuntime();
+        boolean realSend = (forceReal || runtime.enabled()) && runtime.usable();
+        if (!realSend) {
+            if (forceReal) {
+                throw new BusinessException(1005, "请先在管理后台保存完整的阿里云短信配置（AccessKey ID/Secret、签名、模板 Code）");
+            }
+            if (runtime.enabled()) {
+                throw new BusinessException(1005, "短信服务已启用但配置不完整，请联系管理员");
+            }
+            if (!smsConfigService.isMockFallback()) {
+                throw new BusinessException(1005, "短信服务未配置，请联系管理员");
+            }
+        }
+
+        String code = realSend ? generateSmsCode() : "123456";
+        if (realSend) {
+            try {
+                aliyunSmsClient.sendVerifyCode(phone, code, runtime);
+            } catch (BusinessException e) {
+                // 发送失败不占用频控与当日额度，便于修正配置后立即重试
+                stringRedisTemplate.delete(freqKey);
+                stringRedisTemplate.opsForValue().decrement(dailyKey);
+                throw e;
+            }
+        } else {
+            log.info("[SMS-MOCK] 手机号 {} 验证码: {}", phone, code);
+        }
+
+        smsCodeMapper.insertCode(phone, code, LocalDateTime.now().plusMinutes(SMS_CODE_EXPIRE_MINUTES));
+        stringRedisTemplate.delete(SMS_FAIL_KEY + ":" + phone);
+    }
+
+    private static String generateSmsCode() {
+        return String.valueOf(100000 + SECURE_RANDOM.nextInt(900000));
+    }
+
+    @Override
+    public LoginResponse smsLogin(SmsLoginRequest request) {
+        String phone = request.getPhone();
+        String stored = smsCodeMapper.selectLatestValid(phone);
+        if (stored == null || !stored.equals(request.getCode())) {
+            // 连错 5 次作废当前验证码，防止暴力猜码
+            String failKey = SMS_FAIL_KEY + ":" + phone;
+            Long fails = stringRedisTemplate.opsForValue().increment(failKey);
+            if (fails != null && fails == 1) {
+                stringRedisTemplate.expire(failKey, Duration.ofMinutes(10));
+            }
+            if (fails != null && fails >= SMS_MAX_WRONG_ATTEMPTS) {
+                smsCodeMapper.invalidateAll(phone);
+                stringRedisTemplate.delete(failKey);
+                throw new BusinessException(1004, "验证码错误次数过多，该验证码已失效，请重新获取");
+            }
+            throw new BusinessException(1004, "验证码错误或已过期");
+        }
+        stringRedisTemplate.delete(SMS_FAIL_KEY + ":" + phone);
+        smsCodeMapper.markUsed(phone, request.getCode());
+
+        // 手机号匹配既有账号；未注册则自动创建家长账号（user_type=3）
+        User user = userMapper.selectByPhone(request.getPhone());
+        if (user == null) {
+            user = new User();
+            user.setUsername(request.getPhone());
+            user.setPassword(passwordEncoder.encode(IdUtil.fastSimpleUUID()));
+            user.setRealName("家长" + request.getPhone().substring(7));
+            user.setPhone(request.getPhone());
+            user.setUserType(3);
+            user.setStatus(1);
+            user.setLastLoginTime(LocalDateTime.now());
+            userMapper.insert(user);
+        } else {
+            if (user.getStatus() != 1) {
+                throw new BusinessException(1002, "账号已被禁用");
+            }
+            // 家长端仅允许家长账号登录：其他身份登录会因数据权限与建档来源语义错乱
+            if (user.getUserType() == null || user.getUserType() != 3) {
+                throw new BusinessException(1006, "该手机号不是家长账号，请使用家长手机号登录");
+            }
+            user.setLastLoginTime(LocalDateTime.now());
+            userMapper.updateById(user);
+        }
+        return generateTokenResponse(user);
+    }
+
+    /**
+     * 医务人员 Token 响应：userType=6（医务人员），数据权限按其所属门店隔离；
+     * userId 为 medical_staff 主键（与 user_info 无关联）
+     */
+    private LoginResponse generateStaffTokenResponse(MedicalStaff staff) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", staff.getId());
+        claims.put("username", staff.getPhone());
+        claims.put("userType", 6);
+        claims.put("storeId", staff.getStoreId());
+        claims.put("permissions", Collections.emptyList());
+
+        String accessToken = JwtUtil.generateAccessToken(jwtSecret, claims);
+        String refreshToken = JwtUtil.generateRefreshToken(jwtSecret, claims);
+
+        LoginResponse response = new LoginResponse();
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setExpiresIn(7200L);
+        response.setTokenType("Bearer");
+
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+        userInfo.setId(staff.getId());
+        userInfo.setUsername(staff.getPhone());
+        userInfo.setRealName(staff.getName());
+        userInfo.setPhone(staff.getPhone());
+        userInfo.setUserType(6);
+        userInfo.setStaffRole(staff.getStaffRole());
+        userInfo.setStoreId(staff.getStoreId());
+        userInfo.setRoles(List.of("medical_staff"));
+        userInfo.setPermissions(Collections.emptyList());
+        response.setUser(userInfo);
+
+        return response;
+    }
+
     /**
      * 生成Token响应
      */
@@ -186,6 +377,7 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setId(user.getId());
         userInfo.setUsername(user.getUsername());
         userInfo.setRealName(user.getRealName());
+        userInfo.setPhone(user.getPhone());
         userInfo.setUserType(user.getUserType());
         userInfo.setStoreId(user.getStoreId());
         userInfo.setCenterId(user.getCenterId());

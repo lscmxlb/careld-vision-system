@@ -47,9 +47,12 @@ request.interceptors.response.use(
       const msg = response.data?.message
       switch (response.status) {
         case 401:
-          ElMessage.error(msg || '登录已过期，请重新登录')
-          useUserStore().logout()
-          window.location.href = '/login'
+          // 避免退出登录时重复弹窗和跳转
+          if (!window.location.pathname.startsWith('/login')) {
+            ElMessage.error(msg || '登录已过期，请重新登录')
+            useUserStore().clearToken()
+            window.location.href = '/login'
+          }
           break
         case 403:
           ElMessage.error(msg || '没有权限访问')

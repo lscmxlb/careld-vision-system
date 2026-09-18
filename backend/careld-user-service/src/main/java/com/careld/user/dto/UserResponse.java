@@ -28,6 +28,9 @@ public class UserResponse {
     @Schema(description = "用户类型")
     private Integer userType;
 
+    @Schema(description = "医务人员角色（1 医师 / 2 医生助理，仅 userType=6）")
+    private Integer staffRole;
+
     @Schema(description = "运营中心ID")
     private Long centerId;
 

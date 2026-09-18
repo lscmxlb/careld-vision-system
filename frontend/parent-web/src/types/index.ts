@@ -53,12 +53,17 @@ export interface Child {
   age?: number
   gender: number
   eyeCondition: string
+  nakedVisionBoth?: string
+  nakedVisionLeft?: string
+  nakedVisionRight?: string
   medicalHistory?: string
   allergyInfo?: string
   familyHistory?: string
   auditStatus: number
   auditRemark?: string
   parentUserId?: number
+  /** 剩余可约次数 */
+  remainingCount?: number
   lastVisionTest?: {
     testTime: string
     leftEye: string
@@ -74,6 +79,9 @@ export interface CreateChildRequest {
   birthDate: string
   gender: number
   eyeCondition: string
+  nakedVisionBoth?: string
+  nakedVisionLeft?: string
+  nakedVisionRight?: string
   medicalHistory?: string
   allergyInfo?: string
   familyHistory?: string
@@ -202,9 +210,41 @@ export interface Reserve {
   source?: number // 1=小程序 2=医院 3=电话
   remark?: string
   cancelReason?: string
-  status: number // 1=待到店 2=已到店 3=服务中 4=已完成 5=已取消
+  status: number // 1=已预约 2=养护中 3=已完成 4=已取消
   arriveTime?: string
   createdAt: string
+}
+
+/** 每日可约时段（由排班规则物化生成） */
+export interface ScheduleSlot {
+  id: number
+  storeId: number
+  slotDate: string
+  slotStartTime: string
+  slotEndTime: string
+  maxCapacity: number
+  bookedCount: number
+  status: number // 1=开放 0=关闭
+}
+
+/** 养护记录 */
+export interface CareRecord {
+  id: number
+  appointmentId?: number
+  childId: number
+  storeId?: number
+  careDate: string
+  timeSlot?: string
+  visionBeforeLeft?: string
+  visionBeforeRight?: string
+  visionBeforeBoth?: string
+  visionAfterLeft?: string
+  visionAfterRight?: string
+  visionAfterBoth?: string
+  executorId?: number
+  executorName?: string
+  status: number // 1=养护中 2=已完成
+  createdAt?: string
 }
 
 export interface CreateReserveRequest {

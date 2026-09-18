@@ -33,16 +33,57 @@ public class StoreController {
                                           @RequestParam(value = "keyword", required = false) String keyword,
                                           @RequestParam(value = "page", defaultValue = "1") Integer page,
                                           @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：代理商用户按 agentId 过滤，门店用户按 storeId 过滤
+        // 数据权限：沿组织绑定链严格向下过滤
+        Integer currentType = UserContext.getCurrentUserType();
+        Long scopeCenterId = null;
+        Long scopeStoreId = null;
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && currentType != 1) {
+            switch (currentType) {
+                case 4:
+                    // 运营中心用户：仅本中心下的门店
+                    scopeCenterId = UserContext.getCurrentCenterId();
+                    break;
+                case 5:
+                    // 代理商用户：仅本代理商下的门店（resolveAgentId 强制）
+                    break;
+                case 2:
+                    // 医院维护用户：仅自己这家医院
+                    scopeStoreId = UserContext.getCurrentStoreId();
+                    break;
+                default:
+                    break;
+            }
+        }
+        // 代理商用户强制按自己的 agentId 过滤；运营中心用户可按前端传入的 agentId 筛选（centerId 同时限制范围）
         Long effectiveAgentId = DataScopeHelper.resolveAgentId(agentId);
-        var p = storeService.listStores(status, effectiveAgentId, keyword, page, size);
+        var p = storeService.listStores(status, effectiveAgentId, scopeCenterId, scopeStoreId, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
     @Operation(summary = "全量门店列表（下拉用）")
     @GetMapping("/all")
     public Result<List<Store>> all() {
-        return Result.success(storeService.listAllStores());
+        // 数据权限：沿组织绑定链严格向下过滤
+        Integer currentType = UserContext.getCurrentUserType();
+        Long scopeCenterId = null;
+        Long scopeAgentId = null;
+        Long scopeStoreId = null;
+        if (!DataScopeHelper.isSuperAdmin() && currentType != null && currentType != 1) {
+            switch (currentType) {
+                case 4:
+                    scopeCenterId = UserContext.getCurrentCenterId();
+                    break;
+                case 5:
+                    scopeAgentId = UserContext.getCurrentAgentId();
+                    break;
+                case 2:
+                    scopeStoreId = UserContext.getCurrentStoreId();
+                    break;
+                default:
+                    break;
+            }
+        }
+        return Result.success(storeService.listAllStores(scopeCenterId, scopeAgentId, scopeStoreId));
     }
 
     @Operation(summary = "当前登录用户所属门店")

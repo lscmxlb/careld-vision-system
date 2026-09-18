@@ -31,7 +31,7 @@
       </el-form>
 
       <!-- 表格 -->
-      <el-table :data="tableData" v-loading="loading" stripe>
+      <el-table :data="tableData" v-loading="loading" stripe scrollbar-always-on>
         <el-table-column prop="childName" label="儿童姓名" width="100" />
         <el-table-column prop="testTime" label="检测时间" width="160" />
         <el-table-column label="左眼视力" width="100">

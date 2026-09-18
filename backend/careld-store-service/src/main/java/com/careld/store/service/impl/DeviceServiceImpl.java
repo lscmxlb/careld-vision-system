@@ -2,9 +2,13 @@ package com.careld.store.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
+import com.careld.common.security.DataScopeHelper;
+import com.careld.common.security.UserContext;
 import com.careld.store.dto.CalibrationRequest;
 import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
@@ -39,9 +43,9 @@ public class DeviceServiceImpl implements DeviceService {
     private final DeviceTypeMapper deviceTypeMapper;
 
     @Override
-    public IPage<DeviceResponse> pageDevices(Long storeId, Integer status, String keyword, Integer page, Integer size) {
+    public IPage<DeviceResponse> pageDevices(Long storeId, Long agentId, Long centerId, Integer status, String keyword, Integer page, Integer size) {
         Page<TvDevice> p = new Page<>(page == null ? 1 : page, size == null ? 20 : size);
-        tvDeviceMapper.selectPage(p, buildWrapper(storeId, status, keyword));
+        tvDeviceMapper.selectPage(p, buildWrapper(storeId, agentId, centerId, status, keyword));
         List<TvDevice> records = p.getRecords();
         Map<Long, String> nameMap = resolveStoreNames(records);
         Map<Long, String> typeNameMap = resolveDeviceTypeNames(records);
@@ -53,8 +57,8 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
-    public List<DeviceResponse> listDevices(Long storeId, Integer status, String keyword) {
-        List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, status, keyword));
+    public List<DeviceResponse> listDevices(Long storeId, Long agentId, Long centerId, Integer status, String keyword) {
+        List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, agentId, centerId, status, keyword));
         Map<Long, String> nameMap = resolveStoreNames(devices);
         Map<Long, String> typeNameMap = resolveDeviceTypeNames(devices);
         return devices.stream().map(d -> toResponse(d, nameMap, typeNameMap)).collect(Collectors.toList());
@@ -123,7 +127,7 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     public Map<String, Object> deviceSyncSummary(Long storeId) {
-        List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, null, null));
+        List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, null, null, null, null));
         long total = devices.size();
         long online = devices.stream().filter(d -> d.getLastOnlineTime() != null
                 && d.getLastOnlineTime().isAfter(LocalDateTime.now().minusHours(2))).count();
@@ -188,10 +192,13 @@ public class DeviceServiceImpl implements DeviceService {
      */
     @Override
     public void releaseDevice(Long id) {
-        TvDevice device = getEntityById(id);
-        device.setStoreId(null);
-        device.setStatus(0);
-        tvDeviceMapper.updateById(device);
+        // updateById 默认不更新 null 字段，需使用 update + Wrapper 显式设置 store_id = null
+        tvDeviceMapper.update(null,
+            Wrappers.<TvDevice>lambdaUpdate()
+                .set(TvDevice::getStoreId, null)
+                .set(TvDevice::getStatus, 0)
+                .eq(TvDevice::getId, id)
+        );
     }
 
     /**
@@ -222,9 +229,17 @@ public class DeviceServiceImpl implements DeviceService {
         return 0; // 正常
     }
 
-    private LambdaQueryWrapper<TvDevice> buildWrapper(Long storeId, Integer status, String keyword) {
+    private LambdaQueryWrapper<TvDevice> buildWrapper(Long storeId, Long agentId, Long centerId, Integer status, String keyword) {
         LambdaQueryWrapper<TvDevice> wrapper = new LambdaQueryWrapper<>();
-        if (storeId != null) {
+        if (agentId != null || centerId != null) {
+            List<Long> storeIds = resolveScopedStoreIds(agentId, centerId);
+            if (storeIds.isEmpty()) {
+                // 范围内无可见医院，直接返回空条件（配合外层不可能命中的条件）
+                wrapper.apply("1 = 0");
+                return wrapper;
+            }
+            wrapper.in(TvDevice::getStoreId, storeIds);
+        } else if (storeId != null) {
             wrapper.eq(TvDevice::getStoreId, storeId);
         }
         if (status != null) {
@@ -237,6 +252,72 @@ public class DeviceServiceImpl implements DeviceService {
         }
         wrapper.orderByDesc(TvDevice::getId);
         return wrapper;
+    }
+
+    /**
+     * 解析代理商/运营中心范围内的可见医院ID列表（store 软删除由 @TableLogic 自动过滤）
+     */
+    private List<Long> resolveScopedStoreIds(Long agentId, Long centerId) {
+        LambdaQueryWrapper<Store> w = new LambdaQueryWrapper<>();
+        w.select(Store::getId);
+        if (agentId != null) {
+            w.eq(Store::getAgentId, agentId);
+        } else {
+            List<Long> agentIds = storeMapper.selectAgentCenterMapping().stream()
+                    .filter(r -> {
+                        Object cid = r.get("center_id");
+                        return cid != null && ((Number) cid).longValue() == centerId;
+                    })
+                    .map(r -> ((Number) r.get("id")).longValue())
+                    .collect(Collectors.toList());
+            if (agentIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+            w.in(Store::getAgentId, agentIds);
+        }
+        return storeMapper.selectList(w).stream().map(Store::getId).collect(Collectors.toList());
+    }
+
+    /**
+     * 校验当前登录用户是否有权操作指定设备（按组织链范围）
+     * - admin/总部用户：全部可见
+     * - 运营中心(type=4)：设备所属医院须归属本中心
+     * - 代理商(type=5)：设备所属医院须归属本代理商
+     * - 门店(type=2)：设备须绑定本医院
+     * - 空闲设备（未绑定医院）仅总部可见
+     */
+    @Override
+    public void assertDeviceInScope(Long id) {
+        if (DataScopeHelper.isSuperAdmin()) {
+            return;
+        }
+        Integer currentType = UserContext.getCurrentUserType();
+        if (currentType == null || currentType == 1) {
+            return;
+        }
+        TvDevice device = getEntityById(id);
+        if (device.getStoreId() == null) {
+            throw new BusinessException(403, "无权操作该设备");
+        }
+        if (currentType == 2) {
+            if (!device.getStoreId().equals(UserContext.getCurrentStoreId())) {
+                throw new BusinessException(403, "无权操作该设备");
+            }
+            return;
+        }
+        if (currentType == 4 || currentType == 5) {
+            Long agentId = currentType == 5 ? UserContext.getCurrentAgentId() : null;
+            Long centerId = currentType == 4 ? UserContext.getCurrentCenterId() : null;
+            if (agentId == null && centerId == null) {
+                throw new BusinessException(403, "无权操作该设备");
+            }
+            List<Long> visible = resolveScopedStoreIds(agentId, centerId);
+            if (!visible.contains(device.getStoreId())) {
+                throw new BusinessException(403, "无权操作该设备");
+            }
+            return;
+        }
+        throw new BusinessException(403, "无权操作该设备");
     }
 
     private Map<Long, String> resolveStoreNames(List<TvDevice> devices) {

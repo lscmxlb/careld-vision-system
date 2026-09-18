@@ -1,15 +1,18 @@
 package com.careld.common.security;
 
+import java.util.List;
+
 /**
  * 数据权限工具类
  *
- * <p>根据当前登录用户的 userType 自动注入组织过滤条件：
+ * <p>数据权限沿组织绑定链（运营中心 center → 代理商 agent → 医院 store）严格向下过滤：
  * <ul>
- *   <li>type=1 总部：不限制，使用前端传入的参数</li>
- *   <li>type=4 运营中心：强制 centerId = 当前用户 centerId</li>
- *   <li>type=5 代理商：强制 agentId = 当前用户 agentId</li>
- *   <li>type=2 门店维护：强制 storeId = 当前用户 storeId</li>
- *   <li>type=3 家长：强制 userId = 当前用户 userId</li>
+ *   <li>admin（super_admin，拥有 "*" 通配权限）：全局可见，不过滤</li>
+ *   <li>总部其他用户(type=1)：下级全可见，但看不到平级总部用户</li>
+ *   <li>运营中心(type=4)：强制 centerId = 当前用户 centerId</li>
+ *   <li>代理商(type=5)：强制 agentId = 当前用户 agentId</li>
+ *   <li>门店维护(type=2)：强制 storeId = 当前用户 storeId</li>
+ *   <li>家长(type=3)：强制 userId = 当前用户 userId</li>
  * </ul>
  */
 public final class DataScopeHelper {
@@ -18,20 +21,62 @@ public final class DataScopeHelper {
     }
 
     /**
-     * 当前用户是否需要数据过滤（非总部用户需要）
+     * 判断当前用户是否为超级管理员（admin账号或拥有 "*" 通配权限）
+     */
+    public static boolean isSuperAdmin() {
+        UserContext.CurrentUser user = UserContext.get();
+        if (user == null) {
+            return false;
+        }
+        if ("admin".equals(user.getUsername())) {
+            return true;
+        }
+        List<String> permissions = user.getPermissions();
+        return permissions != null && permissions.contains("*");
+    }
+
+    /**
+     * 当前用户是否为家长（type=3）
+     */
+    public static boolean isParent() {
+        Integer userType = UserContext.getCurrentUserType();
+        return userType != null && userType == 3;
+    }
+
+    /**
+     * 解析门店过滤值（家长按所选医院，不做本店强制）
+     *
+     * <p>家长可为孩子选择任意医院建档，数据范围应以「本人孩子」为准（parentUserId/childId 维度），
+     * 门店只是家长所选医院而非所属范围，不能强制回其注册门店；其他角色沿用 {@link #resolveStoreId}。
+     */
+    public static Long resolveStoreIdWithParentChoice(Long paramStoreId) {
+        if (isParent()) {
+            return paramStoreId;
+        }
+        return resolveStoreId(paramStoreId);
+    }
+
+    /**
+     * 当前用户是否需要数据过滤（超级管理员和总部用户除外）
      */
     public static boolean isRestricted() {
+        if (isSuperAdmin()) {
+            return false;
+        }
         Integer userType = UserContext.getCurrentUserType();
         return userType == null || userType != 1;
     }
 
     /**
      * 解析有效的 storeId 过滤值
-     * - 总部(type=1)：返回前端传入的 paramStoreId（可 null）
+     * - 超级管理员/总部(type=1)：返回前端传入的 paramStoreId（可 null）
      * - 门店/医院(type=2)：强制返回当前用户的 storeId
      * - 其他类型：如果用户有 storeId 则使用，否则返回 param
      */
     public static Long resolveStoreId(Long paramStoreId) {
+        if (isSuperAdmin()) {
+            return paramStoreId;
+        }
         Integer userType = UserContext.getCurrentUserType();
         if (userType == null || userType == 1) {
             return paramStoreId;
@@ -45,40 +90,40 @@ public final class DataScopeHelper {
 
     /**
      * 解析有效的 centerId 过滤值
-     * - 总部(type=1)：返回前端传入的 paramCenterId（可 null）
-     * - 运营中心(type=4)：强制返回当前用户的 centerId
-     * - 其他类型：如果用户有 centerId 则使用，否则返回 param
+     * - 超级管理员/总部(type=1)：返回前端传入的 paramCenterId（可 null）
+     * - 其他类型（运营中心/代理商/门店）：强制使用当前用户上下文中的 centerId
      */
     public static Long resolveCenterId(Long paramCenterId) {
+        if (isSuperAdmin()) {
+            return paramCenterId;
+        }
         Integer userType = UserContext.getCurrentUserType();
         if (userType == null || userType == 1) {
             return paramCenterId;
         }
-        if (userType == 4) {
-            Long currentCenterId = UserContext.getCurrentCenterId();
-            if (currentCenterId != null) {
-                return currentCenterId;
-            }
+        Long currentCenterId = UserContext.getCurrentCenterId();
+        if (currentCenterId != null) {
+            return currentCenterId;
         }
         return paramCenterId;
     }
 
     /**
      * 解析有效的 agentId 过滤值
-     * - 总部(type=1)：返回前端传入的 paramAgentId（可 null）
-     * - 代理商(type=5)：强制返回当前用户的 agentId
-     * - 其他类型：如果用户有 agentId 则使用，否则返回 param
+     * - 超级管理员/总部(type=1)：返回前端传入的 paramAgentId（可 null）
+     * - 其他类型（代理商/门店）：强制使用当前用户上下文中的 agentId
      */
     public static Long resolveAgentId(Long paramAgentId) {
+        if (isSuperAdmin()) {
+            return paramAgentId;
+        }
         Integer userType = UserContext.getCurrentUserType();
         if (userType == null || userType == 1) {
             return paramAgentId;
         }
-        if (userType == 5) {
-            Long currentAgentId = UserContext.getCurrentAgentId();
-            if (currentAgentId != null) {
-                return currentAgentId;
-            }
+        Long currentAgentId = UserContext.getCurrentAgentId();
+        if (currentAgentId != null) {
+            return currentAgentId;
         }
         return paramAgentId;
     }

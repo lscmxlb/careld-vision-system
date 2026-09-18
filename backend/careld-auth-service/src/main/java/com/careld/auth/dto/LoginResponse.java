@@ -39,8 +39,14 @@ public class LoginResponse {
         @Schema(description = "真实姓名")
         private String realName;
 
+        @Schema(description = "手机号")
+        private String phone;
+
         @Schema(description = "用户类型")
         private Integer userType;
+
+        @Schema(description = "医务人员角色（1 医师 / 2 医生助理，仅 userType=6）")
+        private Integer staffRole;
 
         @Schema(description = "门店ID")
         private Long storeId;

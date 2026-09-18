@@ -13,24 +13,24 @@
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
         <el-form-item label="运营中心" v-if="isHqUser">
-          <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange">
+          <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange" style="width: 150px">
             <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="代理商" v-if="isHqUser">
-          <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch">
+          <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch" style="width: 150px">
             <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="选择状态">
+          <el-select v-model="queryForm.status" placeholder="选择状态" style="width: 100px">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
             <el-option label="全部" :value="undefined" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="queryForm.keyword" placeholder="医院名称/编码" clearable @keyup.enter="handleSearch" />
+          <el-input v-model="queryForm.keyword" placeholder="医院名称/编码" clearable @keyup.enter="handleSearch" style="width: 160px" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch"><el-icon><Search /></el-icon>搜索</el-button>
@@ -50,19 +50,19 @@
             <el-tag :type="institutionTypeTag(row.institutionType)">{{ institutionTypeLabel(row.institutionType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="运营中心" width="120">
+        <el-table-column label="运营中心" width="150">
           <template #default="{ row }">
             <span v-if="row.centerName">{{ row.centerName }}</span>
             <el-tag v-else type="danger" size="small">未设置</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="代理商" width="120">
+        <el-table-column label="代理商" width="150">
           <template #default="{ row }">
             <span v-if="row.agentName">{{ row.agentName }}</span>
             <el-tag v-else type="danger" size="small">未设置</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="业务负责人" width="100">
+        <el-table-column label="业务负责人" width="120">
           <template #default="{ row }">{{ getAgentContactName(row.agentId) }}</template>
         </el-table-column>
         <el-table-column prop="joinDate" label="加盟时间" width="120" />
@@ -74,13 +74,15 @@
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
-            <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
-            <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'store:list:update'">
-              {{ row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
+            <div class="action-buttons">
+              <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
+              <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
+              <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'store:list:update'">
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -145,6 +147,27 @@
             <el-radio :label="3">其他</el-radio>
           </el-radio-group>
         </el-form-item>
+        <!-- 新建模式：一体化创建店长登录账号 -->
+        <template v-if="!isEdit">
+          <el-divider content-position="left">店长登录账号（医院端）</el-divider>
+          <el-form-item>
+            <el-checkbox v-model="formData.createManagerAccount">同时创建店长登录账号，用于登录医院端</el-checkbox>
+          </el-form-item>
+          <template v-if="formData.createManagerAccount">
+            <el-form-item label="登录账号" prop="managerUsername">
+              <el-input v-model="formData.managerUsername" placeholder="请输入登录账号（用户名）" />
+            </el-form-item>
+            <el-form-item label="真实姓名" prop="managerRealName">
+              <el-input v-model="formData.managerRealName" placeholder="请输入店长真实姓名" />
+            </el-form-item>
+            <el-form-item label="手机号" prop="managerPhone">
+              <el-input v-model="formData.managerPhone" placeholder="选填，手机号也可用于登录" />
+            </el-form-item>
+            <el-form-item label="初始密码" prop="managerPassword">
+              <el-input v-model="formData.managerPassword" type="password" show-password placeholder="请输入初始密码（至少6位）" />
+            </el-form-item>
+          </template>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -173,12 +196,12 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'AdminStoreList' })
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { storeApi, orgApi, deviceApi } from '@/api'
+import { storeApi, orgApi, deviceApi, userApi, roleApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import type { Store, StoreQuery, OpsCenter, Agent, Device } from '@/types'
+import type { Store, StoreQuery, OpsCenter, Agent, Device, User } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
 import { regionData } from 'element-china-area-data'
 
@@ -208,7 +231,15 @@ const submitLoading = ref(false)
 const isEdit = ref(false)
 const currentId = ref<number | null>(null)
 
-const formData = reactive<Partial<Store> & { regionCodes?: string[]; centerId?: number }>({
+const formData = reactive<Partial<Store> & {
+  regionCodes?: string[]
+  centerId?: number
+  createManagerAccount?: boolean
+  managerUsername?: string
+  managerRealName?: string
+  managerPhone?: string
+  managerPassword?: string
+}>({
   storeCode: '',
   centerId: undefined,
   storeName: '',
@@ -225,7 +256,12 @@ const formData = reactive<Partial<Store> & { regionCodes?: string[]; centerId?: 
   joinDate: '',
   bedCount: 0,
   institutionType: undefined,
-  regionCodes: []
+  regionCodes: [],
+  createManagerAccount: true,
+  managerUsername: '',
+  managerRealName: '',
+  managerPhone: '',
+  managerPassword: ''
 })
 
 const formRules: FormRules = {
@@ -240,7 +276,14 @@ const formRules: FormRules = {
     { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
-  institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }]
+  institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }],
+  managerUsername: [{ required: true, message: '请输入店长登录账号', trigger: 'blur' }],
+  managerRealName: [{ required: true, message: '请输入店长真实姓名', trigger: 'blur' }],
+  managerPhone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
+  managerPassword: [
+    { required: true, message: '请输入初始密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ]
 }
 
 const institutionTypeLabel = (type?: number) => {
@@ -361,7 +404,7 @@ const onFormCenterChange = async (val: number | undefined) => {
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增医院'
-  Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [] })
+  Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [], createManagerAccount: true, managerUsername: '', managerRealName: '', managerPhone: '', managerPassword: '' })
   formAgentOptions.value = []
   currentId.value = null
   dialogVisible.value = true
@@ -475,8 +518,56 @@ const handleSubmit = async () => {
           await storeApi.updateStore(currentId.value, formData)
           ElMessage.success('更新成功')
         } else {
-          await storeApi.createStore(formData)
-          ElMessage.success('创建成功')
+          const newStoreId = await storeApi.createStore(formData)
+          // 一体化创建店长登录账号（医院端），失败不回滚建店
+          if (formData.createManagerAccount) {
+            let accountCreated = false
+            try {
+              const newUserId = await userApi.createUser({
+                username: formData.managerUsername,
+                password: formData.managerPassword,
+                realName: formData.managerRealName,
+                phone: formData.managerPhone || undefined,
+                userType: 2,
+                centerId: formData.centerId,
+                agentId: formData.agentId,
+                storeId: newStoreId
+              } as Partial<User>)
+              // 自动绑定医院管理员角色
+              try {
+                const roles = await roleApi.getRoleList()
+                const adminRole = roles.find(r => r.roleCode === 'hospital_admin')
+                if (adminRole) {
+                  await roleApi.assignUserRoles(newUserId, [adminRole.id])
+                } else {
+                  ElMessage.warning('未找到医院管理员角色，请到用户管理中手动分配角色')
+                }
+              } catch (e) {
+                console.error('绑定角色失败', e)
+                ElMessage.warning('店长账号已创建，但角色绑定失败，请到用户管理中手动分配角色')
+              }
+              accountCreated = true
+            } catch (e) {
+              console.error('创建店长账号失败', e)
+              ElMessage.warning('医院已创建，但店长账号创建失败，请到用户管理中手动创建')
+            }
+            if (accountCreated) {
+              ElMessageBox.alert(
+                h('div', { style: 'line-height: 1.8' }, [
+                  h('div', null, '医院创建成功！'),
+                  h('div', null, `店长登录账号：${formData.managerUsername}`),
+                  h('div', null, `初始密码：${formData.managerPassword}`),
+                  h('div', null, '请使用该账号登录医院端，并在医院端维护医务人员名册。')
+                ]),
+                '创建成功',
+                { confirmButtonText: '知道了', type: 'success' }
+              ).catch(() => {})
+            } else {
+              ElMessage.success('创建成功')
+            }
+          } else {
+            ElMessage.success('创建成功')
+          }
         }
         dialogVisible.value = false
         fetchData()
@@ -501,5 +592,13 @@ onMounted(() => {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
   .search-form { margin-bottom: 20px; }
   .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
+  .action-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-content: flex-start;
+    align-items: center;
+    white-space: nowrap;
+  }
 }
 </style>

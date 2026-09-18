@@ -212,6 +212,8 @@ auth:
 - 逻辑删除字段：deletedAt（时间戳）
 - 包结构：`com.careld.{module}`
 
+**改动后必做**：改完任何 Java 代码，必须 `mvn package` 重新打包并重启对应服务，否则进程跑的是旧 jar（详细命令见「常见问题 → 改了后端代码但没生效」）。
+
 #### 启动顺序
 1. **必须**: 先启动 MySQL 和 Redis
 2. **必须**: 先启动 careld-auth-service（其他服务依赖）
@@ -386,6 +388,26 @@ docker exec -it careld-redis redis-cli ping
 1. 确认 Redis 容器运行：`docker ps | grep redis`
 2. 检查 Redis 配置（host/port/password）
 3. 测试连接：`docker exec -it careld-redis redis-cli ping`
+
+### 改了后端代码但没生效？—— 必须先重新打包重启（重要教训）
+后端各服务是以独立 jar 进程运行的（8281-8287）。**任何 Java 代码改动后，不重新打包并重启，跑的一直是旧代码**，会表现为“我明明改了怎么还报错/没变化”，此前多次线上式报错都源于此。因此每改完一个模块必须立刻：
+
+1. 重新打包：
+   ```bash
+   cd backend
+   mvn -q package -pl careld-<module>-service -am -DskipTests
+   ```
+2. 重启对应服务（以 child-service/8284 为例）：
+   ```bash
+   PID=$(pgrep -f 'java -jar careld-child-service' | head -1)
+   kill $PID            # 若端口仍被占用（BindException/地址已在使用）再 kill -9
+   # 环境变量没有现成 env 文件时，从任一在跑的 careld java 进程提取（JWT_SECRET/ENCRYPTION_KEY/MYSQL_*/REDIS_* 缺一不可，缺了会启动失败）
+   SRC=$(pgrep -f 'java -jar careld-.*-service' | head -1)
+   while IFS='=' read -r k v; do case "$k" in MYSQL_*|REDIS_*|JWT_*|ENCRYPTION_KEY|SPRING_PROFILES_ACTIVE) export "$k=$v";; esac; done < <(tr '\0' '\n' < /proc/$SRC/environ)
+   nohup java -jar careld-child-service/target/careld-child-service-2.0.1.jar > /tmp/child-service.log 2>&1 &
+   ```
+3. 验证生效：`curl -s -o /dev/null -w '%{http_code}' http://localhost:<port>` 返回 200、日志出现 `Started ...Application`；接口层面再用一次真实请求确认新行为（jar 时间戳应晚于源码修改时间）。
+4. 前端 Vite dev 是热更新，**不需要**重启/打包；但改完要跑 `npm run type-check`（vue-tsc）确认类型无误。
 
 ## 测试规范
 

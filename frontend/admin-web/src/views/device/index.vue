@@ -13,12 +13,12 @@
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
         <el-form-item label="医院">
-          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable>
+          <el-select v-model="queryForm.storeId" placeholder="选择医院" clearable filterable style="width: 180px">
             <el-option v-for="item in storeOptions" :key="item.id" :label="item.storeName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="到期状态">
-          <el-select v-model="queryForm.expireStatus" placeholder="选择状态" clearable>
+          <el-select v-model="queryForm.expireStatus" placeholder="选择状态" clearable style="width: 150px">
             <el-option label="正常" :value="0" />
             <el-option label="即将到期" :value="1" />
             <el-option label="已到期" :value="2" />
@@ -52,10 +52,9 @@
         </el-table-column>
         <el-table-column prop="installDate" label="安装日期" width="120" />
         <el-table-column prop="maintenanceDate" label="维护日期" width="120" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'device:list:update'">编辑</el-button>
-            <el-button type="warning" size="small" @click="handleCalibrate(row)">校准</el-button>
             <el-button v-if="row.storeId" type="info" size="small" @click="handleRelease(row)" v-permission="'device:list:release'">设为空闲</el-button>
             <el-button type="danger" size="small" @click="handleDelete(row)" v-permission="'device:list:delete'">删除</el-button>
           </template>
@@ -246,7 +245,14 @@ const handleRelease = async (row: Device) => {
     await deviceApi.releaseDevice(row.id)
     ElMessage.success('已设为空闲')
     fetchData()
-  } catch { /* 取消 */ }
+  } catch (error: any) {
+    // 用户取消或关闭弹窗，静默处理
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+    // 其他错误（如接口异常）展示错误信息
+    ElMessage.error(error?.message || '操作失败')
+  }
 }
 
 const handleCalibrate = (row: Device) => {

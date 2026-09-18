@@ -1,0 +1,61 @@
+/**
+ * Careld 医生端 - 全局 SCSS 变量
+ * 该文件会被自动注入到每个组件的 <style lang="scss"> 中，只放变量，不放样式
+ */
+
+/* 覆盖 uView Plus 主题（uview 内部使用 !default，此处先声明即生效） */
+$u-primary: #2563eb;
+$u-primary-dark: #1d4ed8;
+$u-primary-disabled: #bfdbfe;
+$u-primary-light: #eff6ff;
+$u-success: #22c55e;
+$u-warning: #f59e0b;
+$u-error: #ef4444;
+$u-main-color: #1f2937;
+$u-content-color: #4b5563;
+$u-tips-color: #9ca3af;
+$u-border-color: #eef1f5;
+$u-bg-color: #f4f6f9;
+
+@import 'uview-plus/theme.scss';
+
+/* ---------------- 应用设计变量 ---------------- */
+$app-primary: #2563eb;
+$app-primary-dark: #1d4ed8;
+$app-primary-light: #eff6ff;
+$app-primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%);
+
+$app-success: #22c55e;
+$app-success-light: #e9fbf0;
+$app-warning: #f59e0b;
+$app-warning-light: #fef6e7;
+$app-danger: #ef4444;
+$app-danger-light: #fdeeee;
+$app-info: #3b82f6;
+$app-info-light: #eaf2fe;
+$app-grey: #94a3b8;
+$app-grey-light: #f1f5f9;
+
+$app-text: #1f2937;
+$app-text-sub: #5b6572;
+$app-text-light: #9ca3af;
+$app-text-white: #ffffff;
+
+$app-bg: #f4f6f9;
+$app-card: #ffffff;
+$app-border: #eef1f5;
+
+$app-radius-sm: 8rpx;
+$app-radius: 16rpx;
+$app-radius-lg: 24rpx;
+$app-gap: 24rpx;
+
+/* uni-app 内置变量微调 */
+$uni-color-primary: #2563eb;
+$uni-color-success: #22c55e;
+$uni-color-warning: #f59e0b;
+$uni-color-error: #ef4444;
+$uni-text-color: #1f2937;
+$uni-text-color-grey: #9ca3af;
+$uni-bg-color-grey: #f4f6f9;
+$uni-border-color: #eef1f5;

@@ -27,6 +27,10 @@ public class AesUtil {
         if (plaintext == null || plaintext.isEmpty()) {
             return null;
         }
+        if (secretKey == null || secretKey.length() != 32) {
+            throw new RuntimeException("加密失败：密钥长度必须恰好为32字符，当前为"
+                    + (secretKey == null ? "null" : secretKey.length()) + "，请检查配置 encryption.key/ENCRYPTION_KEY");
+        }
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
             SecureRandom random = new SecureRandom();
@@ -46,7 +50,7 @@ public class AesUtil {
             return Base64.getEncoder().encodeToString(byteBuffer.array());
         } catch (Exception e) {
             log.error("加密失败", e);
-            throw new RuntimeException("加密失败", e);
+            throw new RuntimeException("加密失败：" + e.getMessage(), e);
         }
     }
 
@@ -56,6 +60,10 @@ public class AesUtil {
     public static String decrypt(String ciphertext, String secretKey) {
         if (ciphertext == null || ciphertext.isEmpty()) {
             return null;
+        }
+        if (secretKey == null || secretKey.length() != 32) {
+            throw new RuntimeException("解密失败：密钥长度必须恰好为32字符，当前为"
+                    + (secretKey == null ? "null" : secretKey.length()) + "，请检查配置 encryption.key/ENCRYPTION_KEY");
         }
         try {
             byte[] decoded = Base64.getDecoder().decode(ciphertext);
@@ -76,7 +84,7 @@ public class AesUtil {
             return new String(decrypted, StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.error("解密失败", e);
-            throw new RuntimeException("解密失败", e);
+            throw new RuntimeException("解密失败：" + e.getMessage(), e);
         }
     }
 }
