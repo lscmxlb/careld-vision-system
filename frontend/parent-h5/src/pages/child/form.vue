@@ -292,7 +292,9 @@ async function loadDoctors() {
       size: 200,
     })
     doctors.value = res?.list || []
-  } catch {
+  } catch (err: any) {
+    console.error('加载医师列表失败:', err)
+    uni.showToast({ title: err?.message || '加载医师列表失败', icon: 'none' })
     doctors.value = []
   } finally {
     doctorLoading.value = false
