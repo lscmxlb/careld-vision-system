@@ -87,4 +87,51 @@ public final class StatisticsDtos {
     public static class ExportResponse {
         private String downloadUrl;
     }
+
+    /**
+     * 医生端工作台统计：儿童档案数量 / 当前已预约数量 / 已完成养护次数
+     */
+    @Data
+    public static class WorkbenchStats {
+        /** 儿童档案数量（未删除且非已隐藏） */
+        private long childCount;
+        /** 当前已预约数量（已预约状态） */
+        private long reservedCount;
+        /** 已完成养护次数（养护记录已完成） */
+        private long completedCareCount;
+    }
+
+    /**
+     * 医院数据统计：医院基本信息 + 动态统计
+     */
+    @Data
+    public static class StoreOverview {
+        // ---- 医院基本信息 ----
+        private Long storeId;
+        private String storeCode;
+        private String storeName;
+        private Integer institutionType;
+        private Integer status;
+        private String provinceName;
+        private String cityName;
+        private String districtName;
+        private String address;
+        private String contactName;
+        private String contactPhone;
+        private String businessHours;
+        private String joinDate;
+        private Integer bedCount;
+        private String agentName;
+        private String centerName;
+
+        // ---- 动态统计 ----
+        /** 儿童档案数量（未删除且非已隐藏） */
+        private Long childCount;
+        /** 养护服务次数（含养护中） */
+        private Long careCount;
+        /** 本月预约数据（按预约日期，排除已取消） */
+        private Long monthlyReserveCount;
+        /** 最后活跃日期（医生/医生助理最后登录，无记录为空） */
+        private String lastActiveDate;
+    }
 }

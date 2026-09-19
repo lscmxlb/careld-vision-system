@@ -49,7 +49,7 @@
       </view>
 
       <view class="login-tip">
-        未注册的手机号将自动创建家长账号；登录后请先完善孩子档案，待医院审核通过即可预约养护。
+        未注册的手机号将自动创建家长账号；登录后请先完善儿童档案，待医院审核通过即可预约养护。
       </view>
     </view>
 
@@ -87,7 +87,7 @@ function startCountdown() {
 
 onLoad(() => {
   if (getToken()) {
-    uni.switchTab({ url: '/pages/child/index' })
+    uni.switchTab({ url: '/pages/appointment/list' })
   }
 })
 
@@ -126,9 +126,11 @@ async function handleLogin() {
   loading.value = true
   try {
     await userStore.loginBySms(form.phone, form.code)
+    // 登录后自动认领同手机号未绑定档案（含默认名回填家长姓名）
+    await userStore.claimMyChildren()
     toast('登录成功')
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/child/index' })
+      uni.switchTab({ url: '/pages/appointment/list' })
     }, 300)
   } catch {
     // 错误提示已在请求层处理

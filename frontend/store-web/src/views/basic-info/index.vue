@@ -2,10 +2,6 @@
   <div class="basic-info-page">
     <!-- 基础信息：科室管理 + 预约规则设置，共用保存配置 -->
     <el-card v-loading="deptLoading || configLoading">
-      <template #header>
-        <span>基础信息</span>
-      </template>
-
       <!-- 第一组：科室管理 -->
       <div class="section">
         <div class="section-title">科室管理</div>
@@ -142,6 +138,11 @@ const loadDepartment = async () => {
   }
 }
 
+/** 科室信息是否已填写（门店无科室记录时据此决定是否新建，避免信息静默丢失） */
+const hasDeptInput = computed(
+  () => !!(deptForm.deptCode || deptForm.deptName || deptForm.chargeStandard != null)
+)
+
 // ---------- 预约规则 ----------
 const configFormRef = ref<FormInstance>()
 const configLoading = ref(false)
@@ -217,9 +218,9 @@ const isDirty = computed(() => baseline.value !== '' && takeSnapshot() !== basel
 
 const handleSubmit = async () => {
   if (!deptFormRef.value || !configFormRef.value) return
-  // 无科室记录时不校验科室组（store-web 无新建科室入口），配置仍可保存
+  // 无科室记录且未填写科室信息时不校验科室组，配置仍可保存
   const validations: Promise<unknown>[] = [configFormRef.value.validate()]
-  if (deptForm.id) {
+  if (deptForm.id || hasDeptInput.value) {
     validations.push(deptFormRef.value.validate())
   }
   try {
@@ -229,15 +230,20 @@ const handleSubmit = async () => {
   }
   submitLoading.value = true
   try {
+    // chargeStandard 显式传 null：允许清空已配置的收费标准
+    const deptPayload = {
+      storeId: userStore.storeId,
+      deptCode: deptForm.deptCode,
+      deptName: deptForm.deptName,
+      deptType: deptForm.deptType,
+      chargeStandard: deptForm.chargeStandard ?? null,
+      sortOrder: deptForm.sortOrder
+    }
     if (deptForm.id) {
-      await departmentApi.updateDepartment(deptForm.id, {
-        storeId: userStore.storeId,
-        deptCode: deptForm.deptCode,
-        deptName: deptForm.deptName,
-        deptType: deptForm.deptType,
-        chargeStandard: deptForm.chargeStandard,
-        sortOrder: deptForm.sortOrder
-      })
+      await departmentApi.updateDepartment(deptForm.id, deptPayload)
+    } else if (hasDeptInput.value) {
+      // 门店尚无科室记录：首次保存时创建，否则科室信息不会落库
+      deptForm.id = await departmentApi.createDepartment(deptPayload)
     }
     await appointmentConfigApi.saveConfig({
       ...configForm,

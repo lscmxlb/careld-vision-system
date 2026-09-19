@@ -7,6 +7,7 @@ import com.careld.user.dto.MenuRequest;
 import com.careld.user.entity.Menu;
 import com.careld.user.service.MenuService;
 import com.careld.user.service.PermissionService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class MenuController {
         return Result.success(menuService.getMenuTree());
     }
 
+    @OperationLog(module = "menus", action = "create", description = "新增菜单")
     @Operation(summary = "新增菜单")
     @PostMapping
     @RequirePermission("settings:menu:create")
@@ -55,6 +57,7 @@ public class MenuController {
         return Result.success(menuService.createMenu(request));
     }
 
+    @OperationLog(module = "menus", action = "update", description = "修改菜单")
     @Operation(summary = "修改菜单")
     @PutMapping("/{id}")
     @RequirePermission("settings:menu:update")
@@ -63,6 +66,7 @@ public class MenuController {
         return Result.success();
     }
 
+    @OperationLog(module = "menus", action = "delete", description = "删除菜单")
     @Operation(summary = "删除菜单")
     @DeleteMapping("/{id}")
     @RequirePermission("settings:menu:delete")

@@ -1,42 +1,10 @@
 <template>
   <view class="page">
-    <view class="search-bar">
-      <view class="search-box">
-        <text class="search-icon">🔍</text>
-        <input
-          v-model="keyword"
-          class="search-input"
-          type="text"
-          placeholder="儿童姓名 / 家长姓名 / 手机号"
-          placeholder-class="ph"
-          confirm-type="search"
-          @confirm="reload"
-        />
-        <text v-if="keyword" class="search-clear" @click="clearKeyword">✕</text>
+    <view class="topbar">
+      <view class="picker-wrap">
+        <ChildSearchPicker placeholder="儿童姓名 / 手机号" @select="onPickChild" />
       </view>
-      <view class="more-toggle" @click="showMoreFilter = !showMoreFilter">
-        {{ showMoreFilter ? '收起' : '筛选' }}
-      </view>
-    </view>
-
-    <view v-if="showMoreFilter" class="more-filter">
-      <view class="mf-row">
-        <text class="mf-label">儿童姓名</text>
-        <input v-model="childName" class="mf-input" type="text" placeholder="不限" placeholder-class="ph" confirm-type="search" @confirm="reload" />
-      </view>
-      <view class="mf-row">
-        <text class="mf-label">家长姓名</text>
-        <input v-model="parentName" class="mf-input" type="text" placeholder="不限" placeholder-class="ph" confirm-type="search" @confirm="reload" />
-      </view>
-      <view class="mf-row">
-        <text class="mf-label">养护次数大于</text>
-        <input v-model.number="minCareCount" class="mf-input" type="number" placeholder="不限" placeholder-class="ph" @confirm="reload" />
-        <text class="mf-unit">次</text>
-      </view>
-      <view class="mf-actions">
-        <view class="btn btn-sm btn-plain" @click="reset">重置</view>
-        <view class="btn btn-sm btn-primary" @click="reload">查询</view>
-      </view>
+      <view class="query-btn" @click="reload">查询</view>
     </view>
 
     <view v-if="list.length" class="list">
@@ -93,19 +61,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import ChildSearchPicker from '@/components/ChildSearchPicker.vue'
 import { careRecordApi } from '@/api/care-record'
 import { useUserStore } from '@/stores/user'
 import { displayVision } from '@/utils/format'
 import { CARE_STATUS_MAP } from '@/utils/dict'
-import type { CareRecord } from '@/types'
+import type { CareRecord, Child } from '@/types'
 
 const userStore = useUserStore()
 
-const keyword = ref('')
-const childName = ref('')
-const parentName = ref('')
-const minCareCount = ref<number | undefined>(undefined)
-const showMoreFilter = ref(false)
+const pickedChildId = ref<number | undefined>(undefined)
 
 const list = ref<CareRecord[]>([])
 const total = ref(0)
@@ -114,6 +79,10 @@ const size = 20
 const loading = ref(false)
 const hasMore = ref(true)
 
+function onPickChild(child: Child | null) {
+  pickedChildId.value = child?.id
+}
+
 async function load(reset = false) {
   if (loading.value) return
   loading.value = true
@@ -121,10 +90,7 @@ async function load(reset = false) {
     if (reset) page.value = 1
     const res = await careRecordApi.getRecordPage({
       storeId: userStore.storeId,
-      childName: childName.value || undefined,
-      parentName: parentName.value || undefined,
-      phone: keyword.value || undefined,
-      minCareCount: minCareCount.value,
+      childId: pickedChildId.value,
       page: page.value,
       size,
     })
@@ -139,19 +105,6 @@ async function load(reset = false) {
 
 function reload() {
   load(true)
-}
-
-function clearKeyword() {
-  keyword.value = ''
-  reload()
-}
-
-function reset() {
-  keyword.value = ''
-  childName.value = ''
-  parentName.value = ''
-  minCareCount.value = undefined
-  reload()
 }
 
 function goDetail(row: CareRecord) {
@@ -179,91 +132,29 @@ onReachBottom(() => {
   padding-bottom: 60rpx;
 }
 
-.search-bar {
+.topbar {
   display: flex;
   align-items: center;
-  padding: 20rpx 24rpx 0;
+  padding: 20rpx 24rpx 12rpx;
   background: #fff;
 }
 
-.search-box {
+.picker-wrap {
   flex: 1;
-  display: flex;
-  align-items: center;
-  height: 72rpx;
-  padding: 0 20rpx;
-  background: #f4f6f9;
-  border-radius: 36rpx;
+  min-width: 0;
 }
 
-.search-icon {
-  font-size: 26rpx;
-  margin-right: 12rpx;
-}
-
-.search-input {
-  flex: 1;
-  font-size: 28rpx;
-  color: #1e293b;
-}
-
-.ph {
-  color: #94a3b8;
-}
-
-.search-clear {
-  width: 40rpx;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 26rpx;
-}
-
-.more-toggle {
-  margin-left: 20rpx;
-  font-size: 26rpx;
-  color: #2563eb;
-}
-
-.more-filter {
-  padding: 16rpx 24rpx 20rpx;
-  background: #fff;
-}
-
-.mf-row {
-  display: flex;
-  align-items: center;
-  min-height: 80rpx;
-  border-bottom: 1rpx solid #f8fafc;
-}
-
-.mf-label {
-  width: 200rpx;
+.query-btn {
   flex: none;
+  margin-left: 20rpx;
+  height: 72rpx;
+  padding: 0 32rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  color: #fff;
   font-size: 27rpx;
-  color: #475569;
-}
-
-.mf-input {
-  flex: 1;
-  font-size: 27rpx;
-  color: #1e293b;
-  text-align: right;
-}
-
-.mf-unit {
-  margin-left: 10rpx;
-  font-size: 26rpx;
-  color: #64748b;
-}
-
-.mf-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 20rpx;
-}
-
-.mf-actions .btn {
-  margin-left: 16rpx;
+  align-items: center;
 }
 
 .list {

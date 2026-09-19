@@ -1,5 +1,5 @@
 <template>
-  <view class="reserve-card" @click="$emit('detail', row)">
+  <view class="reserve-card">
     <view class="rc-head">
       <view class="rc-name-wrap">
         <text class="rc-name">{{ row.childName || '未知儿童' }}</text>
@@ -18,49 +18,36 @@
       <text class="rc-meta-item">家长：{{ row.parentName || '-' }}</text>
       <text class="rc-meta-item">{{ row.parentPhone || '' }}</text>
     </view>
-    <view v-if="row.executorName" class="rc-meta">
-      <text class="rc-meta-item">执行：{{ row.executorName }}</text>
-    </view>
     <view v-if="statusValue === 4" class="rc-meta">
       <text class="rc-meta-item rc-reason">取消原因：{{ row.cancelReason || '-' }}</text>
     </view>
 
-    <view v-if="!readonly" class="rc-actions" @click.stop>
-      <view
-        v-if="row.status === 1 || row.status === 2"
-        class="btn btn-sm"
-        :class="row.status === 2 ? 'btn-primary' : 'btn-primary'"
-        :style="{ opacity: canCare ? 1 : 0.45 }"
-        @click="onCare"
-      >
+    <view v-if="!readonly && (row.status === 1 || row.status === 2 || sameDayNoShow)" class="rc-actions">
+      <template v-if="row.status === 1">
+        <view
+          class="btn btn-sm btn-danger-plain rc-btn"
+          :class="{ 'is-disabled': !cancelable }"
+          @click="emitIf('cancel', cancelable)"
+        >
+          取消预约
+        </view>
+        <view
+          class="btn btn-sm btn-plain rc-btn"
+          :class="{ 'is-disabled': !adjustable }"
+          @click="emitIf('adjust', adjustable)"
+        >
+          调整日期
+        </view>
+        <view
+          class="btn btn-sm btn-plain rc-btn"
+          :class="{ 'is-disabled': !noShowable }"
+          @click="emitIf('noshow', noShowable)"
+        >
+          标记爽约
+        </view>
+      </template>
+      <view class="btn btn-sm btn-primary rc-btn" :class="{ 'is-disabled': !canCare }" @click="onCare">
         {{ row.status === 2 ? '完成养护' : '开始养护' }}
-      </view>
-      <view
-        v-if="row.status === 1"
-        class="btn btn-sm btn-plain"
-        :class="{ 'is-disabled': !adjustable }"
-        @click="emitIf('adjust', adjustable)"
-      >
-        调整
-      </view>
-      <view
-        v-if="row.status === 1"
-        class="btn btn-sm btn-plain"
-        :class="{ 'is-disabled': !noShowable }"
-        @click="emitIf('noshow', noShowable)"
-      >
-        爽约
-      </view>
-      <view
-        v-if="row.status === 1"
-        class="btn btn-sm btn-danger-plain"
-        :class="{ 'is-disabled': !cancelable }"
-        @click="emitIf('cancel', cancelable)"
-      >
-        取消
-      </view>
-      <view v-if="row.status === 3 || statusValue === 4" class="btn btn-sm btn-plain" @click="$emit('detail', row)">
-        详情
       </view>
     </view>
   </view>
@@ -71,7 +58,7 @@ import { computed } from 'vue'
 import type { Reserve } from '@/types'
 import { reserveStatusLabel, reserveStatusTag, reserveStatusValue } from '@/utils/dict'
 import { formatHm } from '@/utils/format'
-import { canAdjust, canCancel, canMarkNoShow, canOperateCare, isOverdue } from '@/utils/reserve-rules'
+import { canAdjust, canCancel, canMarkNoShow, canOperateCare, isOverdue, isReserveToday } from '@/utils/reserve-rules'
 import { toast } from '@/utils/request'
 
 const props = defineProps<{
@@ -85,13 +72,16 @@ const emit = defineEmits<{
   (e: 'adjust', row: Reserve): void
   (e: 'noshow', row: Reserve): void
   (e: 'cancel', row: Reserve): void
-  (e: 'detail', row: Reserve): void
 }>()
 
 const statusValue = computed(() => reserveStatusValue(props.row))
 const statusLabel = computed(() => reserveStatusLabel(props.row))
 const statusTag = computed(() => reserveStatusTag(props.row))
 const showOverdue = computed(() => props.row.status === 1 && isOverdue(props.row))
+/** 当天已爽约：仍允许开始养护（客户当天到店） */
+const sameDayNoShow = computed(
+  () => props.row.status === 4 && props.row.noShowFlag === 1 && isReserveToday(props.row)
+)
 
 const canCare = computed(() => canOperateCare(props.row))
 const adjustable = computed(() => canAdjust(props.row))
@@ -196,11 +186,16 @@ function emitIf(type: 'adjust' | 'noshow' | 'cancel', enabled: boolean) {
 
 .rc-actions {
   display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 14rpx;
+  align-items: center;
+  gap: 12rpx;
   margin-top: 22rpx;
   padding-top: 20rpx;
   border-top: 2rpx solid #eef1f5;
+}
+
+.rc-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 0 6rpx;
 }
 </style>

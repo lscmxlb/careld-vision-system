@@ -37,13 +37,13 @@ export function reserveStatusTag(row: Reserve): string {
 /* ---------------- 档案审核状态 ---------------- */
 export const AUDIT_STATUS_MAP: Record<number, { label: string; tag: string }> = {
   0: { label: '待审核', tag: 'tag-warning' },
-  1: { label: '已通过', tag: 'tag-success' },
+  1: { label: '已审核', tag: 'tag-success' },
   2: { label: '已驳回', tag: 'tag-danger' },
 }
 
 export const AUDIT_STATUS_OPTIONS = [
   { value: 0, label: '待审核' },
-  { value: 1, label: '已通过' },
+  { value: 1, label: '已审核' },
   { value: 2, label: '已驳回' },
 ]
 
@@ -91,7 +91,7 @@ export const RELATION_OPTIONS = ['妈妈', '爸爸', '爷爷', '奶奶', '外公
 export const DELIVERY_TYPE_OPTIONS = ['顺产', '剖宫产']
 
 /* ---------------- 医务人员角色 ---------------- */
-export const STAFF_ROLE_MAP: Record<number, string> = { 1: '医师', 2: '医生助理' }
+export const STAFF_ROLE_MAP: Record<number, string> = { 1: '主治医师', 2: '医生助理' }
 
 /* ---------------- 用户类型（登录身份展示） ---------------- */
 export const USER_TYPE_MAP: Record<number, string> = {

@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.careld.common.exception.GlobalExceptionHandler;
+import com.careld.common.log.OperationLogAspect;
+import com.careld.common.log.OperationLogWriter;
 import com.careld.common.security.AuthenticationSetter;
 import com.careld.common.security.JwtAuthFilter;
 import com.careld.common.security.PermissionAspect;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +24,9 @@ import org.springframework.context.annotation.Import;
  */
 @Configuration
 @EnableAspectJAutoProxy
-@Import({GlobalExceptionHandler.class, CareldMetaObjectHandler.class, PermissionAspect.class})
+@MapperScan("com.careld.common.mapper")
+@Import({GlobalExceptionHandler.class, CareldMetaObjectHandler.class, PermissionAspect.class,
+        OperationLogWriter.class, OperationLogAspect.class})
 public class CareldCommonAutoConfiguration {
 
     /**

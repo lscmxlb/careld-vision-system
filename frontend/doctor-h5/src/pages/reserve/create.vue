@@ -14,44 +14,7 @@
       <!-- 新建模式：选择儿童 -->
       <view v-else class="card">
         <view class="section-title">1. 选择儿童</view>
-        <view class="search">
-          <text class="search-icon">🔍</text>
-          <input
-            v-model="childKeyword"
-            class="search-input"
-            placeholder="输入姓名或手机号筛选"
-            placeholder-class="ph"
-          />
-          <text v-if="childKeyword" class="search-clear" @click="childKeyword = ''">✕</text>
-        </view>
-
-        <view v-if="childrenLoading" class="loading-tip">加载中…</view>
-        <scroll-view v-else class="child-scroll" scroll-y>
-          <view
-            v-for="item in filteredChildren"
-            :key="item.id"
-            class="child-row"
-            :class="{ 'child-on': selectedChild?.id === item.id }"
-            @click="selectChild(item)"
-          >
-            <view class="cr-main">
-              <view class="cr-name-row">
-                <text class="cr-name">{{ item.name }}</text>
-                <text class="cr-meta">{{ genderText(item.gender) }} · {{ ageText(item.birthDate, item.age) }}</text>
-              </view>
-              <text class="cr-phone">{{ item.phone || '-' }}</text>
-            </view>
-            <view class="cr-right">
-              <text class="tag" :class="(item.remainingCount || 0) > 0 ? 'tag-primary' : 'tag-grey'">
-                剩余 {{ item.remainingCount || 0 }} 次
-              </text>
-              <text v-if="selectedChild?.id === item.id" class="cr-check">✓</text>
-            </view>
-          </view>
-          <view v-if="!filteredChildren.length" class="mini-empty">
-            没有匹配的档案（仅显示已审核且启用的儿童）
-          </view>
-        </scroll-view>
+        <ChildSearchPicker placeholder="输入姓名或手机号查找儿童" @select="onChildSelected" />
       </view>
 
       <!-- 选择日期 -->
@@ -134,9 +97,10 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onBackPress, onLoad } from '@dcloudio/uni-app'
-import { childApi, reserveApi, scheduleRuleApi } from '@/api'
+import ChildSearchPicker from '@/components/ChildSearchPicker.vue'
+import { reserveApi, scheduleRuleApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import { addDays, ageText, formatDate, formatHm, todayStr } from '@/utils/format'
+import { addDays, formatDate, formatHm, todayStr } from '@/utils/format'
 import { toast } from '@/utils/request'
 import type { Child, Reserve, ScheduleSlot } from '@/types'
 
@@ -146,9 +110,6 @@ const isAdjust = ref(false)
 const adjustId = ref<number | null>(null)
 const adjusting = ref<Reserve | null>(null)
 
-const childKeyword = ref('')
-const children = ref<Child[]>([])
-const childrenLoading = ref(false)
 const selectedChild = ref<Child | null>(null)
 
 const availableDates = ref<Array<{ value: string; label: string; sub: string }>>([])
@@ -161,24 +122,18 @@ const form = reactive({ date: '', slotId: '', remark: '' })
 const submitting = ref(false)
 const leaving = ref(false)
 
-const filteredChildren = computed(() => {
-  const kw = childKeyword.value.trim()
-  if (!kw) return children.value
-  return children.value.filter((c) => (c.name || '').includes(kw) || (c.phone || '').includes(kw))
-})
-
 const canSubmit = computed(() => {
   if (!form.slotId) return false
   if (isAdjust.value) return true
   return !!selectedChild.value
 })
 
-function genderText(gender?: number) {
-  return gender === 1 ? '男' : gender === 0 ? '女' : '未填'
-}
-
 function slotRemaining(slot: ScheduleSlot) {
   return (slot.maxCapacity || 0) - (slot.bookedCount || 0)
+}
+
+function onChildSelected(child: Child | null) {
+  selectedChild.value = child
 }
 
 onLoad(async (query) => {
@@ -189,7 +144,6 @@ onLoad(async (query) => {
     await loadAdjusting()
   } else {
     uni.setNavigationBarTitle({ title: '新建预约' })
-    loadChildren()
   }
   loadAvailableDates()
 })
@@ -200,17 +154,6 @@ async function loadAdjusting() {
     adjusting.value = await reserveApi.getReserveDetail(adjustId.value)
   } catch {
     // 错误提示已在请求层处理
-  }
-}
-
-async function loadChildren() {
-  childrenLoading.value = true
-  try {
-    children.value = await childApi.pickOptions({ storeId: userStore.storeId })
-  } catch {
-    // 错误提示已在请求层处理
-  } finally {
-    childrenLoading.value = false
   }
 }
 
@@ -234,10 +177,6 @@ async function loadAvailableDates() {
   } finally {
     daysLoading.value = false
   }
-}
-
-function selectChild(child: Child) {
-  selectedChild.value = child
 }
 
 async function pickDate(value: string) {
@@ -360,101 +299,6 @@ async function submit() {
   margin-top: 8rpx;
   font-size: 26rpx;
   color: #1d4ed8;
-}
-
-.search {
-  display: flex;
-  align-items: center;
-  height: 72rpx;
-  background: #f2f5f8;
-  border-radius: 36rpx;
-  padding: 0 24rpx;
-  margin-bottom: 16rpx;
-}
-
-.search-icon {
-  font-size: 26rpx;
-  margin-right: 12rpx;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 27rpx;
-  color: #1f2937;
-  height: 100%;
-}
-
-.ph {
-  color: #b7bfc9;
-  font-size: 27rpx;
-}
-
-.search-clear {
-  font-size: 26rpx;
-  color: #b7bfc9;
-  padding-left: 12rpx;
-}
-
-.child-scroll {
-  max-height: 620rpx;
-}
-
-.child-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20rpx 20rpx;
-  border-radius: 14rpx;
-  border: 2rpx solid #eef1f5;
-  margin-bottom: 14rpx;
-}
-
-.child-on {
-  border-color: #2563eb;
-  background: #f0f7ff;
-}
-
-.cr-main {
-  min-width: 0;
-  flex: 1;
-}
-
-.cr-name-row {
-  display: flex;
-  align-items: baseline;
-}
-
-.cr-name {
-  font-size: 29rpx;
-  font-weight: 600;
-  color: #1f2937;
-  margin-right: 12rpx;
-}
-
-.cr-meta {
-  font-size: 23rpx;
-  color: #9ca3af;
-}
-
-.cr-phone {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 24rpx;
-  color: #5b6572;
-}
-
-.cr-right {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.cr-check {
-  margin-left: 12rpx;
-  color: #2563eb;
-  font-size: 32rpx;
-  font-weight: 700;
 }
 
 .mini-empty {

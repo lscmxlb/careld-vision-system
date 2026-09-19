@@ -40,6 +40,11 @@ export const childApi = {
     return request.put(`/children/${id}/status`, data)
   },
 
+  // 恢复家长删除（隐藏）的档案，恢复后家长端重新可见
+  restoreChild: (id: number): Promise<void> => {
+    return request.put(`/children/${id}/restore`, {})
+  },
+
   // 搜索儿童（TV/模糊使用）
   searchChildren: (params: { storeId: number; keyword: string }): Promise<Child[]> => {
     return request.get('/children/search', { params })

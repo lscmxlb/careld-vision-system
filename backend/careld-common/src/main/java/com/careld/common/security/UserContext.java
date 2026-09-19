@@ -81,17 +81,24 @@ public final class UserContext {
         private final Long agentId;
         private final Long deptId;
         private final String username;
+        private final String realName;
         private final List<String> permissions;
 
         public CurrentUser(Long userId, Integer userType, Long storeId, Long deptId, String username) {
-            this(userId, userType, storeId, null, null, deptId, username, null);
+            this(userId, userType, storeId, null, null, deptId, username, null, null);
         }
 
         public CurrentUser(Long userId, Integer userType, Long storeId, Long deptId, String username, List<String> permissions) {
-            this(userId, userType, storeId, null, null, deptId, username, permissions);
+            this(userId, userType, storeId, null, null, deptId, username, null, permissions);
         }
 
-        public CurrentUser(Long userId, Integer userType, Long storeId, Long centerId, Long agentId, Long deptId, String username, List<String> permissions) {
+        public CurrentUser(Long userId, Integer userType, Long storeId, Long centerId, Long agentId, Long deptId,
+                           String username, List<String> permissions) {
+            this(userId, userType, storeId, centerId, agentId, deptId, username, null, permissions);
+        }
+
+        public CurrentUser(Long userId, Integer userType, Long storeId, Long centerId, Long agentId, Long deptId,
+                           String username, String realName, List<String> permissions) {
             this.userId = userId;
             this.userType = userType;
             this.storeId = storeId;
@@ -99,6 +106,7 @@ public final class UserContext {
             this.agentId = agentId;
             this.deptId = deptId;
             this.username = username;
+            this.realName = realName;
             this.permissions = permissions;
         }
 
@@ -128,6 +136,10 @@ public final class UserContext {
 
         public String getUsername() {
             return username;
+        }
+
+        public String getRealName() {
+            return realName;
         }
 
         public List<String> getPermissions() {

@@ -28,8 +28,8 @@
       <view class="card">
         <view class="section-title">档案信息</view>
         <view class="kv"><text class="kv-key">档案编号</text><text class="kv-value">{{ child.childCode || '—' }}</text></view>
-        <view class="kv"><text class="kv-key">儿童姓名</text><text class="kv-value">{{ child.name || '—' }}</text></view>
-        <view class="kv"><text class="kv-key">所属医院</text><text class="kv-value">{{ child.storeName || '—' }}</text></view>
+        <view class="kv"><text class="kv-key">儿童姓名</text><text class="kv-value" :class="genderNameClass(child.gender)">{{ child.name || '—' }}</text></view>
+        <view class="kv"><text class="kv-key">建档医院</text><text class="kv-value">{{ child.storeName || '—' }}</text></view>
         <view class="kv"><text class="kv-key">主治医师</text><text class="kv-value">{{ child.doctorName || '—' }}</text></view>
         <view class="kv"><text class="kv-key">性别</text><text class="kv-value">{{ genderText(child.gender) }}</text></view>
         <view class="kv"><text class="kv-key">出生日期</text><text class="kv-value">{{ child.birthDate || '—' }}</text></view>
@@ -66,6 +66,10 @@
           <text class="entry-label">养护检测报告</text>
           <text class="entry-arrow">›</text>
         </view>
+        <view class="entry-row" @click="goServiceRecords">
+          <text class="entry-label">预约记录</text>
+          <text class="entry-arrow">›</text>
+        </view>
       </view>
     </template>
 
@@ -73,6 +77,7 @@
 
     <view class="sticky-bar">
       <view class="btn btn-plain" @click="goRecords">养护记录</view>
+      <view class="btn btn-danger-plain" @click="handleDelete">删除档案</view>
       <view
         class="btn btn-primary"
         :class="{ 'is-disabled': !canReserve }"
@@ -104,6 +109,11 @@ function genderText(gender: number) {
   return gender === 1 ? '男' : gender === 0 ? '女' : '未知'
 }
 
+/** 姓名按性别着色：男孩蓝 #2563eb / 女孩粉 #ec4899 */
+function genderNameClass(gender: number) {
+  return gender === 1 ? 'name-boy' : gender === 0 ? 'name-girl' : ''
+}
+
 function ageLabel(item: Child) {
   return ageText(item.birthDate, item.age) || '年龄未知'
 }
@@ -129,7 +139,27 @@ async function load() {
 function reserveTip() {
   if (child.value?.auditStatus === 0) return '档案待医院审核，暂不可预约'
   if (child.value?.auditStatus === 2) return '档案已被驳回，暂不可预约'
-  return '可用次数不足，请联系医院前台'
+  return '可用次数不足，请联系医院授权预约次数'
+}
+
+/** 删除档案：后端置为隐藏（家长不可见、历史记录一并隐藏，医生端可恢复） */
+function handleDelete() {
+  uni.showModal({
+    title: '删除档案',
+    content: '删除后不可恢复，系统将把档案设为隐藏状态：您将不再看到该儿童及其历史记录，医生端可查看并重新启用。',
+    confirmText: '删除',
+    confirmColor: '#ef4444',
+    success: async (res) => {
+      if (!res.confirm) return
+      try {
+        await childApi.deleteChild(childId.value)
+        toast('档案已删除')
+        setTimeout(() => uni.navigateBack(), 400)
+      } catch {
+        // 错误提示已在请求层处理（含"有尚未完成的预约"业务拦截）
+      }
+    },
+  })
 }
 
 function goReserve() {
@@ -147,6 +177,10 @@ function goTrend() {
 
 function goReport() {
   uni.navigateTo({ url: `/pages/report/index?childId=${childId.value}` })
+}
+
+function goServiceRecords() {
+  uni.navigateTo({ url: `/pages/child/records?id=${childId.value}` })
 }
 
 function goRecords() {
@@ -254,6 +288,14 @@ onShow(load)
 .kv-value {
   flex: 1;
   color: #1e293b;
+}
+
+.name-boy {
+  color: #2563eb;
+}
+
+.name-girl {
+  color: #ec4899;
 }
 
 .entry-card {

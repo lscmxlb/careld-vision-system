@@ -17,9 +17,11 @@ export function isOverdue(row: Reserve): boolean {
   return end.getTime() < Date.now()
 }
 
-/** 开始/完成养护按钮：已预约当天可开始；养护中可完成 */
+/** 开始/完成养护按钮：已预约当天可开始；当天已爽约（客户当天到店）同样可开始；养护中可完成 */
 export function canOperateCare(row: Reserve): boolean {
-  return row.status === 2 || (row.status === 1 && isReserveToday(row))
+  if (row.status === 2) return true
+  if (!isReserveToday(row)) return false
+  return row.status === 1 || (row.status === 4 && row.noShowFlag === 1)
 }
 
 /** 预约调整：仅已预约且未逾期 */

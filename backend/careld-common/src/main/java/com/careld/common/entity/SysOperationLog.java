@@ -1,4 +1,4 @@
-package com.careld.user.entity;
+package com.careld.common.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 
 /**
  * 系统操作日志
+ *
+ * <p>sys_operation_log 表无 deleted_at / created_by 等审计列，故不继承 BaseEntity。</p>
  */
 @Data
 @TableName("sys_operation_log")

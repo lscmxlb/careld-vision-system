@@ -28,14 +28,18 @@ public class OperationLogController {
     @GetMapping
     @RequirePermission("operationlog:view")
     public Result<PageResult<OperationLogResponse>> list(
+            @RequestParam(value = "storeId", required = false) Long storeId,
             @RequestParam(value = "logType", required = false) Integer logType,
             @RequestParam(value = "module", required = false) String module,
+            @RequestParam(value = "action", required = false) String action,
+            @RequestParam(value = "userName", required = false) String userName,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "startDate", required = false) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) LocalDate endDate,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        IPage<OperationLogResponse> p = operationLogService.pageLogs(logType, module, keyword, startDate, endDate, page, size);
+        IPage<OperationLogResponse> p = operationLogService.pageLogs(storeId, logType, module, action, userName,
+                keyword, startDate, endDate, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 

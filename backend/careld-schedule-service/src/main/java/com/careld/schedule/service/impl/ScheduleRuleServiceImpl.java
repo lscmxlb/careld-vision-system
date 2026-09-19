@@ -88,6 +88,7 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
         saveExceptions(rule);
         // 重建时段：清除未占用的空闲时段，按新规则生成；已预约时段保留不重复生成
         slotMapper.deleteUnbookedInRange(exist.getStoreId(), exist.getStartDate(), exist.getEndDate());
+        syncBookedSlotCapacity(rule, bookedSlots);
         materializeSlots(rule, bookedSlots);
     }
 
@@ -149,7 +150,7 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
             Map<String, Object> item = new HashMap<>();
             item.put("date", String.valueOf(row.get("slotDate")));
             item.put("booked", row.get("booked") == null ? 0 : ((Number) row.get("booked")).intValue());
-            item.put("available", row.get("available") == null ? 0 : ((Number) row.get("available")).intValue());
+            item.put("total", row.get("total") == null ? 0 : ((Number) row.get("total")).intValue());
             result.add(item);
         }
         return result;
@@ -266,25 +267,9 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
         }
         Set<LocalDate> exceptions = collectExceptions(rule);
         for (ScheduleSlot slot : bookedSlots) {
-            LocalDate date = slot.getSlotDate();
-            LocalTime start = slot.getSlotStartTime();
-            ScheduleRulePeriod covering = null;
-            if (!date.isBefore(rule.getStartDate()) && !date.isAfter(rule.getEndDate()) && !exceptions.contains(date)) {
-                int dayType = isWeekend(date) ? 2 : 1;
-                for (ScheduleRulePeriod p : rule.getPeriods()) {
-                    if (p.getDayType() == null || p.getDayType() != dayType
-                            || p.getStartTime() == null || p.getEndTime() == null) {
-                        continue;
-                    }
-                    boolean hit = !start.isBefore(p.getStartTime()) && start.isBefore(p.getEndTime())
-                            && Duration.between(p.getStartTime(), start).toMinutes() % 60 == 0;
-                    if (hit) {
-                        covering = p;
-                        break;
-                    }
-                }
-            }
-            String slotLabel = HM.format(start) + "~" + HM.format(slot.getSlotEndTime()) + "（" + date + "）";
+            ScheduleRulePeriod covering = findCoveringPeriod(rule, exceptions, slot.getSlotDate(), slot.getSlotStartTime());
+            String slotLabel = HM.format(slot.getSlotStartTime()) + "~" + HM.format(slot.getSlotEndTime())
+                    + "（" + slot.getSlotDate() + "）";
             if (covering == null) {
                 throw new BusinessException(4002, "时段 " + slotLabel + " 已存在预约，新规则不再覆盖该时段，无法修改");
             }
@@ -294,6 +279,43 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
                         + " 人，新上限 " + covering.getCapacity() + " 人小于已约人数，无法修改");
             }
         }
+    }
+
+    /**
+     * 已预约时段保留原记录（不重建，避免丢失占位），但容量需同步为新规则对应时段的上限，
+     * 否则 Σ容量（日历 B 值）会因旧规则残留容量而按天不一致
+     */
+    private void syncBookedSlotCapacity(ScheduleRule rule, List<ScheduleSlot> bookedSlots) {
+        Set<LocalDate> exceptions = collectExceptions(rule);
+        for (ScheduleSlot slot : bookedSlots) {
+            ScheduleRulePeriod covering = findCoveringPeriod(rule, exceptions, slot.getSlotDate(), slot.getSlotStartTime());
+            if (covering == null || covering.getCapacity() == null
+                    || covering.getCapacity().equals(slot.getMaxCapacity())) {
+                continue;
+            }
+            slotMapper.updateCapacity(slot.getId(), covering.getCapacity());
+        }
+    }
+
+    /** 命中规则时段：日期在区间内且非例外日，开始时间落在某时段内并按整小时对齐 */
+    private ScheduleRulePeriod findCoveringPeriod(ScheduleRule rule, Set<LocalDate> exceptions,
+                                                  LocalDate date, LocalTime start) {
+        if (date.isBefore(rule.getStartDate()) || date.isAfter(rule.getEndDate()) || exceptions.contains(date)) {
+            return null;
+        }
+        int dayType = isWeekend(date) ? 2 : 1;
+        for (ScheduleRulePeriod p : rule.getPeriods()) {
+            if (p.getDayType() == null || p.getDayType() != dayType
+                    || p.getStartTime() == null || p.getEndTime() == null) {
+                continue;
+            }
+            boolean hit = !start.isBefore(p.getStartTime()) && start.isBefore(p.getEndTime())
+                    && Duration.between(p.getStartTime(), start).toMinutes() % 60 == 0;
+            if (hit) {
+                return p;
+            }
+        }
+        return null;
     }
 
     private static boolean isWeekend(LocalDate date) {

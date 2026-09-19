@@ -1,5 +1,6 @@
 package com.careld.user.service.impl;
 
+import com.careld.common.exception.BusinessException;
 import com.careld.user.dto.StatisticsDtos;
 import com.careld.user.mapper.StatisticsMapper;
 import com.careld.user.service.StatisticsService;
@@ -26,6 +27,22 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Override
     public StatisticsDtos.DashboardStats dashboard(Long storeId) {
         return statisticsMapper.dashboard(storeId);
+    }
+
+    @Override
+    public StatisticsDtos.WorkbenchStats workbenchStats(Long storeId) {
+        return statisticsMapper.workbenchStats(storeId);
+    }
+
+    @Override
+    public StatisticsDtos.StoreOverview storeOverview(Long storeId) {
+        LocalDate today = LocalDate.now();
+        StatisticsDtos.StoreOverview overview = statisticsMapper.storeOverview(
+                storeId, today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()));
+        if (overview == null) {
+            throw new BusinessException(404, "医院不存在");
+        }
+        return overview;
     }
 
     @Override

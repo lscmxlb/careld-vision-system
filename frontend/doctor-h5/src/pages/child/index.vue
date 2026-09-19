@@ -1,7 +1,7 @@
 <template>
   <view class="page">
-    <view class="search-bar">
-      <view class="search-box">
+    <view class="topbar">
+      <view class="search">
         <text class="search-icon">🔍</text>
         <input
           v-model="keyword"
@@ -14,22 +14,19 @@
         />
         <text v-if="keyword" class="search-clear" @click="clearKeyword">✕</text>
       </view>
+      <view class="create-btn" @click="goCreate">添加档案</view>
     </view>
 
-    <view class="filter-row">
-      <scroll-view class="chip-scroll" scroll-x :show-scrollbar="false">
-        <view class="chip-list">
-          <view
-            v-for="opt in AUDIT_CHIPS"
-            :key="String(opt.value)"
-            class="chip"
-            :class="{ 'chip-active': activeFilters.includes(opt.value) }"
-            @click="toggleFilter(opt.value)"
-          >
-            {{ opt.label }}
-          </view>
-        </view>
-      </scroll-view>
+    <view class="status-chips">
+      <view
+        v-for="opt in AUDIT_CHIPS"
+        :key="String(opt.value)"
+        class="chip"
+        :class="{ 'chip-on': chipActive(opt.value) }"
+        @click="toggleFilter(opt.value)"
+      >
+        {{ opt.label }}
+      </view>
     </view>
 
     <view v-if="filteredList.length" class="list">
@@ -39,6 +36,7 @@
             <text class="child-name" :class="genderNameClass(item.gender)">{{ item.name || '未命名' }}</text>
             <text class="tag" :class="auditTag(item.auditStatus)">{{ auditLabel(item.auditStatus) }}</text>
             <text v-if="item.status === 0" class="tag tag-danger">已禁用</text>
+            <text v-else-if="item.status === 2" class="tag tag-grey">已隐藏</text>
           </view>
           <view class="remain">
             <text class="remain-label">养护</text>
@@ -77,8 +75,6 @@
       <text class="empty-icon">📋</text>
       <text class="empty-text">暂无儿童档案</text>
     </view>
-
-    <view class="fab" @click="goCreate">＋ 建档</view>
   </view>
 </template>
 
@@ -93,15 +89,22 @@ import type { Child } from '@/types'
 
 const PAGE_SIZE = 20
 
-/** 筛选 chip：待审核/已通过/已驳回（审核状态）+ 已禁用（启用状态） */
-type AuditChipValue = number | 'disabled'
+/** 筛选 chip：待审核/已审核/已驳回（审核状态）+ 已禁用/已隐藏（启用状态）+ 全部（互斥全选） */
+type AuditChipValue = number | 'disabled' | 'hidden' | 'all'
 
 const AUDIT_CHIPS: { value: AuditChipValue; label: string }[] = [
   ...AUDIT_STATUS_OPTIONS.map((o) => ({ value: o.value as AuditChipValue, label: o.label })),
   { value: 'disabled', label: '已禁用' },
+  { value: 'hidden', label: '已隐藏' },
+  { value: 'all', label: '全部' },
 ]
 
-/** 进入页面默认显示：待审核 + 已通过 */
+/** 「全部」对应的具体筛选值（互斥全选；不含已隐藏，已隐藏为独立 chip） */
+const ALL_FILTER_VALUES: AuditChipValue[] = AUDIT_CHIPS.map((c) => c.value).filter(
+  (v) => v !== 'all' && v !== 'hidden',
+)
+
+/** 进入页面默认显示：待审核 + 已审核 */
 const DEFAULT_CHIPS: AuditChipValue[] = [0, 1]
 
 const userStore = useUserStore()
@@ -113,17 +116,27 @@ const list = ref<Child[]>([])
 const loading = ref(false)
 const visibleCount = ref(PAGE_SIZE)
 
-/** 本地筛选：审核状态 chip 之间为并集，已禁用单独放行 status=0 的记录 */
+/** 本地筛选：审核状态 chip 之间为并集，已禁用/已隐藏各自单独放行对应 status */
 const filteredList = computed(() => {
   const auditSelected = activeFilters.value.filter((v): v is number => typeof v === 'number')
   const showDisabled = activeFilters.value.includes('disabled')
+  const showHidden = activeFilters.value.includes('hidden')
   return list.value.filter((item) => {
+    if (item.status === 2) return showHidden
     if (item.status === 0) return showDisabled
     return auditSelected.includes(item.auditStatus)
   })
 })
 
 const visibleList = computed(() => filteredList.value.slice(0, visibleCount.value))
+
+/** 「全部」激活（四个筛选值全选）时，只高亮「全部」chip */
+const allActive = computed(() => ALL_FILTER_VALUES.every((v) => activeFilters.value.includes(v)))
+
+function chipActive(value: AuditChipValue) {
+  if (value === 'all') return allActive.value
+  return !allActive.value && activeFilters.value.includes(value)
+}
 
 function genderText(gender: number) {
   return gender === 1 ? '男孩' : gender === 0 ? '女孩' : '未知'
@@ -182,6 +195,17 @@ function clearKeyword() {
 }
 
 function toggleFilter(value: AuditChipValue) {
+  if (value === 'all') {
+    activeFilters.value = [...ALL_FILTER_VALUES]
+    visibleCount.value = PAGE_SIZE
+    return
+  }
+  if (allActive.value) {
+    // 全选态下点单项：直接切换到只选该项（与「全部」互斥）
+    activeFilters.value = [value]
+    visibleCount.value = PAGE_SIZE
+    return
+  }
   const idx = activeFilters.value.indexOf(value)
   if (idx >= 0) {
     if (activeFilters.value.length === 1) {
@@ -221,21 +245,24 @@ onReachBottom(showMore)
 
 <style lang="scss" scoped>
 .page {
-  padding-bottom: 160rpx;
+  padding-bottom: 40rpx;
 }
 
-.search-bar {
-  padding: 20rpx 24rpx 0;
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 28rpx 12rpx;
   background: #fff;
 }
 
-.search-box {
+.search {
+  flex: 1;
   display: flex;
   align-items: center;
   height: 72rpx;
-  padding: 0 20rpx;
-  background: #f4f6f9;
+  background: #f2f5f8;
   border-radius: 36rpx;
+  padding: 0 24rpx;
 }
 
 .search-icon {
@@ -260,36 +287,43 @@ onReachBottom(showMore)
   font-size: 26rpx;
 }
 
-.filter-row {
+.create-btn {
+  margin-left: 20rpx;
+  height: 72rpx;
+  padding: 0 32rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  color: #fff;
+  font-size: 27rpx;
   display: flex;
   align-items: center;
+}
+
+.status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12rpx 28rpx 8rpx;
   background: #fff;
-  padding: 16rpx 24rpx;
   border-bottom: 1rpx solid #f1f5f9;
-}
-
-.chip-scroll {
-  flex: 1;
-  white-space: nowrap;
-}
-
-.chip-list {
-  display: inline-flex;
+  gap: 14rpx;
 }
 
 .chip {
-  display: inline-block;
-  padding: 10rpx 26rpx;
-  margin-right: 12rpx;
-  font-size: 26rpx;
-  color: #475569;
-  background: #f1f5f9;
-  border-radius: 30rpx;
+  height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: 28rpx;
+  background: #f2f5f8;
+  color: #5b6572;
+  font-size: 25rpx;
+  display: flex;
+  align-items: center;
 }
 
-.chip-active {
-  color: #fff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
+.chip-on {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 500;
 }
 
 .list {
@@ -381,18 +415,5 @@ onReachBottom(showMore)
   color: #b91c1c;
   background: #fef2f2;
   border-radius: 8rpx;
-}
-
-.fab {
-  position: fixed;
-  right: 32rpx;
-  bottom: 60rpx;
-  padding: 22rpx 40rpx;
-  font-size: 28rpx;
-  color: #fff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  border-radius: 50rpx;
-  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.35);
-  z-index: 20;
 }
 </style>

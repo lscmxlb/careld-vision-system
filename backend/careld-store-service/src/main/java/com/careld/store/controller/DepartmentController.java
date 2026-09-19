@@ -4,6 +4,7 @@ import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.store.entity.Department;
 import com.careld.store.service.DepartmentService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -34,23 +35,27 @@ public class DepartmentController {
         return Result.success(departmentService.getById(id));
     }
 
+    @OperationLog(module = "departments", action = "create", description = "新增科室")
     @PostMapping
     public Result<Long> create(@RequestBody Department department) {
         return Result.success(departmentService.createDepartment(department));
     }
 
+    @OperationLog(module = "departments", action = "update", description = "编辑科室")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody Department department) {
         departmentService.updateDepartment(id, department);
         return Result.success();
     }
 
+    @OperationLog(module = "departments", action = "status", description = "科室启用/停用")
     @PatchMapping("/{id}/status")
     public Result<Void> status(@PathVariable Long id, @RequestBody Department department) {
         departmentService.updateStatus(id, department.getStatus());
         return Result.success();
     }
 
+    @OperationLog(module = "departments", action = "delete", description = "删除科室")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         departmentService.deleteDepartment(id);

@@ -24,7 +24,8 @@ public interface QuotaMapper {
     @Select("SELECT store_id FROM child_profile WHERE id = #{childId} AND deleted_at IS NULL")
     Long selectChildStoreId(@Param("childId") Long childId);
 
-    @Select("SELECT name_mask AS nameMask, phone_mask AS phoneMask FROM child_profile WHERE id = #{childId} AND deleted_at IS NULL")
+    @Select("SELECT name_mask AS nameMask, phone_mask AS phoneMask, parent_name AS parentName "
+            + "FROM child_profile WHERE id = #{childId} AND deleted_at IS NULL")
     java.util.Map<String, String> selectChildMask(@Param("childId") Long childId);
 
     @Select("SELECT name_encrypted FROM child_profile WHERE id = #{childId} AND deleted_at IS NULL")

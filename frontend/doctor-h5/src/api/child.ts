@@ -58,4 +58,7 @@ export const childApi = {
     get<ChildServiceRecord[]>(`/children/${id}/service-records`),
 
   deleteChild: (id: number): Promise<void> => del<void>(`/children/${id}`),
+
+  /** 恢复家长删除（隐藏）的档案，恢复后家长端重新可见 */
+  restoreChild: (id: number): Promise<void> => put<void>(`/children/${id}/restore`, {}),
 }

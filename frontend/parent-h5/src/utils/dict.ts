@@ -37,13 +37,13 @@ export function reserveStatusTag(row: Reserve): string {
 /* ---------------- 档案审核状态 ---------------- */
 export const AUDIT_STATUS_MAP: Record<number, { label: string; tag: string }> = {
   0: { label: '待审核', tag: 'tag-warning' },
-  1: { label: '已通过', tag: 'tag-success' },
+  1: { label: '已审核', tag: 'tag-success' },
   2: { label: '已驳回', tag: 'tag-danger' },
 }
 
 export const AUDIT_STATUS_OPTIONS = [
   { value: 0, label: '待审核' },
-  { value: 1, label: '已通过' },
+  { value: 1, label: '已审核' },
   { value: 2, label: '已驳回' },
 ]
 

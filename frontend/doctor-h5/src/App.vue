@@ -214,6 +214,16 @@ scroll-view {
   border: 2rpx solid #fbc9c9;
 }
 
+.btn-danger {
+  background: $app-danger;
+  color: #fff;
+}
+
+.btn-success {
+  background: $app-success;
+  color: #fff;
+}
+
 .btn-block {
   width: 100%;
   height: 88rpx;
@@ -284,6 +294,43 @@ scroll-view {
   transform: rotate(45deg);
   margin-left: 12rpx;
   flex-shrink: 0;
+}
+
+/* ---------------- 选择框（统一样式） ---------------- */
+.field-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.select-box {
+  display: flex;
+  align-items: center;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 12rpx;
+  box-sizing: border-box;
+}
+
+.select-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-arrow {
+  width: 14rpx;
+  height: 14rpx;
+  flex: none;
+  margin-left: 12rpx;
+  border-top: 3rpx solid #94a3b8;
+  border-right: 3rpx solid #94a3b8;
+  transform: rotate(135deg);
 }
 
 /* ---------------- 底部操作条 ---------------- */
@@ -364,7 +411,7 @@ scroll-view {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  z-index: 98;
+  z-index: 1000;
 }
 
 .sheet {
@@ -372,7 +419,7 @@ scroll-view {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 99;
+  z-index: 1001;
   background: #fff;
   border-radius: 28rpx 28rpx 0 0;
   max-height: 86vh;
@@ -409,7 +456,73 @@ scroll-view {
 
 .sheet-footer {
   flex-shrink: 0;
+  display: flex;
+  gap: 20rpx;
   padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 16rpx);
   background: #fff;
+}
+
+.sheet-footer .btn {
+  flex: 1;
+}
+
+/* ---------------- 居中弹窗 ---------------- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 56rpx;
+}
+
+.modal-card {
+  width: 100%;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 32rpx 12rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $app-text;
+}
+
+.modal-close {
+  font-size: 40rpx;
+  color: $app-text-light;
+  line-height: 1;
+  padding: 0 8rpx;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12rpx 32rpx 8rpx;
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.modal-footer .btn {
+  flex: 1;
 }
 </style>

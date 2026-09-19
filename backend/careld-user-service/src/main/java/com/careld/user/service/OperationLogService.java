@@ -13,8 +13,9 @@ public interface OperationLogService {
     /**
      * 分页查询操作日志
      */
-    IPage<OperationLogResponse> pageLogs(Integer logType, String module, String keyword,
-                                         LocalDate startDate, LocalDate endDate, Integer page, Integer size);
+    IPage<OperationLogResponse> pageLogs(Long storeId, Integer logType, String module, String action, String userName,
+                                         String keyword, LocalDate startDate, LocalDate endDate,
+                                         Integer page, Integer size);
 
     /**
      * 操作日志详情

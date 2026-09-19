@@ -2,7 +2,7 @@
  * 排班规则 / 预约规则 / 医务人员相关API
  */
 import request from './request'
-import type { ScheduleRule, ScheduleSlot, AppointmentConfig, MedicalStaff, PageResult } from '@/types'
+import type { ScheduleRule, ScheduleSlot, SlotDailySummary, AppointmentConfig, MedicalStaff, PageResult } from '@/types'
 
 export const scheduleRuleApi = {
   // 排班规则列表（含例外日）
@@ -33,6 +33,11 @@ export const scheduleRuleApi = {
   // 查询日期范围内的可约日期（去重）
   getAvailableDates: (startDate: string, endDate: string, storeId?: number): Promise<string[]> => {
     return request.get('/schedule-rules/available-dates', { params: { storeId, startDate, endDate } })
+  },
+
+  // 按天聚合每日名额（日历 A=已约 / B=当天总可约容量；无排班日期不返回）
+  getSlotDailySummary: (startDate: string, endDate: string, storeId?: number): Promise<SlotDailySummary[]> => {
+    return request.get('/schedule-rules/slot-daily-summary', { params: { startDate, endDate, storeId } })
   }
 }
 

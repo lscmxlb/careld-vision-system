@@ -11,6 +11,7 @@ import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
 import com.careld.user.service.PermissionService;
 import com.careld.user.service.UserService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,6 +52,7 @@ public class UserController {
         return Result.success(userResp);
     }
 
+    @OperationLog(module = "users", action = "password", description = "修改本人密码")
     @Operation(summary = "修改本人密码")
     @PostMapping("/me/password")
     public Result<Void> changeMyPassword(@RequestAttribute("userId") Long userId,
@@ -65,6 +67,7 @@ public class UserController {
         return Result.success();
     }
 
+    @OperationLog(module = "users", action = "phone", description = "修改本人手机号")
     @Operation(summary = "修改本人手机号（医务人员登录账号）")
     @PutMapping("/me/phone")
     public Result<Void> updateMyPhone(@RequestAttribute("userId") Long userId,
@@ -78,6 +81,7 @@ public class UserController {
         return Result.success();
     }
 
+    @OperationLog(module = "users", action = "update", description = "修改本人姓名")
     @Operation(summary = "修改本人姓名（家长建档时自动同步真实姓名）")
     @PutMapping("/me")
     public Result<Void> updateMyRealName(@RequestAttribute("userId") Long userId,
@@ -162,6 +166,7 @@ public class UserController {
         return Result.success(userService.getUserById(id));
     }
 
+    @OperationLog(module = "users", action = "create", description = "新建用户")
     @Operation(summary = "创建用户")
     @PostMapping
     @RequirePermission("user:create")
@@ -169,6 +174,7 @@ public class UserController {
         return Result.success(userService.createUser(request));
     }
 
+    @OperationLog(module = "users", action = "update", description = "编辑用户")
     @Operation(summary = "更新用户")
     @PutMapping("/{id}")
     @RequirePermission("user:update")
@@ -177,6 +183,7 @@ public class UserController {
         return Result.success();
     }
 
+    @OperationLog(module = "users", action = "delete", description = "删除用户")
     @Operation(summary = "删除用户")
     @DeleteMapping("/{id}")
     @RequirePermission("user:delete")
@@ -185,6 +192,7 @@ public class UserController {
         return Result.success();
     }
 
+    @OperationLog(module = "users", action = "password", description = "重置用户密码")
     @Operation(summary = "重置密码")
     @PostMapping("/{id}/reset-password")
     @RequirePermission("user:resetPwd")
@@ -193,6 +201,7 @@ public class UserController {
         return Result.success();
     }
 
+    @OperationLog(module = "users", action = "status", description = "启用/禁用用户")
     @Operation(summary = "更新状态")
     @PatchMapping("/{id}/status")
     @RequirePermission("user:toggleStatus")
@@ -219,6 +228,7 @@ public class UserController {
         return Result.success(roles);
     }
 
+    @OperationLog(module = "users", action = "roles", description = "分配用户角色")
     @Operation(summary = "分配用户角色")
     @PutMapping("/{id}/roles")
     @RequirePermission("user:update")

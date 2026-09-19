@@ -11,6 +11,10 @@ public interface StatisticsService {
 
     StatisticsDtos.DashboardStats dashboard(Long storeId);
 
+    StatisticsDtos.WorkbenchStats workbenchStats(Long storeId);
+
+    StatisticsDtos.StoreOverview storeOverview(Long storeId);
+
     StatisticsDtos.StoreTraffic storeTraffic(Long storeId, LocalDate startDate, LocalDate endDate, String groupBy);
 
     StatisticsDtos.VisionImprovement visionImprovement(Long storeId, LocalDate startDate, LocalDate endDate);

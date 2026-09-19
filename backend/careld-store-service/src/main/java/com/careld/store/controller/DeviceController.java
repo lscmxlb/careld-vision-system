@@ -11,6 +11,7 @@ import com.careld.store.dto.DeviceBindRequest;
 import com.careld.store.dto.DeviceResponse;
 import com.careld.store.entity.TvDevice;
 import com.careld.store.service.DeviceService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -78,6 +79,7 @@ public class DeviceController {
         return Result.success(deviceService.getDeviceById(id));
     }
 
+    @OperationLog(module = "devices", action = "create", description = "新增设备")
     @Operation(summary = "新增设备")
     @PostMapping
     @RequirePermission("device:list:create")
@@ -85,6 +87,7 @@ public class DeviceController {
         return Result.success(deviceService.createDevice(device));
     }
 
+    @OperationLog(module = "devices", action = "update", description = "编辑设备")
     @Operation(summary = "更新设备")
     @PutMapping("/{id}")
     @RequirePermission("device:list:update")
@@ -94,6 +97,7 @@ public class DeviceController {
         return Result.success();
     }
 
+    @OperationLog(module = "devices", action = "delete", description = "删除设备")
     @Operation(summary = "删除设备")
     @DeleteMapping("/{id}")
     @RequirePermission("device:list:delete")
@@ -103,12 +107,14 @@ public class DeviceController {
         return Result.success();
     }
 
+    @OperationLog(module = "devices", action = "bind", description = "绑定设备")
     @Operation(summary = "设备绑定门店")
     @PostMapping("/bind")
     public Result<Long> bind(@Valid @RequestBody DeviceBindRequest request) {
         return Result.success(deviceService.bindDevice(request));
     }
 
+    @OperationLog(module = "devices", action = "calibration", description = "更新设备校准数据")
     @Operation(summary = "更新设备校准数据")
     @PutMapping("/{id}/calibration")
     public Result<Void> updateCalibration(@PathVariable Long id, @RequestBody CalibrationRequest request) {
@@ -116,6 +122,7 @@ public class DeviceController {
         return Result.success();
     }
 
+    @OperationLog(module = "devices", action = "sync", description = "触发设备同步")
     @Operation(summary = "触发设备同步")
     @PostMapping("/{id}/sync")
     public Result<Void> sync(@PathVariable Long id) {
@@ -123,6 +130,7 @@ public class DeviceController {
         return Result.success();
     }
 
+    @OperationLog(module = "devices", action = "unbind", description = "解绑设备")
     @Operation(summary = "解绑设备")
     @PostMapping("/{id}/unbind")
     public Result<Void> unbind(@PathVariable Long id) {
@@ -130,6 +138,7 @@ public class DeviceController {
         return Result.success();
     }
 
+    @OperationLog(module = "devices", action = "release", description = "释放设备")
     @Operation(summary = "释放设备（设为空闲）")
     @PostMapping("/{id}/release")
     @RequirePermission("device:list:release")

@@ -8,6 +8,7 @@ import com.careld.schedule.dto.BatchScheduleRequest;
 import com.careld.schedule.entity.ReserveOrder;
 import com.careld.schedule.entity.Schedule;
 import com.careld.schedule.service.ScheduleService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -38,12 +39,14 @@ public class ScheduleController {
         return Result.success(scheduleService.getCalendar(effectiveStoreId, startDate, endDate));
     }
 
+    @OperationLog(module = "schedules", action = "create", description = "新增排班")
     @Operation(summary = "创建排班")
     @PostMapping
     public Result<Long> create(@RequestBody Schedule schedule) {
         return Result.success(scheduleService.createSchedule(schedule));
     }
 
+    @OperationLog(module = "schedules", action = "create", description = "批量新增排班")
     @Operation(summary = "批量创建排班")
     @PostMapping("/batch")
     public Result<Void> batchCreate(@RequestBody BatchScheduleRequest request) {
@@ -54,6 +57,7 @@ public class ScheduleController {
         return Result.success();
     }
 
+    @OperationLog(module = "schedules", action = "update", description = "修改排班")
     @Operation(summary = "更新排班")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody Schedule schedule) {
@@ -61,6 +65,7 @@ public class ScheduleController {
         return Result.success();
     }
 
+    @OperationLog(module = "schedules", action = "delete", description = "删除排班")
     @Operation(summary = "删除排班")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
@@ -97,12 +102,14 @@ public class ScheduleController {
         return Result.success(scheduleService.getReserveById(id));
     }
 
+    @OperationLog(module = "reserve", action = "create", description = "创建预约")
     @Operation(summary = "创建预约")
     @PostMapping("/reserves")
     public Result<Long> createReserve(@RequestBody ReserveOrder order) {
         return Result.success(scheduleService.createReserve(order));
     }
 
+    @OperationLog(module = "reserve", action = "cancel", description = "取消预约（取消服务）")
     @Operation(summary = "取消预约")
     @PostMapping("/reserves/{id}/cancel")
     public Result<Void> cancel(@PathVariable Long id, @RequestBody Map<String, String> params) {
@@ -110,6 +117,7 @@ public class ScheduleController {
         return Result.success();
     }
 
+    @OperationLog(module = "reserve", action = "create", description = "创建预约")
     @Operation(summary = "创建预约（新链路：slotId + childId，校验审核/次数/满额/每日一约）")
     @PostMapping("/reserves/v2")
     public Result<Long> createReserveV2(@RequestBody ReserveOrder order) {
@@ -126,6 +134,7 @@ public class ScheduleController {
         return Result.success(scheduleService.statisticsReserves(effectiveStoreId, startDate, endDate));
     }
 
+    @OperationLog(module = "reserve", action = "start", description = "开始养护服务")
     @Operation(summary = "开始养护（录入养护前视力）")
     @PostMapping("/reserves/{id}/start")
     public Result<Void> startCare(@PathVariable Long id, @RequestBody Map<String, String> params) {
@@ -133,6 +142,7 @@ public class ScheduleController {
         return Result.success();
     }
 
+    @OperationLog(module = "reserve", action = "complete", description = "完成养护服务")
     @Operation(summary = "完成养护（录入养护后视力）")
     @PostMapping("/reserves/{id}/complete")
     public Result<Void> completeCare(@PathVariable Long id, @RequestBody Map<String, String> params) {
@@ -146,6 +156,7 @@ public class ScheduleController {
         return Result.success(scheduleService.getCareRecord(id));
     }
 
+    @OperationLog(module = "reserve", action = "no-show", description = "标记爽约")
     @Operation(summary = "标记爽约（不退还预约次数）")
     @PostMapping("/reserves/{id}/no-show")
     public Result<Void> noShow(@PathVariable Long id) {
@@ -153,6 +164,7 @@ public class ScheduleController {
         return Result.success();
     }
 
+    @OperationLog(module = "reserve", action = "adjust", description = "预约改期")
     @Operation(summary = "预约调整（已预约记录更换到新时段）")
     @PostMapping("/reserves/{id}/adjust")
     public Result<Void> adjust(@PathVariable Long id, @RequestBody Map<String, Object> params) {

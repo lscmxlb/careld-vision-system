@@ -5,6 +5,7 @@ import com.careld.child.entity.ChildProfile;
 import com.careld.child.entity.ChildServiceRecord;
 import com.careld.child.service.ChildService;
 import com.careld.common.exception.BusinessException;
+import com.careld.common.log.OperationLog;
 import com.careld.common.result.Result;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -35,11 +37,28 @@ public class ChildController {
                                            @RequestParam(value = "keyword", required = false) String keyword,
                                            @RequestParam(value = "includeDisabled", required = false) Boolean includeDisabled,
                                            @RequestParam(value = "remainingCountMin", required = false) Integer remainingCountMin,
-                                           @RequestParam(value = "status", required = false) Integer status) {
+                                           @RequestParam(value = "status", required = false) Integer status,
+                                           @RequestParam(value = "statuses", required = false) String statuses) {
         // 数据权限：家长按本人孩子过滤（门店不强制，可为异地医院），其他角色注入 storeId
         Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
         Long effectiveParentUserId = DataScopeHelper.resolveUserId(parentUserId);
-        return Result.success(childService.listProfiles(effectiveStoreId, auditStatus, effectiveParentUserId, keyword, Boolean.TRUE.equals(includeDisabled), status, remainingCountMin, aesKey));
+        return Result.success(childService.listProfiles(effectiveStoreId, auditStatus, effectiveParentUserId, keyword, Boolean.TRUE.equals(includeDisabled), status, parseStatuses(statuses), remainingCountMin, aesKey));
+    }
+
+    /** statuses 逗号分隔多状态（医院端「全部」=0,1，不含已隐藏 2） */
+    private List<Integer> parseStatuses(String statuses) {
+        if (statuses == null || statuses.isBlank()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(statuses.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Integer::parseInt)
+                    .toList();
+        } catch (NumberFormatException e) {
+            throw new BusinessException(400, "statuses 参数格式错误");
+        }
     }
 
     @GetMapping("/pending-count")
@@ -76,11 +95,18 @@ public class ChildController {
         return Result.success(childService.pickOptions(effectiveStoreId, keyword, aesKey));
     }
 
+    @Operation(summary = "家长按登录手机号认领未绑定的儿童档案（登录后自动调用）")
+    @PostMapping("/claim-by-phone")
+    public Result<Map<String, Object>> claimByPhone() {
+        return Result.success(childService.claimByPhone(aesKey));
+    }
+
     @GetMapping("/{id}")
     public Result<ChildProfile> get(@PathVariable Long id) {
         return Result.success(childService.getProfile(id, aesKey));
     }
 
+    @OperationLog(module = "children", action = "create", description = "新建儿童档案")
     @PostMapping
     public Result<Long> create(@RequestBody ChildRequest request) {
         // 将前端字段映射到实体
@@ -122,6 +148,7 @@ public class ChildController {
         return Result.success(childService.createProfile(profile, aesKey));
     }
 
+    @OperationLog(module = "children", action = "update", description = "编辑儿童档案")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody ChildRequest request) {
         ChildProfile profile = new ChildProfile();
@@ -149,6 +176,7 @@ public class ChildController {
         return Result.success();
     }
 
+    @OperationLog(module = "children", action = "audit", description = "审核儿童档案")
     @PostMapping("/{id}/audit")
     public Result<Void> audit(@PathVariable Long id, @RequestBody Map<String, Object> params,
                               @RequestAttribute("userId") Long userId) {
@@ -158,10 +186,19 @@ public class ChildController {
         return Result.success();
     }
 
+    @OperationLog(module = "children", action = "status", description = "儿童档案状态变更")
     @PutMapping("/{id}/status")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> params,
                                      @RequestAttribute("userId") Long userId) {
         childService.updateStatus(id, (Integer) params.get("status"), userId);
+        return Result.success();
+    }
+
+    @OperationLog(module = "children", action = "restore", description = "恢复已删除档案")
+    @Operation(summary = "恢复已删除（隐藏）档案（医生端/医院端）")
+    @PutMapping("/{id}/restore")
+    public Result<Void> restore(@PathVariable Long id) {
+        childService.restoreProfile(id);
         return Result.success();
     }
 
@@ -177,6 +214,7 @@ public class ChildController {
         return Result.success(profile.getRemainingCount() == null ? 0 : profile.getRemainingCount());
     }
 
+    @OperationLog(module = "children", action = "grant", description = "授权可约次数")
     @Operation(summary = "添加服务记录（授予可约次数，需缴费金额/缴费方式/开单医生）")
     @PostMapping("/{id}/service-records")
     public Result<Long> addServiceRecord(@PathVariable Long id,
@@ -199,9 +237,11 @@ public class ChildController {
         return Result.success(childService.listServiceRecords(id));
     }
 
+    @OperationLog(module = "children", action = "delete", description = "删除（隐藏）儿童档案")
+    @Operation(summary = "家长删除档案（隐藏，可被医生端/医院端恢复）")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        childService.deleteProfile(id);
+        childService.hideProfile(id);
         return Result.success();
     }
 }

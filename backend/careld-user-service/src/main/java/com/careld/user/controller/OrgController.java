@@ -10,6 +10,7 @@ import com.careld.user.entity.Agent;
 import com.careld.user.entity.BrandHq;
 import com.careld.user.entity.OpsCenter;
 import com.careld.user.service.OrgService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -51,12 +52,14 @@ public class OrgController {
         return Result.success(orgService.getHqById(id));
     }
 
+    @OperationLog(module = "org", action = "create", description = "新增总部")
     @Operation(summary = "新增总部")
     @PostMapping("/hq")
     public Result<Long> createHq(@RequestBody BrandHq hq) {
         return Result.success(orgService.createHq(hq));
     }
 
+    @OperationLog(module = "org", action = "update", description = "编辑总部")
     @Operation(summary = "编辑总部")
     @PutMapping("/hq/{id}")
     public Result<Void> updateHq(@PathVariable Long id, @RequestBody BrandHq hq) {
@@ -64,6 +67,7 @@ public class OrgController {
         return Result.success();
     }
 
+    @OperationLog(module = "org", action = "delete", description = "删除总部")
     @Operation(summary = "删除总部")
     @DeleteMapping("/hq/{id}")
     public Result<Void> deleteHq(@PathVariable Long id) {
@@ -127,6 +131,7 @@ public class OrgController {
         return Result.success(orgService.getCenterById(id));
     }
 
+    @OperationLog(module = "org", action = "create", description = "新增运营中心")
     @Operation(summary = "新增运营中心")
     @PostMapping("/centers")
     @RequirePermission("organization:center:create")
@@ -134,6 +139,7 @@ public class OrgController {
         return Result.success(orgService.createCenter(center));
     }
 
+    @OperationLog(module = "org", action = "update", description = "编辑运营中心")
     @Operation(summary = "编辑运营中心")
     @PutMapping("/centers/{id}")
     @RequirePermission("organization:center:update")
@@ -142,6 +148,7 @@ public class OrgController {
         return Result.success();
     }
 
+    @OperationLog(module = "org", action = "delete", description = "删除运营中心")
     @Operation(summary = "删除运营中心")
     @DeleteMapping("/centers/{id}")
     @RequirePermission("organization:center:delete")
@@ -207,6 +214,7 @@ public class OrgController {
         return Result.success(orgService.getAgentById(id));
     }
 
+    @OperationLog(module = "org", action = "create", description = "新增代理商")
     @Operation(summary = "新增代理商")
     @PostMapping("/agents")
     @RequirePermission("organization:agent:create")
@@ -214,6 +222,7 @@ public class OrgController {
         return Result.success(orgService.createAgent(agent));
     }
 
+    @OperationLog(module = "org", action = "update", description = "编辑代理商")
     @Operation(summary = "编辑代理商")
     @PutMapping("/agents/{id}")
     @RequirePermission("organization:agent:update")
@@ -222,6 +231,7 @@ public class OrgController {
         return Result.success();
     }
 
+    @OperationLog(module = "org", action = "delete", description = "删除代理商")
     @Operation(summary = "删除代理商")
     @DeleteMapping("/agents/{id}")
     @RequirePermission("organization:agent:delete")

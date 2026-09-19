@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-header">
       <h1>Careld</h1>
-      <p>可尔欧得视力养护</p>
+      <p>Careld诊约助手服务</p>
     </div>
 
     <div class="login-form">

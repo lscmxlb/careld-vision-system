@@ -68,7 +68,7 @@ export const scheduleRuleApi = {
   getAvailableDates: (startDate: string, endDate: string, storeId?: number): Promise<string[]> =>
     get<string[]>('/schedule-rules/available-dates', { startDate, endDate, storeId }),
 
-  /** 按天聚合每日名额（工作台日历：A=已约 B=剩余；无排班日期不返回） */
+  /** 按天聚合每日名额（工作台日历：A=已约 B=当天可接受预约总数；无排班日期不返回） */
   getSlotDailySummary: (
     startDate: string,
     endDate: string,

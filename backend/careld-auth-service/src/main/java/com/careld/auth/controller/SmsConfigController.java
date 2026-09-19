@@ -7,6 +7,7 @@ import com.careld.auth.service.AuthService;
 import com.careld.auth.service.SmsConfigService;
 import com.careld.common.result.Result;
 import com.careld.common.security.RequirePermission;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,6 +33,7 @@ public class SmsConfigController {
         return Result.success(smsConfigService.getConfig());
     }
 
+    @OperationLog(module = "auth", action = "sms-config", description = "保存短信服务配置")
     @Operation(summary = "保存短信配置")
     @PutMapping
     @RequirePermission("settings:view")
@@ -40,6 +42,7 @@ public class SmsConfigController {
         return Result.success();
     }
 
+    @OperationLog(module = "auth", action = "sms-test", description = "测试发送短信")
     @Operation(summary = "测试发送：使用已保存的配置真实发送一条验证码")
     @PostMapping("/test")
     @RequirePermission("settings:view")

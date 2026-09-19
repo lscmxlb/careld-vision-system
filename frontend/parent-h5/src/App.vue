@@ -301,6 +301,12 @@ scroll-view {
   box-shadow: 0 -4rpx 20rpx rgba(15, 23, 42, 0.06);
 }
 
+/* tab 页底栏：--window-bottom = tabBar 高 + 安全区，抬到 tabBar 之上并与下方 tab 标题留出间距（安全区已在下方占位，去掉自身底部安全区内边距） */
+.sticky-bar-on-tab {
+  bottom: calc(var(--window-bottom, 0px) + 24rpx);
+  padding-bottom: 16rpx;
+}
+
 .sticky-bar .btn {
   flex: 1;
 }

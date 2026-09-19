@@ -2,6 +2,7 @@
   <view class="vision-row" :class="{ 'vr-disabled': disabled }">
     <text class="vr-label">{{ label }}</text>
     <picker
+      class="vr-control"
       mode="selector"
       :range="VISION_MAIN_OPTIONS"
       :value="mainIndex"
@@ -10,20 +11,21 @@
     >
       <view class="vr-cell" :class="{ 'vr-empty': !parsed.main }">
         <text class="vr-text">{{ parsed.main || '5.3-4.0' }}</text>
-        <text class="vr-arrow">▾</text>
+        <view class="vr-arrow" />
       </view>
     </picker>
     <picker
       v-if="showSub"
+      class="vr-control"
       mode="selector"
       :range="VISION_SUB_OPTIONS"
       :value="subIndex"
       :disabled="disabled"
       @change="onSubChange"
     >
-      <view class="vr-cell vr-cell-sub">
+      <view class="vr-cell">
         <text class="vr-text">{{ parsed.sub }}</text>
-        <text class="vr-arrow">▾</text>
+        <view class="vr-arrow" />
       </view>
     </picker>
     <text v-if="!disabled && parsed.main" class="vr-clear" @click="clear">✕</text>
@@ -99,41 +101,55 @@ function clear() {
   color: #5b6572;
 }
 
+.vr-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.vr-control + .vr-control {
+  margin-left: 14rpx;
+}
+
 .vr-cell {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-width: 168rpx;
-  height: 64rpx;
-  padding: 0 18rpx;
-  background: #f7f9fb;
+  width: 100%;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
   border-radius: 12rpx;
-  margin-right: 14rpx;
-}
-
-.vr-cell-sub {
-  min-width: 132rpx;
+  box-sizing: border-box;
 }
 
 .vr-text {
+  flex: 1;
+  min-width: 0;
   font-size: 28rpx;
-  color: #1f2937;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vr-empty .vr-text {
-  color: #b7bfc9;
-  font-size: 26rpx;
+  color: #c2c9d1;
 }
 
 .vr-arrow {
-  font-size: 20rpx;
-  color: #b7bfc9;
-  margin-left: 10rpx;
+  width: 14rpx;
+  height: 14rpx;
+  flex: none;
+  margin-left: 12rpx;
+  border-top: 3rpx solid #94a3b8;
+  border-right: 3rpx solid #94a3b8;
+  transform: rotate(135deg);
 }
 
 .vr-clear {
   font-size: 24rpx;
   color: #b7bfc9;
+  margin-left: 6rpx;
   padding: 8rpx;
 }
 </style>

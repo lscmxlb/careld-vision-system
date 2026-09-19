@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.careld</groupId>
         <artifactId>careld-vision-system</artifactId>
-        <version>2.0.1</version>
+        <version>2.1.0</version>
     </parent>
 
     <artifactId>careld-child-service</artifactId>
@@ -22,6 +22,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- 建档同步家长账号时生成不可登录的随机密码（与 auth-service 短信自动注册一致） -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
         <!-- Lombok -->

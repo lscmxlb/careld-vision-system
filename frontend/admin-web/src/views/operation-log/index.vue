@@ -9,6 +9,22 @@
 
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
+        <el-form-item label="医院">
+          <el-select
+            v-model="queryForm.storeId"
+            placeholder="全部医院"
+            clearable
+            filterable
+            style="width: 180px"
+          >
+            <el-option
+              v-for="item in storeOptions"
+              :key="item.id"
+              :label="item.storeName"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="日志类型">
           <el-select v-model="queryForm.logType" placeholder="全部类型" clearable>
             <el-option label="操作日志" :value="1" />
@@ -20,9 +36,19 @@
           <el-select v-model="queryForm.module" placeholder="全部模块" clearable filterable>
             <el-option
               v-for="item in moduleOptions"
-              :key="item"
-              :label="item"
-              :value="item"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="操作">
+          <el-select v-model="queryForm.action" placeholder="全部操作" clearable filterable>
+            <el-option
+              v-for="item in actionOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
             />
           </el-select>
         </el-form-item>
@@ -41,7 +67,7 @@
         <el-form-item label="关键词">
           <el-input
             v-model="queryForm.keyword"
-            placeholder="用户名/操作/URL"
+            placeholder="人员/操作内容/URL"
             clearable
             @keyup.enter="handleSearch"
           />
@@ -65,8 +91,16 @@
         </el-table-column>
         <el-table-column prop="userName" label="操作用户" width="100" />
         <el-table-column prop="storeName" label="所属医院" width="130" show-overflow-tooltip />
-        <el-table-column prop="module" label="模块" width="100" />
-        <el-table-column prop="action" label="操作" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="module" label="模块" width="100">
+          <template #default="{ row }">
+            {{ moduleLabel(row.module) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作内容" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.description || actionLabel(row.action) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="requestMethod" label="请求方式" width="90">
           <template #default="{ row }">
             <el-tag
@@ -135,8 +169,10 @@
         </el-descriptions-item>
         <el-descriptions-item label="操作用户">{{ currentLog.userName }}</el-descriptions-item>
         <el-descriptions-item label="所属医院">{{ currentLog.storeName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="模块">{{ currentLog.module }}</el-descriptions-item>
-        <el-descriptions-item label="操作">{{ currentLog.action }}</el-descriptions-item>
+        <el-descriptions-item label="模块">{{ moduleLabel(currentLog.module) }}</el-descriptions-item>
+        <el-descriptions-item label="操作内容">
+          {{ currentLog.description || actionLabel(currentLog.action) }}
+        </el-descriptions-item>
         <el-descriptions-item label="请求方式">
           <el-tag :type="getMethodTag(currentLog.requestMethod)" size="small" effect="plain">
             {{ currentLog.requestMethod }}
@@ -185,8 +221,8 @@
 defineOptions({ name: 'AdminOperationLog' })
 import { ref, reactive, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
-import { operationLogApi } from '@/api'
-import type { OperationLog, OperationLogQuery } from '@/types'
+import { operationLogApi, storeApi } from '@/api'
+import type { OperationLog, OperationLogQuery, Store } from '@/types'
 
 // 表格数据
 const loading = ref(false)
@@ -199,8 +235,10 @@ const pagination = reactive({
 
 // 查询表单
 const queryForm = reactive<OperationLogQuery>({
+  storeId: undefined,
   logType: undefined,
   module: undefined,
+  action: undefined,
   keyword: '',
   startDate: undefined,
   endDate: undefined
@@ -208,12 +246,60 @@ const queryForm = reactive<OperationLogQuery>({
 
 const dateRange = ref<[string, string] | null>(null)
 
-// 模块选项
+// 医院下拉（数据权限由后端 /stores/all 控制；含禁用医院，历史日志仍需可查）
+const storeOptions = ref<Store[]>([])
+
+// 模块选项：value 必须与后端 module 字段一致（英文 key）
 const moduleOptions = [
-  '用户管理', '医院管理', '科室管理', '儿童档案',
-  '排班管理', '预约管理', '视力检测', '设备管理',
-  '系统设置', '认证授权', '数据统计'
+  { label: '儿童档案', value: 'children' },
+  { label: '预约管理', value: 'reserve' },
+  { label: '排班管理', value: 'schedules' },
+  { label: '排班设置', value: 'schedule-rules' },
+  { label: '预约规则', value: 'appointment-config' },
+  { label: '养护记录', value: 'care-records' },
+  { label: '视力记录', value: 'vision' },
+  { label: '医院管理', value: 'stores' },
+  { label: '设备管理', value: 'devices' },
+  { label: '设备类型', value: 'device-types' },
+  { label: '科室管理', value: 'departments' },
+  { label: '用户管理', value: 'users' },
+  { label: '角色权限', value: 'roles' },
+  { label: '菜单管理', value: 'menus' },
+  { label: '组织架构', value: 'org' },
+  { label: '医务人员', value: 'medical-staff' },
+  { label: '登录认证', value: 'auth' },
+  { label: '统计报表', value: 'statistics' }
 ]
+
+const actionOptions = [
+  { label: '新增', value: 'create' },
+  { label: '修改', value: 'update' },
+  { label: '删除', value: 'delete' },
+  { label: '审核', value: 'audit' },
+  { label: '取消', value: 'cancel' },
+  { label: '状态变更', value: 'status' },
+  { label: '恢复', value: 'restore' },
+  { label: '开始', value: 'start' },
+  { label: '完成', value: 'complete' },
+  { label: '改期', value: 'adjust' },
+  { label: '爽约', value: 'no-show' },
+  { label: '授权次数', value: 'grant' },
+  { label: '绑定', value: 'bind' },
+  { label: '解绑', value: 'unbind' },
+  { label: '释放', value: 'release' },
+  { label: '分配角色', value: 'roles' },
+  { label: '权限分配', value: 'permissions' },
+  { label: '重置密码', value: 'password' },
+  { label: '修改手机号', value: 'phone' },
+  { label: '登录', value: 'login' },
+  { label: '登出', value: 'logout' }
+]
+
+const moduleLabel = (value: string) =>
+  moduleOptions.find((item) => item.value === value)?.label || value
+
+const actionLabel = (value: string) =>
+  actionOptions.find((item) => item.value === value)?.label || value
 
 // 详情弹窗
 const detailVisible = ref(false)
@@ -307,8 +393,10 @@ const handleSearch = () => {
 
 // 重置
 const handleReset = () => {
+  queryForm.storeId = undefined
   queryForm.logType = undefined
   queryForm.module = undefined
+  queryForm.action = undefined
   queryForm.keyword = ''
   queryForm.startDate = undefined
   queryForm.endDate = undefined
@@ -334,7 +422,12 @@ const handleView = (row: OperationLog) => {
   detailVisible.value = true
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    storeOptions.value = await storeApi.getAllStores({ includeDisabled: true })
+  } catch (error) {
+    console.error('获取医院列表失败', error)
+  }
   fetchData()
 })
 </script>

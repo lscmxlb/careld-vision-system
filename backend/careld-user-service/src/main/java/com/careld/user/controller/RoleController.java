@@ -7,6 +7,7 @@ import com.careld.user.dto.RoleRequest;
 import com.careld.user.entity.Role;
 import com.careld.user.entity.RoleMenu;
 import com.careld.user.service.RoleService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class RoleController {
         return Result.success(result);
     }
 
+    @OperationLog(module = "roles", action = "create", description = "新增角色")
     @Operation(summary = "新增角色")
     @PostMapping
     @RequirePermission("settings:role:create")
@@ -53,6 +55,7 @@ public class RoleController {
         return Result.success(roleService.createRole(request));
     }
 
+    @OperationLog(module = "roles", action = "update", description = "修改角色")
     @Operation(summary = "修改角色")
     @PutMapping("/{id}")
     @RequirePermission("settings:role:update")
@@ -61,6 +64,7 @@ public class RoleController {
         return Result.success();
     }
 
+    @OperationLog(module = "roles", action = "delete", description = "删除角色")
     @Operation(summary = "删除角色")
     @DeleteMapping("/{id}")
     @RequirePermission("settings:role:delete")
@@ -69,6 +73,7 @@ public class RoleController {
         return Result.success();
     }
 
+    @OperationLog(module = "roles", action = "permissions", description = "角色权限分配")
     @Operation(summary = "分配角色权限")
     @PutMapping("/{id}/permissions")
     @RequirePermission("settings:role:update")

@@ -7,6 +7,7 @@ import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
 import com.careld.store.entity.Store;
 import com.careld.store.service.StoreService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class StoreController {
 
     @Operation(summary = "全量门店列表（下拉用）")
     @GetMapping("/all")
-    public Result<List<Store>> all() {
+    public Result<List<Store>> all(@RequestParam(value = "includeDisabled", required = false) Boolean includeDisabled) {
         // 数据权限：沿组织绑定链严格向下过滤
         Integer currentType = UserContext.getCurrentUserType();
         Long scopeCenterId = null;
@@ -83,7 +84,8 @@ public class StoreController {
                     break;
             }
         }
-        return Result.success(storeService.listAllStores(scopeCenterId, scopeAgentId, scopeStoreId));
+        return Result.success(storeService.listAllStores(scopeCenterId, scopeAgentId, scopeStoreId,
+                Boolean.TRUE.equals(includeDisabled)));
     }
 
     @Operation(summary = "当前登录用户所属门店")
@@ -98,12 +100,14 @@ public class StoreController {
         return Result.success(storeService.getStoreById(id));
     }
 
+    @OperationLog(module = "stores", action = "create", description = "新增门店")
     @PostMapping
     @RequirePermission("store:list:create")
     public Result<Long> create(@RequestBody Store store) {
         return Result.success(storeService.createStore(store));
     }
 
+    @OperationLog(module = "stores", action = "update", description = "编辑门店")
     @PutMapping("/{id}")
     @RequirePermission("store:list:update")
     public Result<Void> update(@PathVariable Long id, @RequestBody Store store) {
@@ -111,6 +115,7 @@ public class StoreController {
         return Result.success();
     }
 
+    @OperationLog(module = "stores", action = "status", description = "门店启用/停用")
     @PatchMapping("/{id}/status")
     @RequirePermission("store:list:update")
     public Result<Void> status(@PathVariable Long id, @RequestBody Store store) {

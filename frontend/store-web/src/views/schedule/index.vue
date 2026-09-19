@@ -4,7 +4,6 @@
     <el-card class="summary-card">
       <template #header>
         <div class="card-header">
-          <span>预约查询</span>
           <el-form inline class="header-form">
             <el-form-item label="日期范围">
               <el-date-picker
@@ -214,16 +213,12 @@ const fetchSummary = async () => {
 
 // ==================== 预约日历 ====================
 const currentDate = ref(new Date())
-/** 当月每日统计：date -> 统计 */
-const statMap = reactive<Record<string, ReserveDailyStatistics>>({})
-/** 当月每日剩余可约名额：date -> 剩余可约数 */
-const dayRemainMap = reactive<Record<string, number>>({})
-/** 当月每日总可约人数：date -> Σ时段容量（固定不变） */
+/** 当月每日已预约数：date -> Σ已约名额（与容量同源，不含已取消/爽约） */
+const dayBookedMap = reactive<Record<string, number>>({})
+/** 当月每日总可约人数：date -> Σ开放时段容量（固定值，不受已约影响） */
 const dayCapacityMap = reactive<Record<string, number>>({})
 /** 当月每日名额状态：date -> 是否已满（无可约时段或全部约满） */
 const dayFullMap = reactive<Record<string, boolean>>({})
-/** 已查询过名额状态的月份，避免重复请求 */
-const loadedMonths = new Set<string>()
 
 const formatDate = (d: Date): string => {
   const y = d.getFullYear()
@@ -232,43 +227,20 @@ const formatDate = (d: Date): string => {
   return `${y}-${m}-${day}`
 }
 
-const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-
-/** A：当日实际预约数（不含已取消/爽约） */
-const getDayBooked = (day: string) => {
-  const stat = statMap[day]
-  return stat ? (stat.total || 0) - (stat.cancelled || 0) : 0
-}
-
-/** 日历单元格显示：A/B（已约人数 / 当日总可约人数，如 1/4），无时段显示 -/- */
+/** 日历单元格显示：A/B（已约人数 / 当天可接受预约总数，如 1/4），无排班显示 -/- */
 const getDayAbText = (day: string) => {
   const capacity = dayCapacityMap[day] || 0
-  return capacity === 0 ? '-/-' : `${getDayBooked(day)}/${capacity}`
+  return capacity === 0 ? '-/-' : `${dayBookedMap[day] || 0}/${capacity}`
 }
 
 const isPast = (day: string) => day < formatDate(new Date())
 
 const isDayFull = (day: string) => dayFullMap[day] === true
 
-/** 无时段（-/-）或总量为 0（0/0）的日单元格：数值与"预约详情"置灰 */
-const isDayEmpty = (day: string) => {
-  const text = getDayAbText(day)
-  return text === '-/-' || text === '0/0'
-}
+/** 无排班（-/-）的日单元格：数值与"预约详情"置灰 */
+const isDayEmpty = (day: string) => getDayAbText(day) === '-/-'
 
-/** 查询单日名额（Σ时段容量 与 Σ剩余；无可约时段均为 0） */
-const loadDaySlotStats = async (day: string): Promise<{ capacity: number; remain: number }> => {
-  try {
-    const slots: ScheduleSlot[] = await scheduleRuleApi.getSlots(day, userStore.storeId || undefined)
-    return {
-      capacity: slots.reduce((sum, s) => sum + (s.maxCapacity || 0), 0),
-      remain: slots.reduce((sum, s) => sum + (s.maxCapacity - s.bookedCount), 0)
-    }
-  } catch {
-    return { capacity: 0, remain: 0 }
-  }
-}
-
+/** 加载当月每日名额：A=Σ已约、B=Σ开放时段容量；B 为固定值，不随 A 变化 */
 const fetchCalendar = async () => {
   if (!userStore.storeId) return
   const date = currentDate.value
@@ -277,27 +249,23 @@ const fetchCalendar = async () => {
   const startDate = formatDate(start)
   const endDate = formatDate(end)
   try {
-    const list = await reserveApi.getStatistics(startDate, endDate, userStore.storeId)
-    Object.keys(statMap).forEach(key => delete statMap[key])
-    list.forEach(item => { statMap[item.statDate] = item })
+    const list = await scheduleRuleApi.getSlotDailySummary(startDate, endDate, userStore.storeId)
+    // 先清空当月旧数据（含排班已删除的日期），再按最新结果回填
+    Object.keys(dayCapacityMap).forEach(key => {
+      if (key >= startDate && key <= endDate) {
+        delete dayCapacityMap[key]
+        delete dayBookedMap[key]
+        delete dayFullMap[key]
+      }
+    })
+    list.forEach(item => {
+      dayBookedMap[item.date] = item.booked
+      dayCapacityMap[item.date] = item.total
+      dayFullMap[item.date] = item.total - item.booked <= 0
+    })
   } catch {
     // 错误已在拦截器处理
   }
-  // 名额状态按月加载一次
-  const mKey = monthKey(date)
-  if (loadedMonths.has(mKey)) return
-  loadedMonths.add(mKey)
-  const days: string[] = []
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    days.push(formatDate(d))
-  }
-  const results = await Promise.all(days.map(day => loadDaySlotStats(day)))
-  days.forEach((day, i) => {
-    const { capacity, remain } = results[i] as { capacity: number; remain: number }
-    dayCapacityMap[day] = capacity
-    dayRemainMap[day] = remain
-    dayFullMap[day] = remain <= 0
-  })
 }
 
 // ==================== 预约详情弹窗 ====================
@@ -489,8 +457,7 @@ const handleReserveSubmit = async () => {
     })
     ElMessage.success('预约创建成功，已扣减1次可约次数')
     reserveDialogVisible.value = false
-    // 刷新日历统计与名额状态
-    loadedMonths.delete(monthKey(currentDate.value))
+    // 刷新日历名额与顶部统计
     fetchCalendar()
     fetchSummary()
   } catch {
@@ -520,7 +487,7 @@ onMounted(() => {
 
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
 
     .header-form {

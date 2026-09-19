@@ -66,7 +66,12 @@
         <el-table-column prop="storeName" label="所属医院">
           <template #default="{ row }">{{ row.storeName || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column v-if="queryForm.userType === 3" prop="childCount" label="儿童档案数量" width="110">
+          <template #default="{ row }">{{ row.childCount ?? 0 }}</template>
+        </el-table-column>
+        <el-table-column prop="phone" label="手机号" width="130">
+          <template #default="{ row }">{{ row.userType === 3 ? maskPhone(row.phone) : row.phone }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '正常' : '禁用' }}</el-tag>
@@ -209,6 +214,12 @@ const canEditUser = (rowUserType: number): boolean => {
   }
   // 非总部用户：仅严格下级可编辑
   return userTypeLevel(rowUserType) < userTypeLevel(currentUserType.value)
+}
+
+// 家长列表手机号脱敏显示（编辑弹窗仍用原始值，不脱敏）
+const maskPhone = (phone?: string): string => {
+  if (!phone || phone.length !== 11) return phone || ''
+  return `${phone.slice(0, 3)}****${phone.slice(7)}`
 }
 
 // 用户类型与角色编码的对应关系（选用户类型后自动绑定角色，不可手动改）
@@ -493,16 +504,21 @@ const handleEdit = async (row: User) => {
 
 const handleResetPwd = async (row: User) => {
   try {
-    const { value } = await ElMessageBox.prompt('请输入新密码', '重置密码', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputType: 'password',
-      inputValidator: (val) => {
-        if (!val || val.length < 6) return '密码长度不能少于6位'
-        return true
+    const { value } = await ElMessageBox.prompt(
+      `请输入「${row.realName}」的新密码，留空则重置为默认密码`,
+      '重置密码',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputType: 'password',
+        inputPlaceholder: '默认登录密码：4009993608',
+        inputValidator: (val) => {
+          if (val && val.length < 6) return '密码长度不能少于6位'
+          return true
+        }
       }
-    })
-    await userApi.resetPassword(row.id, value)
+    )
+    await userApi.resetPassword(row.id, value || '4009993608')
     ElMessage.success('密码重置成功')
   } catch { /* 取消 */ }
 }

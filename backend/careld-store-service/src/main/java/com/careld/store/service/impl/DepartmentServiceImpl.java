@@ -1,6 +1,7 @@
 package com.careld.store.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
@@ -30,7 +31,14 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public void updateDepartment(Long id, Department department) {
         department.setId(id);
-        departmentMapper.updateById(department);
+        if (department.getChargeStandard() == null) {
+            // 允许清空收费标准：updateById 会跳过 null 字段，需显式将列置为 NULL
+            departmentMapper.update(department, new LambdaUpdateWrapper<Department>()
+                    .eq(Department::getId, id)
+                    .set(Department::getChargeStandard, null));
+        } else {
+            departmentMapper.updateById(department);
+        }
     }
 
     @Override

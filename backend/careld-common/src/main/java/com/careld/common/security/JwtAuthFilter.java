@@ -66,6 +66,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Long agentId = claims.get("agentId") == null ? null : Long.valueOf(claims.get("agentId").toString());
                 Long deptId = claims.get("deptId") == null ? null : Long.valueOf(claims.get("deptId").toString());
                 String username = claims.get("username") == null ? null : claims.get("username").toString();
+                String realName = claims.get("realName") == null ? null : claims.get("realName").toString();
 
                 // 解析权限列表
                 List<String> permissions = new ArrayList<>();
@@ -77,7 +78,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
 
                 if (userId != null) {
-                    UserContext.CurrentUser user = new UserContext.CurrentUser(userId, userType, storeId, centerId, agentId, deptId, username, permissions);
+                    UserContext.CurrentUser user = new UserContext.CurrentUser(userId, userType, storeId, centerId, agentId, deptId, username, realName, permissions);
                     UserContext.set(user);
 
                     request.setAttribute(ATTR_USER_ID, userId);

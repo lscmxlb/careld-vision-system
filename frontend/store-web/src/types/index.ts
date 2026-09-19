@@ -73,7 +73,7 @@ export interface Child {
   medicalHistory?: string
   allergyInfo?: string
   familyHistory?: string
-  auditStatus: number // 0=待审核 1=已通过 2=已驳回
+  auditStatus: number // 0=待审核 1=已审核 2=已驳回
   auditRemark?: string
   storeId?: number
   /** 主治医生ID与姓名快照 */
@@ -98,8 +98,10 @@ export interface ChildQuery {
   keyword?: string
   /** 是否包含已禁用档案（默认 false=仅启用） */
   includeDisabled?: boolean
-  /** 档案状态：1=正常 0=已禁用；不传时按 includeDisabled 语义过滤 */
+  /** 档案状态：1=正常 0=已禁用 2=已隐藏；不传时按 includeDisabled 语义过滤 */
   status?: number
+  /** 状态多值过滤（逗号分隔，如 "0,1"），优先级高于 status */
+  statuses?: string
   /** 仅返回可用次数大于该值的档案 */
   remainingCountMin?: number
 }
@@ -248,8 +250,8 @@ export interface Department {
   deptCode: string
   deptName: string
   deptType: number // 1=门诊 2=养护 3=检测 4=其他
-  /** 收费标准(元)：预约授权自动计费用 */
-  chargeStandard?: number
+  /** 收费标准(元)：预约授权自动计费用；null 表示未配置 */
+  chargeStandard?: number | null
   sortOrder: number
   status: number // 1=启用 0=禁用
   remark?: string
@@ -340,6 +342,13 @@ export interface ScheduleSlot {
   status: number // 1=开放 0=关闭
 }
 
+/** 日历按天聚合名额：booked=Σ已约 B=total=Σ开放时段容量（固定值，不随已约变化） */
+export interface SlotDailySummary {
+  date: string
+  booked: number
+  total: number
+}
+
 /** 预约规则配置 */
 export interface AppointmentConfig {
   id?: number
@@ -422,4 +431,40 @@ export interface ReserveDailyStatistics {
   total: number
   completed: number
   cancelled: number
+}
+
+// ==================== 日志记录 ====================
+export interface OperationLog {
+  id: number
+  logType: number // 1=操作日志 2=登录日志 3=异常日志
+  userId?: number
+  userName?: string
+  storeId?: number
+  storeName?: string
+  module: string
+  action: string
+  description?: string
+  requestMethod: string
+  requestUrl: string
+  requestParams?: string
+  responseData?: string
+  ipAddress?: string
+  userAgent?: string
+  deviceType?: string
+  executeTime?: number
+  status: number // 1=成功 0=失败
+  errorMsg?: string
+  createdAt: string
+}
+
+export interface OperationLogQuery {
+  logType?: number
+  module?: string
+  action?: string
+  userName?: string
+  keyword?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
 }

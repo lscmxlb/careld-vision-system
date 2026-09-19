@@ -15,7 +15,11 @@
 
 # OS
 .DS_Store
+._*
 Thumbs.db
+
+# 本地工具
+.qoder/
 
 # Env
 .env

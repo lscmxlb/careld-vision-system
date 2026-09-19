@@ -30,6 +30,47 @@ public interface StatisticsMapper {
     StatisticsDtos.DashboardStats dashboard(@Param("storeId") Long storeId);
 
     /**
+     * 医生端工作台统计
+     * 口径：儿童档案=未删除且非已隐藏(2)；当前已预约=status 1；已完成养护=care_record.status 2
+     */
+    @Select("SELECT "
+            + "(SELECT COUNT(*) FROM child_profile cp WHERE cp.store_id = #{storeId} "
+            + "  AND cp.deleted_at IS NULL AND cp.status <> 2) AS childCount, "
+            + "(SELECT COUNT(*) FROM reserve_order ro WHERE ro.store_id = #{storeId} "
+            + "  AND ro.status = 1 AND ro.deleted_at IS NULL) AS reservedCount, "
+            + "(SELECT COUNT(*) FROM care_record cr WHERE cr.store_id = #{storeId} "
+            + "  AND cr.status = 2 AND cr.deleted_at IS NULL) AS completedCareCount")
+    StatisticsDtos.WorkbenchStats workbenchStats(@Param("storeId") Long storeId);
+
+    /**
+     * 医院数据统计：医院基本信息（含运营中心/代理商名称）+ 动态统计
+     * 口径：儿童档案=未删除且非已隐藏；养护次数=含养护中(1,2)；本月预约=按预约日期且排除已取消(4)；
+     * 最后活跃=该院医生/医生助理(1,2)最后登录时间
+     */
+    @Select("SELECT s.id AS storeId, s.store_code AS storeCode, s.store_name AS storeName, "
+            + "s.institution_type AS institutionType, s.status AS status, "
+            + "s.province_name AS provinceName, s.city_name AS cityName, s.district_name AS districtName, "
+            + "s.address AS address, s.contact_name AS contactName, s.contact_phone AS contactPhone, "
+            + "s.business_hours AS businessHours, DATE_FORMAT(s.join_date, '%Y-%m-%d') AS joinDate, "
+            + "s.bed_count AS bedCount, a.agent_name AS agentName, c.center_name AS centerName, "
+            + "(SELECT COUNT(*) FROM child_profile cp WHERE cp.store_id = s.id "
+            + "  AND cp.deleted_at IS NULL AND cp.status <> 2) AS childCount, "
+            + "(SELECT COUNT(*) FROM care_record cr WHERE cr.store_id = s.id "
+            + "  AND cr.status IN (1,2) AND cr.deleted_at IS NULL) AS careCount, "
+            + "(SELECT COUNT(*) FROM reserve_order ro WHERE ro.store_id = s.id "
+            + "  AND ro.reserve_date BETWEEN #{monthStart} AND #{monthEnd} "
+            + "  AND ro.status <> 4 AND ro.deleted_at IS NULL) AS monthlyReserveCount, "
+            + "(SELECT DATE_FORMAT(MAX(ms.last_login_time), '%Y-%m-%d') FROM medical_staff ms "
+            + "  WHERE ms.store_id = s.id AND ms.staff_role IN (1,2)) AS lastActiveDate "
+            + "FROM store_info s "
+            + "LEFT JOIN agent a ON a.id = s.agent_id AND a.deleted_at IS NULL "
+            + "LEFT JOIN ops_center c ON c.id = a.center_id AND c.deleted_at IS NULL "
+            + "WHERE s.id = #{storeId} AND s.deleted_at IS NULL")
+    StatisticsDtos.StoreOverview storeOverview(@Param("storeId") Long storeId,
+                                               @Param("monthStart") LocalDate monthStart,
+                                               @Param("monthEnd") LocalDate monthEnd);
+
+    /**
      * 门店客流明细（按天/周/月聚合）
      */
     @Select("<script>"

@@ -127,6 +127,16 @@ export interface ChildServiceRecord {
   createdAt: string
 }
 
+/* ---------------- 工作台统计 ---------------- */
+export interface WorkbenchStats {
+  /** 儿童档案数量 */
+  childCount: number
+  /** 当前已预约数量 */
+  reservedCount: number
+  /** 已完成养护次数 */
+  completedCareCount: number
+}
+
 /* ---------------- 排班 / 预约 ---------------- */
 export interface ScheduleSlot {
   id: string
@@ -139,11 +149,11 @@ export interface ScheduleSlot {
   status: number
 }
 
-/** 工作台日历：按天聚合名额（booked=已约 available=剩余） */
+/** 工作台日历：按天聚合名额（booked=已约 total=当日可约总量，总量固定不随已约变化） */
 export interface SlotDailySummary {
   date: string
   booked: number
-  available: number
+  total: number
 }
 
 export interface Reserve {

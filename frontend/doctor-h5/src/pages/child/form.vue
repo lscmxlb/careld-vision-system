@@ -19,11 +19,16 @@
 
         <view class="field">
           <text class="field-label required">出生日期</text>
-          <picker mode="date" :value="form.birthDate" :end="todayStr()" @change="onBirthChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.birthDate }">
-              {{ form.birthDate || '请选择出生日期' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="date" :value="form.birthDate" :end="todayStr()" @change="onBirthChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.birthDate }">
+                  {{ form.birthDate || '请选择出生日期' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
 
         <view class="field">
@@ -38,11 +43,16 @@
 
         <view class="field">
           <text class="field-label">关系</text>
-          <picker mode="selector" :range="RELATION_OPTIONS" :value="relationIndex" @change="onRelationChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.relation }">
-              {{ form.relation || '请选择关系' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="selector" :range="RELATION_OPTIONS" :value="relationIndex" @change="onRelationChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.relation }">
+                  {{ form.relation || '请选择关系' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
 
         <view class="field">
@@ -89,29 +99,44 @@
 
         <view class="field">
           <text class="field-label">分娩方式</text>
-          <picker mode="selector" :range="DELIVERY_TYPE_OPTIONS" :value="deliveryIndex" @change="onDeliveryChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.deliveryType }">
-              {{ form.deliveryType || '请选择分娩方式' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="selector" :range="DELIVERY_TYPE_OPTIONS" :value="deliveryIndex" @change="onDeliveryChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.deliveryType }">
+                  {{ form.deliveryType || '请选择分娩方式' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
 
         <view class="field">
           <text class="field-label">休息时间</text>
-          <picker mode="time" :value="form.bedtime || '21:00'" @change="onBedtimeChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.bedtime }">
-              {{ form.bedtime || '请选择休息时间' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="time" :value="form.bedtime || '21:00'" @change="onBedtimeChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.bedtime }">
+                  {{ form.bedtime || '请选择休息时间' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
 
         <view class="field">
           <text class="field-label">起床时间</text>
-          <picker mode="time" :value="form.wakeTime || '07:00'" @change="onWakeChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.wakeTime }">
-              {{ form.wakeTime || '请选择起床时间' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="time" :value="form.wakeTime || '07:00'" @change="onWakeChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.wakeTime }">
+                  {{ form.wakeTime || '请选择起床时间' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
 
         <view class="field field-block">
@@ -129,11 +154,16 @@
         <view class="section-title">主治医师</view>
         <view class="field">
           <text class="field-label required">主治医师</text>
-          <picker mode="selector" :range="doctorNames" :value="doctorIndex" @change="onDoctorChange">
-            <view class="field-value" :class="{ 'field-placeholder': !form.doctorId }">
-              {{ doctorName || '请选择主治医师（已注册医生）' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="selector" :range="doctorNames" :value="doctorIndex" @change="onDoctorChange">
+              <view class="select-box">
+                <text class="select-text" :class="{ 'field-placeholder': !form.doctorId }">
+                  {{ doctorName || '请选择主治医师（已注册医生）' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
         <view class="form-tip">门店建档将自动通过审核</view>
       </view>
@@ -418,13 +448,6 @@ onBackPress(() => {
   content: '*';
   color: #ef4444;
   margin-right: 6rpx;
-}
-
-.field-value {
-  flex: 1;
-  font-size: 28rpx;
-  color: #1e293b;
-  text-align: right;
 }
 
 .field-input {

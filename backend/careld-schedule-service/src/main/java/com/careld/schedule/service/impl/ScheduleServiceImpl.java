@@ -245,7 +245,11 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (order == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        if (order.getStatus() == null || order.getStatus() != 1) {
+        // 当天已爽约的订单仍允许开始养护（客户当天到店即可服务）；爽约本就不退还次数，此处不涉及次数变动
+        boolean sameDayNoShow = order.getStatus() != null && order.getStatus() == 4
+                && Integer.valueOf(1).equals(order.getNoShowFlag())
+                && LocalDate.now().equals(order.getReserveDate());
+        if (order.getStatus() == null || (order.getStatus() != 1 && !sameDayNoShow)) {
             throw new BusinessException(4012, "预约状态不允许开始养护");
         }
         if (!order.getReserveDate().equals(LocalDate.now())) {
@@ -280,6 +284,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
         }
         order.setStatus(2);
+        if (sameDayNoShow) {
+            order.setNoShowFlag(0);
+        }
         order.setExecutorId(executorId);
         order.setExecutorName(executorName);
         reserveOrderMapper.updateById(order);
@@ -652,6 +659,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                 : (mask == null ? null : mask.get("nameMask")));
         if (mask != null) {
             order.setParentPhone(mask.get("phoneMask"));
+            // 家长姓名以档案为准；档案未维护时保留订单自身值
+            if (StringUtils.hasText(mask.get("parentName"))) {
+                order.setParentName(mask.get("parentName"));
+            }
         }
     }
 

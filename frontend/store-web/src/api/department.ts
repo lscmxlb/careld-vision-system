@@ -16,8 +16,8 @@ export const departmentApi = {
     return request.get(`/departments/${id}`)
   },
 
-  // 创建科室
-  createDepartment: (data: Partial<Department>): Promise<Department> => {
+  // 创建科室（后端返回新记录ID）
+  createDepartment: (data: Partial<Department>): Promise<number> => {
     return request.post('/departments', data)
   },
 

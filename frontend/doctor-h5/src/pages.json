@@ -50,12 +50,6 @@
       }
     },
     {
-      "path": "pages/reserve/detail",
-      "style": {
-        "navigationBarTitleText": "预约详情"
-      }
-    },
-    {
       "path": "pages/reserve/care",
       "style": {
         "navigationBarTitleText": "养护操作"
@@ -77,6 +71,12 @@
       "path": "pages/child/grant",
       "style": {
         "navigationBarTitleText": "次数授权"
+      }
+    },
+    {
+      "path": "pages/child/select",
+      "style": {
+        "navigationBarTitleText": "选择儿童"
       }
     },
     {
@@ -116,16 +116,22 @@
         "selectedIconPath": "static/tabbar/home-active.png"
       },
       {
+        "pagePath": "pages/child/index",
+        "text": "儿童档案",
+        "iconPath": "static/tabbar/child.png",
+        "selectedIconPath": "static/tabbar/child-active.png"
+      },
+      {
         "pagePath": "pages/reserve/index",
         "text": "预约记录",
         "iconPath": "static/tabbar/reserve.png",
         "selectedIconPath": "static/tabbar/reserve-active.png"
       },
       {
-        "pagePath": "pages/child/index",
-        "text": "儿童档案",
-        "iconPath": "static/tabbar/child.png",
-        "selectedIconPath": "static/tabbar/child-active.png"
+        "pagePath": "pages/care-record/index",
+        "text": "养护记录",
+        "iconPath": "static/tabbar/care.png",
+        "selectedIconPath": "static/tabbar/care-active.png"
       },
       {
         "pagePath": "pages/mine/index",

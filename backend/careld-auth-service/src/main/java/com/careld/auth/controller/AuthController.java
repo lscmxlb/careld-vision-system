@@ -6,6 +6,7 @@ import com.careld.auth.dto.DeviceLoginRequest;
 import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.service.AuthService;
 import com.careld.common.result.Result;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @OperationLog(module = "auth", action = "login", description = "用户登录", logType = 2)
     @Operation(summary = "用户登录")
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -38,6 +40,7 @@ public class AuthController {
         return Result.success(authService.refreshToken(token));
     }
 
+    @OperationLog(module = "auth", action = "logout", description = "退出登录", logType = 2)
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
     public Result<Void> logout(@RequestHeader("Authorization") String token) {
@@ -46,6 +49,7 @@ public class AuthController {
         return Result.success();
     }
 
+    @OperationLog(module = "auth", action = "device-login", description = "TV设备登录", logType = 2)
     @Operation(summary = "TV设备登录")
     @PostMapping("/device-login")
     public Result<LoginResponse> deviceLogin(@Valid @RequestBody DeviceLoginRequest request) {
@@ -58,6 +62,7 @@ public class AuthController {
         return Result.success(authService.generateCaptcha());
     }
 
+    @OperationLog(module = "auth", action = "sms-send", description = "发送短信验证码", logType = 2)
     @Operation(summary = "发送短信验证码（家长端登录）")
     @PostMapping("/sms/send")
     public Result<Void> sendSmsCode(@RequestBody Map<String, String> body) {
@@ -65,6 +70,7 @@ public class AuthController {
         return Result.success();
     }
 
+    @OperationLog(module = "auth", action = "sms-login", description = "短信验证码登录", logType = 2)
     @Operation(summary = "手机号+验证码登录（未注册自动注册家长账号）")
     @PostMapping("/sms/login")
     public Result<LoginResponse> smsLogin(@Valid @RequestBody SmsLoginRequest request) {

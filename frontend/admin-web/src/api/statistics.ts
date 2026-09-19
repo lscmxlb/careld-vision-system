@@ -2,7 +2,7 @@
  * 数据统计相关API
  */
 import request from './request'
-import type { StoreTraffic, VisionImprovement, NationalSummary } from '@/types'
+import type { StoreTraffic, VisionImprovement, NationalSummary, StoreOverview } from '@/types'
 
 export const statisticsApi = {
   // 医院客流统计
@@ -30,6 +30,11 @@ export const statisticsApi = {
     endDate: string
   }): Promise<NationalSummary> => {
     return request.get('/statistics/national-summary', { params })
+  },
+
+  // 单医院数据统计（基本信息 + 动态统计）
+  getStoreOverview: (storeId: number): Promise<StoreOverview> => {
+    return request.get('/statistics/store-overview', { params: { storeId } })
   },
 
   // 数据导出

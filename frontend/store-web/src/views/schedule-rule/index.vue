@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>排班设置</span>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>新增排班规则
           </el-button>
@@ -365,7 +364,7 @@ onMounted(fetchData)
 .schedule-rule-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
   .period-line {

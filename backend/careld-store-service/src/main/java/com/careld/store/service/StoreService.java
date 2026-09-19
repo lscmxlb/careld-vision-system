@@ -14,7 +14,7 @@ public interface StoreService {
     /**
      * 全量门店列表（轻量，供下拉选择），支持按组织链过滤
      */
-    List<Store> listAllStores(Long centerId, Long agentId, Long storeId);
+    List<Store> listAllStores(Long centerId, Long agentId, Long storeId, boolean includeDisabled);
 
     /**
      * 当前登录用户所属门店

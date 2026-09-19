@@ -93,6 +93,7 @@ public class AuthServiceImpl implements AuthService {
             if (!passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
                 throw new BusinessException(1001, "用户名或密码错误");
             }
+            medicalStaffMapper.updateLastLoginTime(staff.getId(), LocalDateTime.now());
             return generateStaffTokenResponse(staff);
         }
 
@@ -319,6 +320,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", staff.getId());
         claims.put("username", staff.getPhone());
+        claims.put("realName", staff.getName());
         claims.put("userType", 6);
         claims.put("storeId", staff.getStoreId());
         claims.put("permissions", Collections.emptyList());
@@ -357,6 +359,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("username", user.getUsername());
+        claims.put("realName", user.getRealName());
         claims.put("userType", user.getUserType());
         claims.put("storeId", user.getStoreId());
         claims.put("centerId", user.getCenterId());

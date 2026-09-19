@@ -74,11 +74,12 @@
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
               <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
+              <el-button type="warning" size="small" @click="handleViewStatistics(row)">数据统计</el-button>
               <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'store:list:update'">
                 {{ row.status === 1 ? '禁用' : '启用' }}
               </el-button>
@@ -191,6 +192,52 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+
+    <!-- 数据统计弹窗 -->
+    <el-dialog v-model="statDialogVisible" :title="`${statStoreName} - 数据统计`" width="720px" destroy-on-close>
+      <div v-loading="statLoading">
+        <template v-if="statData">
+          <el-descriptions title="医院基本信息" :column="2" border size="small">
+            <el-descriptions-item label="医院编码">{{ statData.storeCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="机构性质">{{ institutionTypeLabel(statData.institutionType) }}</el-descriptions-item>
+            <el-descriptions-item label="医院名称">{{ statData.storeName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="医院状态">
+              <el-tag :type="statData.status === 1 ? 'success' : 'danger'">{{ statData.status === 1 ? '启用' : '禁用' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="所在地区">
+              {{ [statData.provinceName, statData.cityName, statData.districtName].filter(Boolean).join(' / ') || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="详细地址">{{ statData.address || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="联系人">{{ statData.contactName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="联系电话">{{ statData.contactPhone || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="加盟时间">{{ statData.joinDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="床位数量">{{ statData.bedCount ?? '-' }}</el-descriptions-item>
+            <el-descriptions-item label="运营中心">{{ statData.centerName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="代理商">{{ statData.agentName || '-' }}</el-descriptions-item>
+          </el-descriptions>
+
+          <div class="stat-section-title">动态统计数据</div>
+          <div class="stat-boxes">
+            <div class="stat-box">
+              <div class="stat-value">{{ statData.childCount }}</div>
+              <div class="stat-label">儿童档案数量</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">{{ statData.careCount }}</div>
+              <div class="stat-label">养护服务次数</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">{{ statData.monthlyReserveCount }}</div>
+              <div class="stat-label">本月预约数据</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value">{{ statData.lastActiveDate || '-' }}</div>
+              <div class="stat-label">最后活跃日期</div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -199,9 +246,9 @@ defineOptions({ name: 'AdminStoreList' })
 import { ref, reactive, onMounted, computed, nextTick, h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { storeApi, orgApi, deviceApi, userApi, roleApi } from '@/api'
+import { storeApi, orgApi, deviceApi, userApi, roleApi, statisticsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import type { Store, StoreQuery, OpsCenter, Agent, Device, User } from '@/types'
+import type { Store, StoreQuery, OpsCenter, Agent, Device, User, StoreOverview } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
 import { regionData } from 'element-china-area-data'
 
@@ -323,6 +370,12 @@ const deviceDialogVisible = ref(false)
 const deviceLoading = ref(false)
 const storeDevices = ref<Device[]>([])
 const currentStoreName = ref('')
+
+// 数据统计
+const statDialogVisible = ref(false)
+const statLoading = ref(false)
+const statData = ref<StoreOverview | null>(null)
+const statStoreName = ref('')
 
 const getAgentName = (agentId?: number) => {
   const agent = allAgents.value.find(a => a.id === agentId)
@@ -499,6 +552,20 @@ const handleViewDevices = async (row: Store) => {
   }
 }
 
+const handleViewStatistics = async (row: Store) => {
+  statStoreName.value = row.storeName
+  statData.value = null
+  statDialogVisible.value = true
+  statLoading.value = true
+  try {
+    statData.value = await statisticsApi.getStoreOverview(row.id)
+  } catch (error) {
+    console.error('获取数据统计失败', error)
+  } finally {
+    statLoading.value = false
+  }
+}
+
 const handleToggleStatus = async (row: Store) => {
   try {
     await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}医院"${row.storeName}"吗？`, '提示', { type: 'warning' })
@@ -599,6 +666,34 @@ onMounted(() => {
     justify-content: flex-start;
     align-items: center;
     white-space: nowrap;
+  }
+  .stat-section-title {
+    margin: 18px 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #303133;
+  }
+  .stat-boxes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .stat-box {
+    padding: 16px 8px;
+    text-align: center;
+    background: #f5f7fa;
+    border-radius: 6px;
+  }
+  .stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: #409eff;
+    line-height: 30px;
+  }
+  .stat-label {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #909399;
   }
 }
 </style>

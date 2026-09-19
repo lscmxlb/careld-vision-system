@@ -85,6 +85,8 @@ export interface ChildQuery {
   includeDisabled?: boolean
   remainingCountMin?: number
   status?: number
+  /** 多状态过滤（逗号分隔，如 "0,1"），医院端「全部」使用 */
+  statuses?: string
 }
 
 export interface CreateChildRequest {
@@ -124,6 +126,10 @@ export interface ChildServiceRecord {
   doctorName?: string
   remark?: string
   createdAt: string
+  /** 关联预约的日期/时段（扣减、退还、爽约等记录返回） */
+  reserveDate?: string
+  timeSlotStart?: string
+  timeSlotEnd?: string
 }
 
 /* ---------------- 排班 / 预约 ---------------- */

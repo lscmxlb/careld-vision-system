@@ -58,6 +58,9 @@ public class UserResponse {
     @Schema(description = "创建时间")
     private LocalDateTime createdAt;
 
+    @Schema(description = "儿童档案数量（仅家长用户）")
+    private Integer childCount;
+
     @Schema(description = "角色列表")
     private List<String> roles;
 

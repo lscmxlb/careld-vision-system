@@ -8,7 +8,7 @@
           <text class="tag tag-primary">{{ mode === 'start' ? '待开始养护' : '养护中' }}</text>
         </view>
         <view class="head-time">
-          {{ reserve?.scheduleDate }} {{ formatHm(reserve?.timeSlotStart) }}-{{ formatHm(reserve?.timeSlotEnd) }}
+          预约养护时间：{{ reserve?.scheduleDate }} {{ formatHm(reserve?.timeSlotStart) }}-{{ formatHm(reserve?.timeSlotEnd) }}
         </view>
         <view v-if="reserve?.remark" class="head-remark">备注：{{ reserve.remark }}</view>
       </view>
@@ -17,33 +17,43 @@
       <view class="card">
         <view class="section-title">养护服务</view>
         <view class="field">
-          <text class="field-label required">执行人</text>
-          <picker
-            mode="selector"
-            :range="staffNames"
-            :value="staffIndex"
-            :disabled="mode !== 'start'"
-            @change="onStaffChange"
-          >
-            <view class="field-value field-arrow" :class="{ 'field-placeholder': !form.executorId }">
-              {{ executorName || '请选择医师或医生助理' }}
-            </view>
-          </picker>
+          <text class="field-label required">养护人</text>
+          <view class="field-control">
+            <picker
+              mode="selector"
+              :range="staffNames"
+              :value="staffIndex"
+              :disabled="mode !== 'start'"
+              @change="onStaffChange"
+            >
+              <view class="select-box" :class="{ 'is-locked': mode !== 'start' }">
+                <text class="select-text" :class="{ 'field-placeholder': !form.executorId }">
+                  {{ executorName || '请选择养护人' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
         <view class="field">
           <text class="field-label required">开始时间</text>
-          <picker mode="time" :value="form.startTime || '09:00'" :disabled="mode !== 'start'" @change="onTimeChange">
-            <view class="field-value field-arrow" :class="{ 'field-placeholder': !form.startTime }">
-              {{ form.startTime || '选择开始时间' }}
-            </view>
-          </picker>
+          <view class="field-control">
+            <picker mode="time" :value="form.startTime || '09:00'" :disabled="mode !== 'start'" @change="onTimeChange">
+              <view class="select-box" :class="{ 'is-locked': mode !== 'start' }">
+                <text class="select-text" :class="{ 'field-placeholder': !form.startTime }">
+                  {{ form.startTime || '选择开始时间' }}
+                </text>
+                <view class="select-arrow" />
+              </view>
+            </picker>
+          </view>
         </view>
       </view>
 
       <!-- 养护前视力 -->
       <view class="card">
         <view class="section-title">
-          <text>养护前视力</text>
+          <text>养护前裸眼视力</text>
           <text v-if="mode !== 'start'" class="section-more">已登记，不可修改</text>
         </view>
         <VisionPicker v-model="form.visionBeforeBoth" label="双眼" :disabled="mode !== 'start'" />
@@ -54,7 +64,7 @@
       <!-- 养护后视力 -->
       <view class="card">
         <view class="section-title">
-          <text>养护后视力</text>
+          <text>养护后裸眼视力</text>
           <text class="section-more">结束养护时填写</text>
         </view>
         <VisionPicker v-model="form.visionAfterBoth" label="双眼" />
@@ -67,22 +77,21 @@
     </view>
 
     <view class="sticky-bar">
-      <view class="bar-row">
-        <view
-          v-if="mode === 'start'"
-          class="btn btn-block btn-outline"
-          :class="{ 'is-disabled': !form.executorId || !form.startTime || submitting }"
-          @click="submitStart(true)"
-        >
-          仅开始养护
-        </view>
-        <view
-          class="btn btn-block btn-primary"
-          :class="{ 'is-disabled': !form.executorId || !form.startTime || submitting }"
-          @click="submitComplete"
-        >
-          {{ submitting ? '提交中…' : '完成养护' }}
-        </view>
+      <view class="btn btn-danger" :class="{ 'is-disabled': submitting }" @click="onCancel">取消</view>
+      <view
+        v-if="mode === 'start'"
+        class="btn btn-primary"
+        :class="{ 'is-disabled': !form.executorId || !form.startTime || submitting }"
+        @click="submitStart"
+      >
+        开始养护
+      </view>
+      <view
+        class="btn btn-success"
+        :class="{ 'is-disabled': !form.executorId || !form.startTime || submitting }"
+        @click="submitComplete"
+      >
+        {{ submitting ? '提交中…' : '完成养护' }}
       </view>
     </view>
   </view>
@@ -139,6 +148,7 @@ onLoad(async (query) => {
   }
   await Promise.all([loadReserve(), loadStaff()])
   if (mode.value === 'complete') await backfillFromRecord()
+  capture()
 })
 
 async function loadReserve() {
@@ -198,23 +208,21 @@ function onTimeChange(e: { detail: { value: string | number } }) {
   form.startTime = String(e.detail.value)
 }
 
-function dirty() {
-  if (leaving.value) return false
-  return (
-    !!form.visionBeforeBoth ||
-    !!form.visionBeforeLeft ||
-    !!form.visionBeforeRight ||
-    !!form.visionAfterBoth ||
-    !!form.visionAfterLeft ||
-    !!form.visionAfterRight
-  )
+const snapshot = ref('')
+
+function capture() {
+  snapshot.value = JSON.stringify(form)
 }
 
-onBackPress(() => {
-  if (!dirty()) return false
+/** 与加载完成时的快照对比：任何录入/改动都算未保存 */
+function isDirty() {
+  return !leaving.value && JSON.stringify(form) !== snapshot.value
+}
+
+function confirmLeave() {
   uni.showModal({
     title: '放弃填写',
-    content: '确认离开吗？已填写的视力数据将不会保存',
+    content: '已录入的数据将不会保存，确认离开吗？',
     confirmText: '确认离开',
     cancelText: '继续填写',
     success: (res) => {
@@ -223,17 +231,32 @@ onBackPress(() => {
       uni.navigateBack()
     },
   })
+}
+
+function onCancel() {
+  if (submitting.value) return
+  if (!isDirty()) {
+    leaving.value = true
+    uni.navigateBack()
+    return
+  }
+  confirmLeave()
+}
+
+onBackPress(() => {
+  if (leaving.value || !isDirty()) return false
+  confirmLeave()
   return true
 })
 
 async function doStart(): Promise<boolean> {
   if (!reserveId.value) return false
   if (!form.executorId || !form.startTime) {
-    toast('请选择执行人与开始时间')
+    toast('请选择养护人与开始时间')
     return false
   }
   if (!form.visionBeforeLeft || !form.visionBeforeRight) {
-    const ok = await confirmModal('数据未填写完整', '养护前视力未录入完整，是否确认开始养护？', '确认开始')
+    const ok = await confirmModal('数据未填写完整', '养护前裸眼视力未录入完整，是否确认开始养护？', '确认开始')
     if (!ok) return false
   }
   await reserveApi.startCare(reserveId.value, {
@@ -247,8 +270,8 @@ async function doStart(): Promise<boolean> {
   return true
 }
 
-/** 仅开始养护 */
-async function submitStart(stay: boolean) {
+/** 仅开始养护：成功后返回预约列表页 */
+async function submitStart() {
   if (submitting.value) return
   submitting.value = true
   try {
@@ -256,14 +279,7 @@ async function submitStart(stay: boolean) {
     if (!ok) return
     leaving.value = true
     uni.showToast({ title: '已开始养护', icon: 'none' })
-    if (stay) {
-      // 留在本页继续填写养护后视力
-      mode.value = 'complete'
-      reserve.value = reserve.value ? { ...reserve.value, status: 2 } : reserve.value
-      leaving.value = false
-      return
-    }
-    setTimeout(() => uni.navigateBack(), 600)
+    setTimeout(() => uni.switchTab({ url: '/pages/reserve/index' }), 600)
   } catch {
     // 错误提示已在请求层处理
   } finally {
@@ -275,7 +291,7 @@ async function submitStart(stay: boolean) {
 async function submitComplete() {
   if (submitting.value) return
   if (!form.executorId || !form.startTime) {
-    toast('请选择执行人与开始时间')
+    toast('请选择养护人与开始时间')
     return
   }
   submitting.value = true
@@ -285,7 +301,7 @@ async function submitComplete() {
       if (!ok) return
     }
     if (!form.visionAfterBoth || !form.visionAfterLeft || !form.visionAfterRight) {
-      const ok = await confirmModal('数据未填写完整', '养护后视力未录入完整，是否确认结束养护？', '确认结束')
+      const ok = await confirmModal('数据未填写完整', '养护后裸眼视力未录入完整，是否确认结束养护？', '确认结束')
       if (!ok) return
     }
     await reserveApi.completeCare(reserveId.value!, {
@@ -295,7 +311,7 @@ async function submitComplete() {
     })
     leaving.value = true
     uni.showToast({ title: '养护已完成', icon: 'none' })
-    setTimeout(() => uni.navigateBack(), 600)
+    setTimeout(() => uni.switchTab({ url: '/pages/reserve/index' }), 600)
   } catch {
     // 错误提示已在请求层处理
   } finally {
@@ -352,18 +368,11 @@ function confirmModal(title: string, content: string, confirmText: string): Prom
   color: #9ca3af;
 }
 
-.field-value {
-  text-align: right;
-  font-size: 28rpx;
-  color: #1f2937;
+.select-box.is-locked {
+  opacity: 0.6;
 }
 
 .submit-holder {
   height: 150rpx;
-}
-
-.bar-row {
-  display: flex;
-  gap: 18rpx;
 }
 </style>

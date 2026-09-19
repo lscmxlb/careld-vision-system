@@ -7,6 +7,7 @@ import com.careld.common.security.UserContext;
 import com.careld.schedule.entity.ScheduleRule;
 import com.careld.schedule.entity.ScheduleSlot;
 import com.careld.schedule.service.ScheduleRuleService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class ScheduleRuleController {
 
     private final ScheduleRuleService scheduleRuleService;
 
+    @OperationLog(module = "schedule-rules", action = "create", description = "新增排班规则")
     @Operation(summary = "创建排班规则")
     @PostMapping
     public Result<Long> create(@RequestBody ScheduleRule rule) {
@@ -39,6 +41,7 @@ public class ScheduleRuleController {
         return Result.success(scheduleRuleService.createRule(rule));
     }
 
+    @OperationLog(module = "schedule-rules", action = "update", description = "修改排班规则")
     @Operation(summary = "修改排班规则")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody ScheduleRule rule) {
@@ -46,6 +49,7 @@ public class ScheduleRuleController {
         return Result.success();
     }
 
+    @OperationLog(module = "schedule-rules", action = "delete", description = "删除排班规则")
     @Operation(summary = "删除排班规则")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
@@ -74,7 +78,7 @@ public class ScheduleRuleController {
         return Result.success(scheduleRuleService.getAvailableDates(DataScopeHelper.resolveStoreIdWithParentChoice(storeId), startDate, endDate));
     }
 
-    @Operation(summary = "按月聚合每日名额（医生端日历：A=已约 B=剩余）")
+    @Operation(summary = "按月聚合每日名额（日历：A=已约 B=当天可接受预约总数，B 不随已约变化）")
     @GetMapping("/slot-daily-summary")
     public Result<List<Map<String, Object>>> slotDailySummary(@RequestParam(value = "storeId", required = false) Long storeId,
                                                               @RequestParam("startDate") LocalDate startDate,

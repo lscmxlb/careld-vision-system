@@ -61,7 +61,7 @@
     <!-- 关于我们弹窗 -->
     <el-dialog v-model="showAbout" title="关于我们" width="85%">
       <div class="about-content">
-        <h4>Careld 可尔欧得视力养护</h4>
+        <h4>Careld诊约助手服务</h4>
         <p>专业的儿童青少年视力养护服务平台</p>
         <p>版本: v1.0.0</p>
         <el-divider />

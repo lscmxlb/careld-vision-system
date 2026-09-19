@@ -6,6 +6,7 @@
           <text class="hero-name">{{ detail.name || '未命名' }}</text>
           <text class="tag" :class="auditTag(detail.auditStatus)">{{ auditLabel(detail.auditStatus) }}</text>
           <text v-if="detail.status === 0" class="tag tag-danger">已禁用</text>
+          <text v-else-if="detail.status === 2" class="tag tag-grey">已隐藏</text>
         </view>
         <text class="hero-remain">{{ detail.remainingCount ?? 0 }}<text class="hero-remain-unit">次</text></text>
       </view>
@@ -109,7 +110,7 @@
     <!-- 预约记录 -->
     <view v-else-if="activeTab === '预约记录'" class="tab-body">
       <view v-if="reserves.length" class="list">
-        <ReserveCard v-for="row in reserves" :key="row.id" :row="row" show-date readonly @detail="goReserveDetail" />
+        <ReserveCard v-for="row in reserves" :key="row.id" :row="row" show-date readonly />
       </view>
       <view v-else class="empty"><text class="empty-icon">📅</text><text class="empty-text">暂无预约记录</text></view>
     </view>
@@ -147,7 +148,8 @@
     <view v-if="detail" class="sticky-bar">
       <view v-if="canAudit" class="btn btn-outline" @click="openAudit">审核</view>
       <view class="btn btn-plain" @click="goEdit">编辑档案</view>
-      <view class="btn btn-outline" @click="toggleStatus">{{ detail.status === 1 ? '禁用' : '启用' }}</view>
+      <view v-if="detail.status === 2" class="btn btn-primary" @click="restoreProfile">恢复档案</view>
+      <view v-else class="btn btn-outline" @click="toggleStatus">{{ detail.status === 1 ? '禁用' : '启用' }}</view>
       <view class="btn btn-primary" @click="goGrant">预约授权</view>
     </view>
 
@@ -167,11 +169,16 @@
           </view>
           <view v-if="auditForm.auditStatus === 1" class="field">
             <text class="field-label required">主治医生</text>
-            <picker mode="selector" :range="doctorNames" :value="doctorIndex" @change="onDoctorChange">
-              <view class="field-value" :class="{ 'field-placeholder': !auditForm.doctorId }">
-                {{ doctorName || '请选择主治医生' }}
-              </view>
-            </picker>
+            <view class="field-control">
+              <picker mode="selector" :range="doctorNames" :value="doctorIndex" @change="onDoctorChange">
+                <view class="select-box">
+                  <text class="select-text" :class="{ 'field-placeholder': !auditForm.doctorId }">
+                    {{ doctorName || '请选择主治医生' }}
+                  </text>
+                  <view class="select-arrow" />
+                </view>
+              </picker>
+            </view>
           </view>
           <view class="field">
             <text class="field-label" :class="{ required: auditForm.auditStatus === 2 }">审核备注</text>
@@ -258,7 +265,7 @@ function goEdit() {
 }
 
 function goGrant() {
-  uni.navigateTo({ url: `/pages/child/grant?id=${childId.value}` })
+  uni.navigateTo({ url: `/pages/child/grant?id=${childId.value}&from=child` })
 }
 
 /* ---------------- 档案审核（家长自建档案） ---------------- */
@@ -309,16 +316,12 @@ async function submitAudit() {
       doctorId: passed ? auditForm.value.doctorId : undefined,
       doctorName: passed ? doctorName.value : undefined,
     })
-    uni.showToast({ title: passed ? '审核已通过' : '已驳回', icon: 'none' })
+    uni.showToast({ title: passed ? '已审核' : '已驳回', icon: 'none' })
     auditVisible.value = false
     loadAll()
   } finally {
     auditLoading.value = false
   }
-}
-
-function goReserveDetail(row: Reserve) {
-  uni.navigateTo({ url: `/pages/reserve/detail?id=${row.id}` })
 }
 
 function goCareDetail(row: CareRecord) {
@@ -337,6 +340,21 @@ function toggleStatus() {
       if (!res.confirm) return
       await childApi.setChildStatus(childId.value, next)
       uni.showToast({ title: `${action}成功`, icon: 'none' })
+      loadAll()
+    },
+  })
+}
+
+function restoreProfile() {
+  if (!detail.value) return
+  uni.showModal({
+    title: '恢复档案',
+    content: `确认恢复档案「${detail.value.name}」吗？恢复后家长端将重新可见。`,
+    confirmText: '恢复',
+    success: async (res) => {
+      if (!res.confirm) return
+      await childApi.restoreChild(childId.value)
+      uni.showToast({ title: '已恢复', icon: 'none' })
       loadAll()
     },
   })

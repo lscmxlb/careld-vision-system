@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>预约记录</span>
           <el-button type="primary" @click="handleCreateReserve">
             <el-icon><Plus /></el-icon>新建预约
           </el-button>
@@ -962,7 +961,7 @@ onMounted(async () => {
 .appointment-record-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 

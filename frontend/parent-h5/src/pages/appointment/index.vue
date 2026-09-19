@@ -12,7 +12,7 @@
       </view>
     </view>
 
-    <!-- 第 1 步：选择孩子 -->
+    <!-- 第 1 步：选择儿童 -->
     <view v-if="step === 1" class="step-body">
       <view v-if="children.length" class="list">
         <view
@@ -39,8 +39,8 @@
       <view v-else-if="!loaded" class="loading-tip">加载中…</view>
       <view v-else class="empty">
         <text class="empty-icon">👶</text>
-        <text class="empty-text">还没有建立任何档案</text>
-        <view class="empty-btn" @click="goAddChild">建立儿童档案</view>
+        <text class="empty-text">还没有添加任何档案</text>
+        <view class="empty-btn" @click="goAddChild">添加儿童档案</view>
       </view>
     </view>
 
@@ -95,25 +95,25 @@
     <view v-else class="step-body">
       <view class="card">
         <view class="section-title">预约信息</view>
-        <view class="kv"><text class="kv-key">孩子</text><text class="kv-value">{{ selectedChild?.name || '—' }}</text></view>
+        <view class="kv"><text class="kv-key">儿童姓名</text><text class="kv-value">{{ selectedChild?.name || '—' }}</text></view>
         <view class="kv"><text class="kv-key">养护日期</text><text class="kv-value">{{ selectedDate }}（{{ weekdayLabel(selectedDate) }}）</text></view>
         <view class="kv"><text class="kv-key">养护时段</text><text class="kv-value">{{ selectedSlotText }}</text></view>
         <view class="kv"><text class="kv-key">当前可用次数</text><text class="kv-value">{{ selectedChild?.remainingCount ?? 0 }} 次</text></view>
       </view>
 
       <view class="card">
-        <view class="field field-block">
+        <view class="field">
           <text class="field-label">备注</text>
-          <textarea v-model="remark" class="field-textarea" placeholder="选填，如孩子近期状况" placeholder-class="field-placeholder" maxlength="100" />
+          <textarea v-model="remark" class="field-textarea" :auto-height="true" placeholder="选填，如儿童近期状况" placeholder-class="field-placeholder" maxlength="100" />
         </view>
       </view>
 
-      <view class="confirm-tip">预约成功后将从该孩子档案扣减 1 次可用次数；如需改约请提前取消（距开始不足 {{ cancelHours }} 小时不可取消）。</view>
+      <view class="confirm-tip">预约成功后将从该儿童档案扣减 1 次可用次数；如需改约请提前取消（距开始不足 {{ cancelHours }} 小时不可取消）。</view>
     </view>
 
-    <!-- 底部操作条 -->
-    <view class="sticky-bar">
-      <view v-if="step > 1" class="btn btn-plain" @click="step -= 1">上一步</view>
+    <!-- 底部操作条：第 1 步点选儿童卡片即进入下一步，无按钮 -->
+    <view v-if="step > 1" class="sticky-bar sticky-bar-on-tab">
+      <view class="btn btn-plain" @click="step -= 1">上一步</view>
       <view
         v-if="step < 3"
         class="btn btn-primary"
@@ -158,7 +158,7 @@ import { toast } from '@/utils/request'
 import { takeReserveChildId } from '@/utils/reserveIntent'
 import type { Child, ScheduleSlot } from '@/types'
 
-const STEP_LABELS = ['选择孩子', '选择时间', '确认预约']
+const STEP_LABELS = ['选择儿童', '选择时间', '确认预约']
 
 const userStore = useUserStore()
 
@@ -205,11 +205,7 @@ const dateStrip = computed(() => {
   })
 })
 
-const canNext = computed(() => {
-  if (step.value === 1) return !!selectedChildId.value
-  if (step.value === 2) return !!selectedDate.value && !!selectedSlotId.value
-  return true
-})
+const canNext = computed(() => !!selectedDate.value && !!selectedSlotId.value)
 
 function ageLabel(item: Child) {
   if (typeof item.age === 'number' && item.age >= 0) return `${item.age}岁`
@@ -223,7 +219,7 @@ function canPick(item: Child) {
 function pickTip(item: Child) {
   if (item.auditStatus === 0) return '档案待医院审核，暂不可预约'
   if (item.auditStatus === 2) return '档案已被驳回，请修改后重新提交'
-  if (!item.remainingCount) return '可用次数不足，请联系医院前台'
+  if (!item.remainingCount) return '可用次数不足，请联系医院授权预约次数'
   return ''
 }
 
@@ -279,7 +275,7 @@ async function ensureDefaultSlots() {
   }
 }
 
-/** 取消时间窗按孩子归属门店配置读取（家长无门店上下文，需显式传 storeId） */
+/** 取消时间窗按儿童归属门店配置读取（家长无门店上下文，需显式传 storeId） */
 async function loadCancelHours(storeId: number) {
   try {
     const config = await appointmentConfigApi.getConfig(storeId)
@@ -306,7 +302,8 @@ async function loadSlots() {
   }
 }
 
-function pickChild(item: Child) {
+/** 点选儿童卡片即选中并进入下一步（选择时间） */
+async function pickChild(item: Child) {
   if (!canPick(item)) {
     toast(pickTip(item))
     return
@@ -317,6 +314,8 @@ function pickChild(item: Child) {
   slots.value = []
   availableDays.value = []
   dateLoaded.value = false
+  step.value = 2
+  await loadAvailability()
 }
 
 function pickDate(day: { date: string; enabled: boolean }) {
@@ -336,32 +335,22 @@ function pickSlot(slot: ScheduleSlot) {
   selectedSlotId.value = slot.id
 }
 
+/** 第 2 步 → 第 3 步（第 1 步由点选儿童卡片直接进入第 2 步） */
 async function nextStep() {
-  if (step.value === 1) {
-    if (!selectedChildId.value) {
-      toast('请选择预约的孩子')
-      return
-    }
-    step.value = 2
-    await loadAvailability()
+  if (!selectedDate.value) {
+    toast('请选择养护日期')
     return
   }
-  if (step.value === 2) {
-    if (!selectedDate.value) {
-      toast('请选择养护日期')
-      return
-    }
-    if (!selectedSlotId.value) {
-      toast('请选择养护时段')
-      return
-    }
-    const blocked = await checkDailyLimit()
-    if (blocked) return
-    step.value = 3
+  if (!selectedSlotId.value) {
+    toast('请选择养护时段')
+    return
   }
+  const blocked = await checkDailyLimit()
+  if (blocked) return
+  step.value = 3
 }
 
-/** 每日一约前置拦截：所选孩子当天已有有效预约时禁止提交 */
+/** 每日一约前置拦截：所选儿童当天已有有效预约时禁止提交 */
 async function checkDailyLimit(): Promise<boolean> {
   const child = selectedChild.value
   if (!child) return false
@@ -394,7 +383,7 @@ async function submit() {
     return
   }
   if ((child.remainingCount ?? 0) <= 0) {
-    toast('可用次数不足，请联系医院前台充值')
+    toast('可用次数不足，请联系医院授权预约次数')
     return
   }
   submitting.value = true
@@ -453,7 +442,7 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  padding-bottom: 180rpx;
+  padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
 }
 
 .steps {
@@ -692,21 +681,13 @@ onShow(async () => {
   text-align: right;
 }
 
-.field-block {
-  display: flex;
-  flex-direction: column;
-}
-
-.field-label {
-  font-size: 28rpx;
-  color: #475569;
-  margin-bottom: 12rpx;
-}
-
+/* 备注：与标签同行（左右结构），自适应高度避免撑高页面遮挡底部按钮 */
 .field-textarea {
-  width: 100%;
-  height: 150rpx;
-  padding: 16rpx;
+  flex: 1;
+  min-width: 0;
+  min-height: 64rpx;
+  max-height: 160rpx;
+  padding: 14rpx 16rpx;
   font-size: 28rpx;
   color: #1e293b;
   background: #f8fafc;

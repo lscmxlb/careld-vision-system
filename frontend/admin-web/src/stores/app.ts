@@ -13,18 +13,25 @@ export interface SystemSettings {
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
-  systemName: 'Careld可尔欧得视力养护系统',
+  systemName: 'Careld诊约助手服务',
   logoUrl: '',
   defaultPageSize: 20,
   tokenExpireHours: 2,
   enableCaptcha: true
 }
 
+const LEGACY_SYSTEM_NAME = 'Careld可尔欧得视力养护系统'
+
 function loadSettings(): SystemSettings {
   try {
     const saved = localStorage.getItem('systemSettings')
     if (saved) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) }
+      const parsed = JSON.parse(saved)
+      // 历史 localStorage 中保存的旧品牌名迁移为新品牌名
+      if (parsed.systemName === LEGACY_SYSTEM_NAME) {
+        parsed.systemName = DEFAULT_SETTINGS.systemName
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed }
     }
   } catch { /* ignore */ }
   return { ...DEFAULT_SETTINGS }

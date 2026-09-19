@@ -29,6 +29,18 @@ public class StatisticsController {
         return Result.success(statisticsService.dashboard(DataScopeHelper.resolveStoreId(storeId)));
     }
 
+    @Operation(summary = "医生端工作台统计（儿童档案/当前已预约/已完成养护）")
+    @GetMapping("/workbench")
+    public Result<StatisticsDtos.WorkbenchStats> workbench(@RequestParam(value = "storeId", required = false) Long storeId) {
+        return Result.success(statisticsService.workbenchStats(DataScopeHelper.resolveStoreId(storeId)));
+    }
+
+    @Operation(summary = "医院数据统计（基本信息 + 动态统计）")
+    @GetMapping("/store-overview")
+    public Result<StatisticsDtos.StoreOverview> storeOverview(@RequestParam("storeId") Long storeId) {
+        return Result.success(statisticsService.storeOverview(DataScopeHelper.resolveStoreId(storeId)));
+    }
+
     @Operation(summary = "门店客流统计")
     @GetMapping("/store-traffic")
     public Result<StatisticsDtos.StoreTraffic> storeTraffic(

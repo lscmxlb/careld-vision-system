@@ -34,4 +34,11 @@ public class ChildServiceRecord extends BaseEntity {
     /** 该次变更后的可用次数（非落库字段，列表接口回溯计算） */
     @TableField(exist = false)
     private Integer remainingAfter;
+    /** 关联预约的日期/时段（非落库字段，列表接口按 appointment_id 回填，供家长端展示预约明细） */
+    @TableField(exist = false)
+    private String reserveDate;
+    @TableField(exist = false)
+    private String timeSlotStart;
+    @TableField(exist = false)
+    private String timeSlotEnd;
 }

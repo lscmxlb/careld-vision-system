@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>TV设备管理</span>
           <el-button type="primary" @click="handleBind">
             <el-icon><Plus /></el-icon>绑定设备
           </el-button>
@@ -168,7 +167,7 @@ onMounted(fetchData)
 .device-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 

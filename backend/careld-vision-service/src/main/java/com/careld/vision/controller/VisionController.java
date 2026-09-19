@@ -3,6 +3,7 @@ import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.vision.entity.VisionTestRecord;
 import com.careld.vision.service.VisionService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,7 @@ public class VisionController {
     public Result<VisionTestRecord> get(@PathVariable Long id) {
         return Result.success(visionService.getRecord(id));
     }
+    @OperationLog(module = "vision", action = "create", description = "录入视力检测记录")
     @PostMapping("/records")
     public Result<Long> create(@RequestBody VisionTestRecord record) {
         return Result.success(visionService.createRecord(record));

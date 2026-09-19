@@ -18,6 +18,7 @@ export interface User {
   agentId?: number
   agentName?: string
   status: number
+  childCount?: number
   roles: string[]
   permissions: string[]
   lastLoginTime?: string
@@ -400,6 +401,30 @@ export interface NationalSummary {
   }>
 }
 
+// 医院数据统计（基本信息 + 动态统计）
+export interface StoreOverview {
+  storeId: number
+  storeCode: string
+  storeName: string
+  institutionType?: number
+  status: number
+  provinceName?: string
+  cityName?: string
+  districtName?: string
+  address?: string
+  contactName?: string
+  contactPhone?: string
+  businessHours?: string
+  joinDate?: string
+  bedCount?: number
+  agentName?: string
+  centerName?: string
+  childCount: number
+  careCount: number
+  monthlyReserveCount: number
+  lastActiveDate?: string
+}
+
 // ==================== 操作日志相关 ====================
 export interface OperationLog {
   id: number
@@ -410,6 +435,7 @@ export interface OperationLog {
   storeName?: string
   module: string
   action: string
+  description?: string
   requestMethod: string
   requestUrl: string
   requestParams?: string
@@ -422,8 +448,11 @@ export interface OperationLog {
 }
 
 export interface OperationLogQuery {
+  storeId?: number
   logType?: number
   module?: string
+  action?: string
+  userName?: string
   keyword?: string
   startDate?: string
   endDate?: string

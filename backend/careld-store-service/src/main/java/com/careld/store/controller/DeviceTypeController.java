@@ -6,6 +6,7 @@ import com.careld.common.result.Result;
 import com.careld.common.security.RequirePermission;
 import com.careld.store.entity.DeviceType;
 import com.careld.store.service.DeviceTypeService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class DeviceTypeController {
         return Result.success(deviceTypeService.getDeviceTypeById(id));
     }
 
+    @OperationLog(module = "device-types", action = "create", description = "新增设备类型")
     @Operation(summary = "新增设备类型")
     @PostMapping
     @RequirePermission("device:type:create")
@@ -55,6 +57,7 @@ public class DeviceTypeController {
         return Result.success(deviceTypeService.createDeviceType(deviceType));
     }
 
+    @OperationLog(module = "device-types", action = "update", description = "编辑设备类型")
     @Operation(summary = "编辑设备类型")
     @PutMapping("/{id}")
     @RequirePermission("device:type:update")
@@ -63,6 +66,7 @@ public class DeviceTypeController {
         return Result.success();
     }
 
+    @OperationLog(module = "device-types", action = "delete", description = "删除设备类型")
     @Operation(summary = "删除设备类型")
     @DeleteMapping("/{id}")
     @RequirePermission("device:type:delete")

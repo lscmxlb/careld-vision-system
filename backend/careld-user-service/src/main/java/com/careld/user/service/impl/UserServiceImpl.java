@@ -180,10 +180,34 @@ public class UserServiceImpl implements UserService {
         List<UserResponse> records = userPage.getRecords().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+        fillChildCounts(records);
 
         Page<UserResponse> result = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
         result.setRecords(records);
         return result;
+    }
+
+    /** 家长用户的儿童档案数量（未删除且未隐藏，按 parent_user_id 归集） */
+    private void fillChildCounts(List<UserResponse> records) {
+        List<Long> parentIds = records.stream()
+                .filter(r -> r.getUserType() != null && r.getUserType() == 3 && r.getId() != null)
+                .map(UserResponse::getId)
+                .collect(Collectors.toList());
+        if (parentIds.isEmpty()) {
+            return;
+        }
+        String placeholders = parentIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT parent_user_id, COUNT(*) AS cnt FROM child_profile " +
+                        "WHERE deleted_at IS NULL AND status <> 2 AND parent_user_id IN (" + placeholders + ") " +
+                        "GROUP BY parent_user_id",
+                parentIds.toArray());
+        Map<Long, Integer> counts = rows.stream().collect(Collectors.toMap(
+                row -> ((Number) row.get("parent_user_id")).longValue(),
+                row -> ((Number) row.get("cnt")).intValue()));
+        records.stream()
+                .filter(r -> r.getUserType() != null && r.getUserType() == 3)
+                .forEach(r -> r.setChildCount(counts.getOrDefault(r.getId(), 0)));
     }
 
     @Override

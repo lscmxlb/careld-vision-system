@@ -1,12 +1,6 @@
 <template>
   <div class="care-record-page">
     <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>养护记录</span>
-        </div>
-      </template>
-
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline>
         <el-form-item label="儿童姓名">
@@ -400,12 +394,6 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .care-record-page {
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .care-count-filter {
     color: #606266;
     font-size: 14px;

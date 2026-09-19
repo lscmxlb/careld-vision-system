@@ -2,7 +2,7 @@
  * 登录态 Store（家长端：纯短信验证码登录）
  */
 import { defineStore } from 'pinia'
-import { authApi, userApi } from '@/api'
+import { authApi, childApi, userApi } from '@/api'
 import { clearAuth, getToken, getUserInfo, setRefreshToken, setToken, setUserInfo } from '@/utils/auth'
 import type { User } from '@/types'
 
@@ -58,6 +58,25 @@ export const useUserStore = defineStore('user', {
       this.userInfo = user
       setUserInfo(user)
       return user
+    },
+
+    /**
+     * 登录后按手机号认领未绑定的儿童档案（幂等）；
+     * 账号姓名为空或默认「家长+尾4位」时，用档案家长姓名回填账号姓名
+     */
+    async claimMyChildren() {
+      if (!this.token) return
+      try {
+        const res = await childApi.claimByPhone()
+        const parentName = res?.parentName
+        const realName = this.userInfo?.realName || ''
+        if (parentName && (!realName || /^家长\d{4}$/.test(realName))) {
+          await userApi.updateMyProfile({ realName: parentName })
+          await this.fetchProfile()
+        }
+      } catch {
+        // 认领失败不阻塞登录与页面加载
+      }
     },
 
     async logout() {

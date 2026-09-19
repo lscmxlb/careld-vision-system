@@ -2,7 +2,7 @@
   <el-container class="main-layout">
     <el-aside width="200px" class="sidebar">
       <div class="logo">
-        <span>医院管理系统</span>
+        <span>Careld诊约助手服务</span>
       </div>
       <el-menu
         :default-active="$route.path"
@@ -14,7 +14,7 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><DataBoard /></el-icon>
-          <span>数据看板</span>
+          <span>数据中心</span>
         </el-menu-item>
         <el-sub-menu index="archive">
           <template #title>
@@ -41,15 +41,19 @@
           <el-menu-item index="/basic-info">基础信息</el-menu-item>
           <el-menu-item index="/medical-staff">医务人员</el-menu-item>
           <el-menu-item index="/device">设备管理</el-menu-item>
+          <el-menu-item v-if="canViewLogs" index="/log-record">日志记录</el-menu-item>
         </el-sub-menu>
       </el-menu>
+      <div class="sidebar-footer">
+        <div class="footer-line">系统服务电话：</div>
+        <div class="footer-phone">400 999 3608</div>
+      </div>
     </el-aside>
 
     <el-container>
       <el-header class="header">
-        <div class="header-left">{{ $route.meta?.title || '医院管理' }}</div>
+        <div class="header-left">{{ userStore.userInfo?.storeName }}</div>
         <div class="header-right">
-          <span class="store-name">{{ userStore.userInfo?.storeName }}</span>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               {{ userStore.userInfo?.realName }}
@@ -85,6 +89,8 @@ import { useUserStore } from '@/stores/user'
 const router = useRouter()
 const userStore = useUserStore()
 const isManager = computed(() => userStore.userInfo?.userType === 2)
+// 医护同为 userType=2，日志记录按后端 operationlog:view 权限决定是否展示
+const canViewLogs = computed(() => userStore.userInfo?.permissions?.includes('operationlog:view') ?? false)
 
 const handleCommand = async (command: string) => {
   if (command === 'logout') {
@@ -100,8 +106,11 @@ const handleCommand = async (command: string) => {
 
   .sidebar {
     background-color: #001529;
+    display: flex;
+    flex-direction: column;
 
     .logo {
+      flex: none;
       height: 64px;
       display: flex;
       align-items: center;
@@ -114,6 +123,28 @@ const handleCommand = async (command: string) => {
 
     .el-menu {
       border-right: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-footer {
+      flex: none;
+      text-align: center;
+      padding: 12px 0 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+      .footer-line {
+        font-size: 13px;
+        line-height: 20px;
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      .footer-phone {
+        font-size: 13px;
+        line-height: 20px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.85);
+      }
     }
   }
 
@@ -125,18 +156,15 @@ const handleCommand = async (command: string) => {
     justify-content: space-between;
 
     .header-left {
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 28px;
+      font-weight: 700;
+      color: #001529;
     }
 
     .header-right {
       display: flex;
       align-items: center;
       gap: 20px;
-
-      .store-name {
-        color: #666;
-      }
 
       .user-info {
         cursor: pointer;

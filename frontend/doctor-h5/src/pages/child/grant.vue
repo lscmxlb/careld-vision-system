@@ -27,16 +27,6 @@
         </view>
 
         <view class="field">
-          <text class="field-label required">授权次数</text>
-          <view class="stepper">
-            <view class="stepper-btn" :class="{ 'is-off': (form.changeCount || 1) <= 1 }" @click="stepCount(-1)">−</view>
-            <input v-model.number="form.changeCount" class="stepper-input" type="number" @input="calcPaymentAmount" />
-            <view class="stepper-btn" :class="{ 'is-off': (form.changeCount || 0) >= 99 }" @click="stepCount(1)">＋</view>
-            <text class="stepper-unit">次</text>
-          </view>
-        </view>
-
-        <view class="field">
           <text class="field-label required">缴费方式</text>
           <view class="field-control">
             <picker mode="selector" :range="PAYMENT_METHODS" :value="methodIndex" @change="onMethodChange">
@@ -45,6 +35,16 @@
                 <view class="select-arrow" />
               </view>
             </picker>
+          </view>
+        </view>
+
+        <view class="field">
+          <text class="field-label required">授权次数</text>
+          <view class="stepper">
+            <view class="stepper-btn" :class="{ 'is-off': (form.changeCount || 1) <= 1 }" @click="stepCount(-1)">−</view>
+            <input v-model.number="form.changeCount" class="stepper-input" type="number" @input="calcPaymentAmount" />
+            <view class="stepper-btn" :class="{ 'is-off': (form.changeCount || 0) >= 99 }" @click="stepCount(1)">＋</view>
+            <text class="stepper-unit">次</text>
           </view>
         </view>
 
@@ -90,6 +90,7 @@ import { toast } from '@/utils/request'
 const userStore = useUserStore()
 
 const childId = ref(0)
+const from = ref('')
 const child = ref<Child | null>(null)
 const submitting = ref(false)
 const leaving = ref(false)
@@ -150,6 +151,11 @@ async function loadDoctors() {
   try {
     const res = await medicalStaffApi.getStaffList({ staffRole: 1, status: 1, page: 1, size: 200 })
     doctors.value = res?.list || []
+    // 默认选择当前登录的医师（按姓名匹配；医生助理不在列表中则不预选）
+    if (!form.value.doctorId) {
+      const me = doctors.value.find((d) => d.name === userStore.displayName)
+      if (me?.id) form.value.doctorId = me.id
+    }
   } catch {
     doctors.value = []
   }
@@ -191,9 +197,19 @@ async function submit() {
     capture()
     toast(`已预约授权 ${form.value.changeCount} 次`)
     leaving.value = true
-    setTimeout(() => uni.navigateBack(), 500)
+    setTimeout(() => backAfterDone(), 500)
   } finally {
     submitting.value = false
+  }
+}
+
+function backAfterDone() {
+  if (from.value === 'home') {
+    uni.switchTab({ url: '/pages/home/index' })
+  } else if (from.value === 'child') {
+    uni.switchTab({ url: '/pages/child/index' })
+  } else {
+    uni.navigateBack()
   }
 }
 
@@ -223,8 +239,9 @@ function cancel() {
 
 onLoad(async (options) => {
   childId.value = Number(options?.id || 0)
+  from.value = String(options?.from || '')
   if (!childId.value) return
-  loadDoctors()
+  await loadDoctors()
   child.value = await childApi.getChildDetail(childId.value)
   // 先取科室收费标准，再按默认值（1 次 × 自费支付）计算金额
   await loadDepartmentStandard()
@@ -326,13 +343,6 @@ onBackPress(() => {
   margin-right: 6rpx;
 }
 
-.field-value {
-  flex: 1;
-  font-size: 28rpx;
-  color: #1e293b;
-  text-align: right;
-}
-
 .field-input {
   flex: 1;
   font-size: 32rpx;
@@ -414,41 +424,5 @@ onBackPress(() => {
   margin-top: 12rpx;
   font-size: 24rpx;
   color: #94a3b8;
-}
-
-.field-control {
-  flex: 1;
-  min-width: 0;
-}
-
-.select-box {
-  display: flex;
-  align-items: center;
-  height: 72rpx;
-  padding: 0 20rpx;
-  background: #f8fafc;
-  border: 1rpx solid #e2e8f0;
-  border-radius: 12rpx;
-  box-sizing: border-box;
-}
-
-.select-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 28rpx;
-  color: #1e293b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.select-arrow {
-  width: 14rpx;
-  height: 14rpx;
-  flex: none;
-  margin-left: 12rpx;
-  border-top: 3rpx solid #94a3b8;
-  border-right: 3rpx solid #94a3b8;
-  transform: rotate(135deg);
 }
 </style>

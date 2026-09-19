@@ -82,10 +82,12 @@ public class StoreServiceImpl implements StoreService {
     }
 
     @Override
-    public List<Store> listAllStores(Long centerId, Long agentId, Long storeId) {
+    public List<Store> listAllStores(Long centerId, Long agentId, Long storeId, boolean includeDisabled) {
         LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
-        // 下拉选择只返回启用状态的医院，禁用医院不显示
-        wrapper.eq(Store::getStatus, 1);
+        // 下拉选择默认只返回启用状态的医院；日志等历史查询可要求包含禁用医院
+        if (!includeDisabled) {
+            wrapper.eq(Store::getStatus, 1);
+        }
         if (storeId != null) {
             wrapper.eq(Store::getId, storeId);
         }

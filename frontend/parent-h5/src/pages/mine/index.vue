@@ -10,27 +10,8 @@
 
     <view class="card">
       <view class="kv"><text class="kv-key">手机号码</text><text class="kv-value">{{ userStore.phoneMask }}</text></view>
-      <view class="kv"><text class="kv-key">绑定孩子</text><text class="kv-value">{{ childCount }} 个</text></view>
+      <view class="kv"><text class="kv-key">绑定儿童</text><text class="kv-value">{{ childCount }} 个</text></view>
       <view class="kv"><text class="kv-key">剩余可用次数</text><text class="kv-value">{{ totalRemaining }} 次</text></view>
-    </view>
-
-    <view class="card">
-      <view class="entry" @click="goMyReserve">
-        <text class="entry-label">我的预约</text>
-        <text class="entry-arrow">›</text>
-      </view>
-      <view class="entry" @click="goCareRecord">
-        <text class="entry-label">养护记录</text>
-        <text class="entry-arrow">›</text>
-      </view>
-      <view class="entry" @click="goTrend">
-        <text class="entry-label">视力趋势</text>
-        <text class="entry-arrow">›</text>
-      </view>
-      <view class="entry entry-last" @click="goReport">
-        <text class="entry-label">检测报告</text>
-        <text class="entry-arrow">›</text>
-      </view>
     </view>
 
     <view class="card">
@@ -82,22 +63,6 @@ const displayName = computed(() =>
 
 const avatarText = computed(() => displayName.value.slice(0, 1))
 
-function goMyReserve() {
-  uni.switchTab({ url: '/pages/appointment/list' })
-}
-
-function goCareRecord() {
-  uni.switchTab({ url: '/pages/care-record/index' })
-}
-
-function goTrend() {
-  uni.navigateTo({ url: '/pages/trend/index' })
-}
-
-function goReport() {
-  uni.navigateTo({ url: '/pages/report/index' })
-}
-
 function handleLogout() {
   uni.showModal({
     title: '退出登录',
@@ -123,6 +88,8 @@ async function loadChildren() {
 }
 
 onShow(async () => {
+  // 先按手机号认领未绑定档案（可能回填家长姓名），再刷新用户信息与儿童统计
+  await userStore.claimMyChildren()
   await userStore.fetchProfile()
   loadChildren()
 })

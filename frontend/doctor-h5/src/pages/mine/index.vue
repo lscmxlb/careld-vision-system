@@ -9,18 +9,17 @@
     </view>
 
     <view class="card">
-      <view class="kv"><text class="kv-key">账号</text><text class="kv-value">{{ user?.username || '—' }}</text></view>
-      <view class="kv kv-clickable" @click="openPasswordEdit">
-        <text class="kv-key">修改密码</text>
-        <text class="kv-value kv-blue">去修改<text class="kv-arrow">›</text></text>
-      </view>
-      <view class="kv"><text class="kv-key">姓名</text><text class="kv-value">{{ user?.realName || '—' }}</text></view>
+      <view class="kv"><text class="kv-key">所在医院</text><text class="kv-value">{{ user?.storeName || '—' }}</text></view>
+      <view class="kv"><text class="kv-key">用户身份</text><text class="kv-value">{{ roleText }}</text></view>
+      <view class="kv"><text class="kv-key">用户姓名</text><text class="kv-value">{{ user?.realName || '—' }}</text></view>
       <view class="kv kv-clickable" @click="openPhoneEdit">
-        <text class="kv-key">手机号码</text>
+        <text class="kv-key">手机号码(登录账号)</text>
         <text class="kv-value">{{ user?.phone || '—' }}<text class="kv-arrow">›</text></text>
       </view>
-      <view class="kv"><text class="kv-key">身份</text><text class="kv-value">{{ roleText }}</text></view>
-      <view class="kv"><text class="kv-key">所在医院</text><text class="kv-value">{{ user?.storeName || '—' }}</text></view>
+      <view class="kv kv-clickable" @click="openPasswordEdit">
+        <text class="kv-key">登录密码</text>
+        <text class="kv-value kv-blue">去修改<text class="kv-arrow">›</text></text>
+      </view>
     </view>
 
     <view class="card">
@@ -54,13 +53,13 @@
       </view>
     </view>
 
-    <view v-if="phoneVisible" class="mask" @click="phoneVisible = false">
-      <view class="sheet" @click.stop>
-        <view class="sheet-header">
-          <text class="sheet-title">修改手机号</text>
-          <text class="sheet-close" @click="phoneVisible = false">✕</text>
+    <view v-if="phoneVisible" class="modal-mask" @click="phoneVisible = false">
+      <view class="modal-card" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">修改手机号</text>
+          <text class="modal-close" @click="phoneVisible = false">✕</text>
         </view>
-        <view class="sheet-body">
+        <view class="modal-body">
           <view class="edit-tip">手机号即登录账号，修改成功后需使用新手机号重新登录。</view>
           <input
             v-model="phoneForm.phone"
@@ -71,7 +70,7 @@
             placeholder-class="edit-placeholder"
           />
         </view>
-        <view class="sheet-footer">
+        <view class="modal-footer">
           <view class="btn btn-plain" @click="phoneVisible = false">取消</view>
           <view class="btn btn-primary" :class="{ 'is-disabled': phoneSubmitting }" @click="submitPhone">
             {{ phoneSubmitting ? '提交中…' : '确认修改' }}
@@ -80,13 +79,13 @@
       </view>
     </view>
 
-    <view v-if="pwdVisible" class="mask" @click="pwdVisible = false">
-      <view class="sheet" @click.stop>
-        <view class="sheet-header">
-          <text class="sheet-title">修改密码</text>
-          <text class="sheet-close" @click="pwdVisible = false">✕</text>
+    <view v-if="pwdVisible" class="modal-mask" @click="pwdVisible = false">
+      <view class="modal-card" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">修改密码</text>
+          <text class="modal-close" @click="pwdVisible = false">✕</text>
         </view>
-        <view class="sheet-body">
+        <view class="modal-body">
           <input
             v-model="pwdForm.oldPassword"
             class="edit-input"
@@ -109,7 +108,7 @@
             placeholder-class="edit-placeholder"
           />
         </view>
-        <view class="sheet-footer">
+        <view class="modal-footer">
           <view class="btn btn-plain" @click="pwdVisible = false">取消</view>
           <view class="btn btn-primary" :class="{ 'is-disabled': pwdSubmitting }" @click="submitPassword">
             {{ pwdSubmitting ? '提交中…' : '确认修改' }}
@@ -286,8 +285,9 @@ onShow(() => {
 }
 
 .kv-key {
-  width: 180rpx;
+  min-width: 180rpx;
   flex: none;
+  white-space: nowrap;
   color: #94a3b8;
 }
 

@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>儿童档案管理</span>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>新建档案
           </el-button>
@@ -23,7 +22,7 @@
         <el-form-item label="审核状态">
           <el-select v-model="queryForm.auditStatus" placeholder="全部" clearable style="width: 120px;">
             <el-option label="待审核" :value="0" />
-            <el-option label="已通过" :value="1" />
+            <el-option label="已审核" :value="1" />
             <el-option label="已驳回" :value="2" />
           </el-select>
         </el-form-item>
@@ -31,6 +30,7 @@
           <el-select v-model="queryForm.status" style="width: 120px;" @change="handleSearch">
             <el-option label="正常" :value="1" />
             <el-option label="已禁用" :value="0" />
+            <el-option label="已隐藏" :value="2" />
             <el-option label="全部" :value="-1" />
           </el-select>
         </el-form-item>
@@ -102,7 +102,13 @@
             <el-button type="info" size="small" @click="handleServiceRecords(row)">预约记录</el-button>
             <el-button type="primary" size="small" @click="handleEdit(row)">档案详情</el-button>
             <el-button
-              v-if="row.status === 1"
+              v-if="row.status === 2"
+              type="primary"
+              size="small"
+              @click="handleRestore(row)"
+            >恢复</el-button>
+            <el-button
+              v-else-if="row.status === 1"
               type="danger"
               size="small"
               @click="handleToggleStatus(row, 0)"
@@ -412,7 +418,7 @@ const editingId = ref<number | null>(null)
 const queryForm = reactive({
   keyword: '',
   auditStatus: undefined as number | undefined,
-  /** -1=全部 1=正常(默认) 0=已禁用 */
+  /** -1=全部(正常+已禁用) 1=正常(默认) 0=已禁用 2=已隐藏 */
   status: 1 as number,
   /** 可用次数大于该值（不填=不限） */
   minRemainingCount: undefined as number | undefined
@@ -477,16 +483,18 @@ const getAuditStatusType = (status: number) => {
 }
 
 const getAuditStatusText = (status: number) => {
-  const map: Record<number, string> = { 0: '待审核', 1: '已通过', 2: '已驳回' }
+  const map: Record<number, string> = { 0: '待审核', 1: '已审核', 2: '已驳回' }
   return map[status] || '未知'
 }
 
-/** 档案启用/禁用状态展示：status 1=启用, 0=禁用 */
+/** 档案状态展示：status 1=启用, 0=禁用, 2=已隐藏（家长删除） */
 const getStatusType = (status: number) => {
-  return status === 1 ? 'success' : 'info'
+  const map: Record<number, string> = { 1: 'success', 0: 'info', 2: 'warning' }
+  return map[status] || 'info'
 }
 const getStatusText = (status: number) => {
-  return status === 1 ? '启用' : '已禁用'
+  const map: Record<number, string> = { 1: '启用', 0: '已禁用', 2: '已隐藏' }
+  return map[status] || '未知'
 }
 
 /** 禁用行灰显 */
@@ -497,13 +505,14 @@ const rowClassName = ({ row }: { row: Child }) => {
 const fetchData = async () => {
   loading.value = true
   try {
+    // 「全部」= 正常 + 已禁用（不含已隐藏，已隐藏需单独筛选）
     const allSelected = queryForm.status === -1
     const res = await childApi.getChildList({
       storeId: userStore.storeId,
       keyword: queryForm.keyword || undefined,
       auditStatus: queryForm.auditStatus,
       status: allSelected ? undefined : queryForm.status,
-      includeDisabled: allSelected || undefined,
+      statuses: allSelected ? '0,1' : undefined,
       remainingCountMin: queryForm.minRemainingCount,
       page: pagination.page,
       size: pagination.size
@@ -658,7 +667,7 @@ const handleAuditSubmit = async () => {
       doctorId: auditForm.auditStatus === 1 ? auditForm.doctorId : undefined,
       doctorName: auditForm.auditStatus === 1 ? doctor?.name : undefined
     })
-    ElMessage.success(auditForm.auditStatus === 1 ? '审核已通过' : '已驳回')
+    ElMessage.success(auditForm.auditStatus === 1 ? '已审核' : '已驳回')
     auditVisible.value = false
     fetchData()
   } catch {
@@ -683,6 +692,26 @@ const handleToggleStatus = async (row: Child, status: number) => {
   try {
     await childApi.setChildStatus(row.id, { status })
     ElMessage.success(`${action}成功`)
+    fetchData()
+  } catch {
+    // 错误已在拦截器处理
+  }
+}
+
+// ==================== 恢复家长隐藏的档案 ====================
+const handleRestore = async (row: Child) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认恢复档案「${row.name}」吗？恢复后家长端将重新可见。`,
+      '恢复档案',
+      { confirmButtonText: '恢复', cancelButtonText: '取消', type: 'info' }
+    )
+  } catch {
+    return // 用户取消
+  }
+  try {
+    await childApi.restoreChild(row.id)
+    ElMessage.success('已恢复')
     fetchData()
   } catch {
     // 错误已在拦截器处理
@@ -888,7 +917,7 @@ onMounted(() => {
 .child-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 

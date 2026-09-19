@@ -57,5 +57,13 @@ export const childApi = {
   getServiceRecords: (id: number): Promise<ChildServiceRecord[]> =>
     get<ChildServiceRecord[]>(`/children/${id}/service-records`),
 
+  /** 家长删除档案（后端语义为隐藏：家长不可见，医生端/医院端可恢复） */
   deleteChild: (id: number): Promise<void> => del<void>(`/children/${id}`),
+
+  /** 家长按登录手机号认领未绑定档案（登录后自动调用，幂等） */
+  claimByPhone: (): Promise<{ claimedCount: number; parentName: string | null }> =>
+    post<{ claimedCount: number; parentName: string | null }>('/children/claim-by-phone', {}),
+
+  /** 恢复已删除（隐藏）档案（医生端/医院端） */
+  restoreChild: (id: number): Promise<void> => put<void>(`/children/${id}/restore`, {}),
 }

@@ -8,6 +8,7 @@ import com.careld.common.result.Result;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.user.entity.MedicalStaff;
 import com.careld.user.mapper.MedicalStaffMapper;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,7 @@ public class MedicalStaffController {
         return Result.success(PageResult.of(result.getRecords(), page, size, result.getTotal()));
     }
 
+    @OperationLog(module = "medical-staff", action = "create", description = "新增医务人员")
     @Operation(summary = "新增医务人员")
     @PostMapping
     public Result<MedicalStaff> create(@RequestBody MedicalStaff staff) {
@@ -85,6 +87,7 @@ public class MedicalStaffController {
         return Result.success(staff);
     }
 
+    @OperationLog(module = "medical-staff", action = "update", description = "编辑医务人员")
     @Operation(summary = "修改医务人员")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody MedicalStaff staff) {
@@ -124,6 +127,7 @@ public class MedicalStaffController {
         return Result.success();
     }
 
+    @OperationLog(module = "medical-staff", action = "status", description = "启用/禁用医务人员")
     @Operation(summary = "启用/禁用医务人员")
     @PutMapping("/{id}/status")
     public Result<Void> changeStatus(@PathVariable Long id, @RequestBody MedicalStaff param) {
@@ -141,6 +145,7 @@ public class MedicalStaffController {
         return Result.success();
     }
 
+    @OperationLog(module = "medical-staff", action = "password", description = "重置医务人员密码")
     @Operation(summary = "重置登录密码")
     @PutMapping("/{id}/password")
     public Result<Void> resetPassword(@PathVariable Long id, @RequestBody MedicalStaff param) {

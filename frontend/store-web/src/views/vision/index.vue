@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>视力养护记录</span>
           <el-button type="primary" @click="handleExport">
             <el-icon><Download /></el-icon>导出记录
           </el-button>
@@ -199,7 +198,7 @@ onMounted(fetchData)
 .vision-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 

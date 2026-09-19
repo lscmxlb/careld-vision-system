@@ -35,8 +35,8 @@ export const storeApi = {
     return request.delete(`/stores/${id}`)
   },
 
-  // 获取所有医院（下拉选择）
-  getAllStores: (): Promise<Store[]> => {
-    return request.get('/stores/all')
+  // 获取所有医院（下拉选择）；includeDisabled 用于历史数据查询场景
+  getAllStores: (params?: { includeDisabled?: boolean }): Promise<Store[]> => {
+    return request.get('/stores/all', { params })
   }
 }

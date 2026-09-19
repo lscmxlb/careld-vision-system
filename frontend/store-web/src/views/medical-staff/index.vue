@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>医务人员管理</span>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>新增医务人员
           </el-button>
@@ -295,7 +294,7 @@ onMounted(fetchData)
 .medical-staff-page {
   .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 

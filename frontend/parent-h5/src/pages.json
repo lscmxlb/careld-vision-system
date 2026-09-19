@@ -51,13 +51,19 @@
     {
       "path": "pages/child/form",
       "style": {
-        "navigationBarTitleText": "建立儿童档案"
+        "navigationBarTitleText": "添加儿童档案"
       }
     },
     {
       "path": "pages/child/detail",
       "style": {
         "navigationBarTitleText": "档案详情"
+      }
+    },
+    {
+      "path": "pages/child/records",
+      "style": {
+        "navigationBarTitleText": "预约记录"
       }
     },
     {

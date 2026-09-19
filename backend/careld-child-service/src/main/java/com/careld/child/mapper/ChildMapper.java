@@ -1,9 +1,13 @@
 package com.careld.child.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.careld.child.entity.ChildProfile;
+import com.careld.child.entity.ParentUser;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 import java.util.List;
 @Mapper
 public interface ChildMapper extends BaseMapper<ChildProfile> {
@@ -63,15 +67,48 @@ public interface ChildMapper extends BaseMapper<ChildProfile> {
             "<if test='auditStatus != null'>AND c.audit_status = #{auditStatus} </if>" +
             "<if test='parentUserId != null'>AND c.parent_user_id = #{parentUserId} </if>" +
             "<if test='keyword != null'>AND (c.name_mask LIKE CONCAT('%',#{keyword},'%') OR c.phone_mask LIKE CONCAT('%',#{keyword},'%')) </if>" +
+            "<if test='statuses != null and statuses.size() > 0'>AND c.status IN " +
+            "<foreach collection='statuses' item='st' open='(' separator=',' close=')'>#{st}</foreach> </if>" +
             "<if test='status != null'>AND c.status = #{status} </if>" +
-            "<if test='status == null and (includeDisabled == null or includeDisabled == false)'>AND c.status = 1 </if>" +
+            "<if test='(statuses == null or statuses.size() == 0) and status == null and (includeDisabled == null or includeDisabled == false)'>AND c.status = 1 </if>" +
             "ORDER BY c.created_at DESC</script>")
     List<ChildProfile> selectEnrichedList(@Param("storeId") Long storeId,
                                           @Param("auditStatus") Integer auditStatus,
                                           @Param("parentUserId") Long parentUserId,
                                           @Param("keyword") String keyword,
                                           @Param("includeDisabled") Boolean includeDisabled,
-                                          @Param("status") Integer status);
+                                          @Param("status") Integer status,
+                                          @Param("statuses") List<Integer> statuses);
+
+    /** 当前登录用户的手机号（认领匹配用，与档案同库） */
+    @Select("SELECT phone FROM sys_user WHERE id = #{userId} AND deleted_at IS NULL")
+    String selectUserPhone(@Param("userId") Long userId);
+
+    /** 按手机号查账号（建档同步家长账号用：仅家长类型可复用，其余占用返回后由服务层忽略） */
+    @Select("SELECT id, user_type, store_id FROM sys_user WHERE phone = #{phone} AND deleted_at IS NULL LIMIT 1")
+    ParentUser selectUserByPhone(@Param("phone") String phone);
+
+    /** 新建家长账号（username/phone 均为手机号，与 auth-service 短信自动注册口径一致） */
+    @Insert("INSERT INTO sys_user (username, password, real_name, phone, user_type, store_id, status) " +
+            "VALUES (#{username}, #{password}, #{realName}, #{phone}, #{userType}, #{storeId}, 1)")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insertParentUser(ParentUser user);
+
+    /** 家长账号未绑定医院时补上门店（便于门店侧用户管理可见） */
+    @Update("UPDATE sys_user SET store_id = #{storeId} WHERE id = #{id} AND store_id IS NULL")
+    int fillStoreIfNull(@Param("id") Long id, @Param("storeId") Long storeId);
+
+    /** 监护人脱敏手机号一致且尚未绑定家长、未隐藏的档案（认领候选，再由服务层解密精确比对） */
+    @Select("SELECT " + ENRICHED_COLUMNS +
+            "FROM child_profile c " + ENRICHED_JOINS +
+            "WHERE c.deleted_at IS NULL AND c.parent_user_id IS NULL AND c.status <> 2 " +
+            "AND c.phone_mask = #{phoneMask} " +
+            "ORDER BY c.created_at DESC")
+    List<ChildProfile> selectUnboundByPhoneMask(@Param("phoneMask") String phoneMask);
+
+    /** 该儿童是否有未完成的预约（已预约=1 / 养护中=2），用于删除档案前置校验 */
+    @Select("SELECT COUNT(*) FROM reserve_order WHERE child_id = #{childId} AND status IN (1, 2) AND deleted_at IS NULL")
+    long countUnfinishedReserves(@Param("childId") Long childId);
 
     @Select("SELECT " + ENRICHED_COLUMNS +
             "FROM child_profile c " + ENRICHED_JOINS +

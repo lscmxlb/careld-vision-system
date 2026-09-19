@@ -2,6 +2,7 @@ package com.careld.child.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.careld.child.entity.ChildProfile;
 import com.careld.child.entity.ChildServiceRecord;
+import com.careld.child.entity.ParentUser;
 import com.careld.child.mapper.ChildMapper;
 import com.careld.child.mapper.ChildServiceRecordMapper;
 import com.careld.child.service.ChildService;
@@ -11,6 +12,7 @@ import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
 import com.careld.common.utils.MaskUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,8 +20,12 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,15 +33,18 @@ public class ChildServiceImpl implements ChildService {
 
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("自费支付", "医保-个人余额", "医保-统筹支付", "免费体验", "其它");
 
+    private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
     private final ChildMapper childMapper;
     private final ChildServiceRecordMapper serviceRecordMapper;
     @Override
     @Transactional
     public Long createProfile(ChildProfile profile, String aesKey) {
+        String plainPhone = profile.getPhoneMask();
         profile.setNameEncrypted(AesUtil.encrypt(profile.getNameMask(), aesKey));
-        profile.setPhoneEncrypted(AesUtil.encrypt(profile.getPhoneMask(), aesKey));
+        profile.setPhoneEncrypted(AesUtil.encrypt(plainPhone, aesKey));
         profile.setNameMask(MaskUtil.maskName(profile.getNameMask()));
-        profile.setPhoneMask(MaskUtil.maskPhone(profile.getPhoneMask()));
+        profile.setPhoneMask(MaskUtil.maskPhone(plainPhone));
         // 来源与审核：医生添加自动通过；家长添加待审核（来源由控制器按用户类型设置）
         if (profile.getSourceType() != null && profile.getSourceType() == 1) {
             profile.setAuditStatus(0);
@@ -43,10 +52,43 @@ public class ChildServiceImpl implements ChildService {
             profile.setSourceType(2);
             profile.setAuditStatus(1);
         }
+        // 医院侧建档（家长账号未知）：按监护人手机号同步家长账号并绑定，保证后台用户管理可见
+        if (profile.getParentUserId() == null && plainPhone != null && plainPhone.matches("^1[3-9]\\d{9}$")) {
+            Long parentUserId = ensureParentUser(plainPhone, profile.getParentName(), profile.getStoreId());
+            if (parentUserId != null) {
+                profile.setParentUserId(parentUserId);
+            }
+        }
         profile.setStatus(1);
         profile.setChildCode(generateChildCode());
         childMapper.insert(profile);
         return profile.getId();
+    }
+
+    /**
+     * 按监护人手机号取家长账号：已存在家长账号直接复用（顺带补门店），否则新建。
+     * 手机号被非家长账号占用时返回 null（无法建号，档案保持未绑定）。
+     */
+    private Long ensureParentUser(String phone, String parentName, Long storeId) {
+        ParentUser exist = childMapper.selectUserByPhone(phone);
+        if (exist != null) {
+            if (exist.getUserType() == null || exist.getUserType() != 3) {
+                return null;
+            }
+            if (storeId != null) {
+                childMapper.fillStoreIfNull(exist.getId(), storeId);
+            }
+            return exist.getId();
+        }
+        ParentUser parent = new ParentUser();
+        parent.setUsername(phone);
+        parent.setPassword(PASSWORD_ENCODER.encode(UUID.randomUUID().toString()));
+        parent.setRealName(StringUtils.hasText(parentName) ? parentName : "家长" + phone.substring(7));
+        parent.setPhone(phone);
+        parent.setUserType(3);
+        parent.setStoreId(storeId);
+        childMapper.insertParentUser(parent);
+        return parent.getId();
     }
     @Override
     @Transactional
@@ -94,6 +136,11 @@ public class ChildServiceImpl implements ChildService {
     public ChildProfile getProfile(Long id, String aesKey) {
         ChildProfile profile = childMapper.selectEnrichedById(id);
         if (profile == null) {
+            throw new BusinessException(404, "档案不存在");
+        }
+        // 家长删除的档案（隐藏）对家长本人不可见，等同不存在
+        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 3
+                && profile.getStatus() != null && profile.getStatus() == 2) {
             throw new BusinessException(404, "档案不存在");
         }
         checkDetailScope(profile);
@@ -156,8 +203,15 @@ public class ChildServiceImpl implements ChildService {
         }
     }
     @Override
-    public List<ChildProfile> listProfiles(Long storeId, Integer auditStatus, Long parentUserId, String keyword, boolean includeDisabled, Integer status, Integer remainingCountMin, String aesKey) {
-        List<ChildProfile> list = childMapper.selectEnrichedList(storeId, auditStatus, parentUserId, null, includeDisabled, status);
+    public List<ChildProfile> listProfiles(Long storeId, Integer auditStatus, Long parentUserId, String keyword, boolean includeDisabled, Integer status, List<Integer> statuses, Integer remainingCountMin, String aesKey) {
+        // 家长视角不可见已隐藏/已禁用档案，也不允许绕过状态过滤
+        Integer userType = UserContext.getCurrentUserType();
+        if (userType != null && userType == 3) {
+            includeDisabled = false;
+            status = null;
+            statuses = null;
+        }
+        List<ChildProfile> list = childMapper.selectEnrichedList(storeId, auditStatus, parentUserId, null, includeDisabled, status, statuses);
         for (ChildProfile profile : list) {
             enrich(profile);
             // 列表姓名展示明文（解密失败回退掩码）；手机号仍脱敏
@@ -206,7 +260,7 @@ public class ChildServiceImpl implements ChildService {
 
     @Override
     public List<ChildProfile> searchByGuardianPhone(Long storeId, String phone, String aesKey) {
-        List<ChildProfile> all = childMapper.selectEnrichedList(storeId, null, null, null, false, null);
+        List<ChildProfile> all = childMapper.selectEnrichedList(storeId, null, null, null, false, null, null);
         List<ChildProfile> matched = new ArrayList<>();
         String phoneMask = MaskUtil.maskPhone(phone);
         for (ChildProfile profile : all) {
@@ -241,7 +295,7 @@ public class ChildServiceImpl implements ChildService {
 
     @Override
     public List<ChildProfile> pickOptions(Long storeId, String keyword, String aesKey) {
-        List<ChildProfile> list = childMapper.selectEnrichedList(storeId, 1, null, null, false, 1);
+        List<ChildProfile> list = childMapper.selectEnrichedList(storeId, 1, null, null, false, 1, null);
         String kw = keyword == null ? "" : keyword.trim();
         List<ChildProfile> result = new ArrayList<>();
         for (ChildProfile profile : list) {
@@ -283,10 +337,91 @@ public class ChildServiceImpl implements ChildService {
     }
     @Override
     @Transactional
-    public void deleteProfile(Long id) {
+    public void hideProfile(Long id) {
         ChildProfile exist = childMapper.selectById(id);
         if (exist == null) throw new BusinessException(404, "档案不存在");
-        childMapper.deleteById(id);
+        if (exist.getStatus() != null && exist.getStatus() == 2) {
+            throw new BusinessException(400, "档案已删除");
+        }
+        // 家长仅能删除本人绑定的档案；门店用户限本店；总部/运营/代理放行
+        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 3) {
+            Long uid = UserContext.getCurrentUserId();
+            if (uid == null || !uid.equals(exist.getParentUserId())) {
+                throw new BusinessException(403, "无权删除该档案");
+            }
+        } else if (DataScopeHelper.isRestricted()) {
+            Long storeId = UserContext.getCurrentStoreId();
+            if (storeId == null || !storeId.equals(exist.getStoreId())) {
+                throw new BusinessException(403, "无权删除该档案");
+            }
+        }
+        if (childMapper.countUnfinishedReserves(id) > 0) {
+            throw new BusinessException(400, "该儿童有尚未完成的预约，暂不能删除档案");
+        }
+        ChildProfile update = new ChildProfile();
+        update.setId(id);
+        update.setStatus(2);
+        childMapper.updateById(update);
+    }
+
+    @Override
+    @Transactional
+    public void restoreProfile(Long id) {
+        if (UserContext.getCurrentUserType() != null && UserContext.getCurrentUserType() == 3) {
+            throw new BusinessException(403, "无权操作该档案");
+        }
+        ChildProfile exist = childMapper.selectById(id);
+        if (exist == null) throw new BusinessException(404, "档案不存在");
+        if (exist.getStatus() == null || exist.getStatus() != 2) {
+            throw new BusinessException(400, "该档案未处于已隐藏状态");
+        }
+        checkDetailScope(exist);
+        ChildProfile update = new ChildProfile();
+        update.setId(id);
+        update.setStatus(1);
+        childMapper.updateById(update);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> claimByPhone(String aesKey) {
+        Integer userType = UserContext.getCurrentUserType();
+        Long uid = UserContext.getCurrentUserId();
+        if (userType == null || userType != 3 || uid == null) {
+            throw new BusinessException(403, "仅家长账号可执行档案认领");
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("claimedCount", 0);
+        result.put("parentName", null);
+        String phone = childMapper.selectUserPhone(uid);
+        if (!StringUtils.hasText(phone)) {
+            return result;
+        }
+        String mask = MaskUtil.maskPhone(phone);
+        if (!StringUtils.hasText(mask)) {
+            return result;
+        }
+        int claimed = 0;
+        String parentName = null;
+        for (ChildProfile profile : childMapper.selectUnboundByPhoneMask(mask)) {
+            // 掩码预筛后再解密精确比对；无密文/占位数据退化为掩码一致即命中
+            String plain = decryptForDetail(profile.getPhoneEncrypted(), aesKey);
+            boolean hit = StringUtils.hasText(plain) ? phone.equals(plain) : mask.equals(profile.getPhoneMask());
+            if (!hit) {
+                continue;
+            }
+            ChildProfile update = new ChildProfile();
+            update.setId(profile.getId());
+            update.setParentUserId(uid);
+            childMapper.updateById(update);
+            claimed++;
+            if (parentName == null && StringUtils.hasText(profile.getParentName())) {
+                parentName = profile.getParentName();
+            }
+        }
+        result.put("claimedCount", claimed);
+        result.put("parentName", parentName);
+        return result;
     }
 
     @Override
@@ -347,6 +482,7 @@ public class ChildServiceImpl implements ChildService {
         wrapper.orderByDesc(ChildServiceRecord::getCreatedAt)
                 .orderByDesc(ChildServiceRecord::getId);
         List<ChildServiceRecord> records = serviceRecordMapper.selectList(wrapper);
+        fillReserveInfo(records);
         // 可用次数回溯：最新一条 = 当前剩余次数，更早一条 = 更新一条的可用次数 − 更新一条的变更次数
         ChildProfile child = childMapper.selectById(childId);
         int remaining = child == null || child.getRemainingCount() == null ? 0 : child.getRemainingCount();
@@ -355,6 +491,31 @@ public class ChildServiceImpl implements ChildService {
             remaining -= record.getChangeCount() == null ? 0 : record.getChangeCount();
         }
         return records;
+    }
+
+    /** 回填流水关联预约的日期/时段（取消/扣减/爽约等记录展示"哪次预约"用） */
+    private void fillReserveInfo(List<ChildServiceRecord> records) {
+        List<Long> appointmentIds = records.stream()
+                .map(ChildServiceRecord::getAppointmentId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (appointmentIds.isEmpty()) {
+            return;
+        }
+        Map<Long, Map<String, Object>> reserveMap = new HashMap<>();
+        for (Map<String, Object> row : serviceRecordMapper.selectReserveInfoByIds(appointmentIds)) {
+            reserveMap.put(((Number) row.get("id")).longValue(), row);
+        }
+        for (ChildServiceRecord record : records) {
+            Map<String, Object> row = record.getAppointmentId() == null ? null : reserveMap.get(record.getAppointmentId());
+            if (row == null) {
+                continue;
+            }
+            record.setReserveDate((String) row.get("reserveDate"));
+            record.setTimeSlotStart((String) row.get("timeSlotStart"));
+            record.setTimeSlotEnd((String) row.get("timeSlotEnd"));
+        }
     }
     private String generateChildCode() {
         return "CH" + System.currentTimeMillis();

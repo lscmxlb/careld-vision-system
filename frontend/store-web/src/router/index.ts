@@ -19,7 +19,7 @@ const router = createRouter({
           path: 'dashboard',
           name: 'Dashboard',
           component: () => import('@/views/dashboard/index.vue'),
-          meta: { title: '数据看板', icon: 'DataBoard' }
+          meta: { title: '数据中心', icon: 'DataBoard' }
         },
         // 档案管理
         {
@@ -77,6 +77,12 @@ const router = createRouter({
           name: 'Device',
           component: () => import('@/views/device/index.vue'),
           meta: { title: '设备管理', icon: 'Monitor', managerOnly: true }
+        },
+        {
+          path: 'log-record',
+          name: 'LogRecord',
+          component: () => import('@/views/log-record/index.vue'),
+          meta: { title: '日志记录', icon: 'Document', managerOnly: true }
         }
       ]
     }

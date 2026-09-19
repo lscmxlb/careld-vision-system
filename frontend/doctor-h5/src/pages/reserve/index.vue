@@ -14,7 +14,7 @@
         />
         <text v-if="keyword" class="search-clear" @click="clearKeyword">✕</text>
       </view>
-      <view class="create-btn" @click="goCreate">新建</view>
+      <view class="create-btn" @click="goCreate">添加预约</view>
     </view>
 
     <!-- 状态多选 -->
@@ -62,11 +62,10 @@
           :key="row.id"
           :row="row"
           show-date
-          @care="goCare"
-          @adjust="goAdjust"
-          @cancel="openCancel"
-          @noshow="confirmNoShow"
-          @detail="goDetail"
+          @care="onCare"
+          @adjust="onAdjust"
+          @noshow="onNoShow"
+          @cancel="onCancel"
         />
         <view v-if="!list.length" class="empty">
           <view class="empty-icon">📅</view>
@@ -83,15 +82,15 @@
       <view class="safe-bottom" />
     </view>
 
-    <CancelSheet v-model:visible="cancelVisible" :row="cancelingRow" :loading="cancelLoading" @confirm="submitCancel" />
+    <CancelSheet v-model:visible="cancelVisible" :row="cancelRow" :loading="cancelLoading" @confirm="submitCancel" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
-import ReserveCard from '@/components/ReserveCard.vue'
 import CancelSheet from '@/components/CancelSheet.vue'
+import ReserveCard from '@/components/ReserveCard.vue'
 import { appointmentConfigApi, reserveApi } from '@/api'
 import { RESERVE_STATUS_OPTIONS } from '@/utils/dict'
 import { addDays, formatDate, todayStr } from '@/utils/format'
@@ -108,6 +107,9 @@ const page = ref(1)
 const size = 20
 const total = ref(0)
 const loading = ref(false)
+const cancelVisible = ref(false)
+const cancelRow = ref<Reserve | null>(null)
+const cancelLoading = ref(false)
 
 const today = todayStr()
 const dateOptions = Array.from({ length: 30 }, (_, i) => {
@@ -208,47 +210,19 @@ onPullDownRefresh(async () => {
 onReachBottom(() => loadMore())
 
 /* ---------------- 操作 ---------------- */
-const cancelVisible = ref(false)
-const cancelLoading = ref(false)
-const cancelingRow = ref<Reserve | null>(null)
-
 function goCreate() {
   uni.navigateTo({ url: '/pages/reserve/create' })
 }
 
-function goAdjust(row: Reserve) {
-  uni.navigateTo({ url: `/pages/reserve/create?mode=adjust&id=${row.id}` })
-}
-
-function goCare(row: Reserve) {
+function onCare(row: Reserve) {
   uni.navigateTo({ url: `/pages/reserve/care?id=${row.id}` })
 }
 
-function goDetail(row: Reserve) {
-  uni.navigateTo({ url: `/pages/reserve/detail?id=${row.id}` })
+function onAdjust(row: Reserve) {
+  uni.navigateTo({ url: `/pages/reserve/create?mode=adjust&id=${row.id}` })
 }
 
-function openCancel(row: Reserve) {
-  cancelingRow.value = row
-  cancelVisible.value = true
-}
-
-async function submitCancel(reason: string) {
-  if (!cancelingRow.value) return
-  cancelLoading.value = true
-  try {
-    await reserveApi.cancelReserve(cancelingRow.value.id, reason)
-    uni.showToast({ title: '预约已取消，次数已退还', icon: 'none' })
-    cancelVisible.value = false
-    reload()
-  } catch {
-    // 错误提示已在请求层处理
-  } finally {
-    cancelLoading.value = false
-  }
-}
-
-function confirmNoShow(row: Reserve) {
+function onNoShow(row: Reserve) {
   uni.showModal({
     title: '标记爽约',
     content: '标记爽约不退还预约次数（与取消不同），确认标记该预约为爽约吗？',
@@ -265,6 +239,26 @@ function confirmNoShow(row: Reserve) {
       }
     },
   })
+}
+
+function onCancel(row: Reserve) {
+  cancelRow.value = row
+  cancelVisible.value = true
+}
+
+async function submitCancel(reason: string) {
+  if (!cancelRow.value) return
+  cancelLoading.value = true
+  try {
+    await reserveApi.cancelReserve(cancelRow.value.id, reason)
+    uni.showToast({ title: '预约已取消，次数已退还', icon: 'none' })
+    cancelVisible.value = false
+    reload()
+  } catch {
+    // 错误提示已在请求层处理
+  } finally {
+    cancelLoading.value = false
+  }
 }
 </script>
 

@@ -5,7 +5,7 @@
       <div class="logo">
         <img v-if="appStore.systemSettings.logoUrl" :src="appStore.systemSettings.logoUrl" alt="Logo" class="logo-img" v-show="!appStore.sidebarCollapsed">
         <img v-else src="/src/assets/logo.svg" alt="Careld" class="logo-img" v-show="!appStore.sidebarCollapsed">
-        <span class="logo-text" v-show="!appStore.sidebarCollapsed">{{ appStore.systemSettings.systemName || 'Careld运营中心' }}</span>
+        <span class="logo-text" v-show="!appStore.sidebarCollapsed">{{ appStore.systemSettings.systemName || 'Careld诊约助手服务' }}</span>
         <el-icon :size="24" v-if="appStore.sidebarCollapsed"><Monitor /></el-icon>
       </div>
       <el-menu

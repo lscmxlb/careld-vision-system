@@ -12,7 +12,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="可尔欧得视力养护系统"
+        android:text="Careld诊约助手服务"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         android:textStyle="bold"

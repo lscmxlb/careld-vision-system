@@ -6,6 +6,7 @@ import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
 import com.careld.schedule.entity.AppointmentConfig;
 import com.careld.schedule.service.ScheduleRuleService;
+import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AppointmentConfigController {
         return Result.success(scheduleRuleService.getConfig(DataScopeHelper.resolveStoreIdWithParentChoice(storeId)));
     }
 
+    @OperationLog(module = "appointment-config", action = "update", description = "保存预约规则")
     @Operation(summary = "保存预约规则配置")
     @PutMapping
     public Result<Void> save(@RequestBody AppointmentConfig config) {

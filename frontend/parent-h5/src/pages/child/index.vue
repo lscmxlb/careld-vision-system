@@ -2,19 +2,23 @@
   <view class="page">
     <view v-if="list.length" class="list">
       <view v-for="item in list" :key="item.id" class="card child-card">
-        <view class="child-head" @click="goDetail(item)">
+        <view class="child-head">
           <view class="child-name-row">
-            <text class="child-name">{{ item.name || '未命名' }}</text>
+            <text class="child-name" :class="genderNameClass(item.gender)">{{ item.name || '未命名' }}</text>
             <text v-if="item.auditStatus !== 1" class="tag" :class="auditTag(item.auditStatus)">
               {{ auditLabel(item.auditStatus) }}
             </text>
           </view>
-          <text class="remain" :class="{ 'remain-zero': !item.remainingCount }">
-            {{ item.remainingCount ?? 0 }}<text class="remain-unit">次</text>
-          </text>
+          <view class="remain">
+            <text class="remain-label">养护</text>
+            <text class="remain-num">{{ item.careCount ?? 0 }}</text>
+            <text class="remain-slash">/</text>
+            <text class="remain-label">可用</text>
+            <text class="remain-num" :class="{ 'remain-zero': !item.remainingCount }">{{ item.remainingCount ?? 0 }}</text>
+          </view>
         </view>
 
-        <view class="child-meta" @click="goDetail(item)">
+        <view class="child-meta">
           <text>{{ genderText(item.gender) }}</text>
           <text class="dot">·</text>
           <text>{{ ageLabel(item) }}</text>
@@ -22,8 +26,8 @@
           <text>{{ item.phone || '—' }}</text>
         </view>
 
-        <view class="child-store" @click="goDetail(item)">
-          <text class="child-store-key">所属医院</text>
+        <view class="child-store">
+          <text class="child-store-key">建档医院</text>
           <text class="child-store-value">{{ item.storeName || '—' }}</text>
         </view>
 
@@ -34,7 +38,7 @@
           档案待医院审核，审核通过后即可预约养护
         </view>
         <view v-else-if="item.auditStatus === 1 && !item.remainingCount" class="pending-tip pending-tip-warn">
-          可用次数为 0，请联系医院前台办理套餐充值
+          可用次数不足，请联系医院授权预约次数
         </view>
 
         <view class="child-actions">
@@ -49,17 +53,17 @@
         </view>
       </view>
 
-      <view class="loading-tip">— 共 {{ list.length }} 个孩子 —</view>
+      <view class="loading-tip">— 共 {{ list.length }} 个儿童 —</view>
     </view>
 
     <view v-else-if="!loaded && loading" class="loading-tip">加载中…</view>
     <view v-else class="empty">
       <text class="empty-icon">👶</text>
-      <text class="empty-text">还没有建立任何档案</text>
-      <view class="empty-btn" @click="goCreate">建立儿童档案</view>
+      <text class="empty-text">还没有添加任何档案</text>
+      <view class="empty-btn" @click="goCreate">添加儿童档案</view>
     </view>
 
-    <view v-if="list.length" class="fab" @click="goCreate">＋ 建立儿童档案</view>
+    <view v-if="list.length" class="fab" @click="goCreate">＋ 添加儿童档案</view>
   </view>
 </template>
 
@@ -82,6 +86,11 @@ const loaded = ref(false)
 
 function genderText(gender: number) {
   return gender === 1 ? '男' : gender === 0 ? '女' : '未知'
+}
+
+/** 姓名按性别着色：男孩蓝 #2563eb / 女孩粉 #ec4899 */
+function genderNameClass(gender: number) {
+  return gender === 1 ? 'name-boy' : gender === 0 ? 'name-girl' : ''
 }
 
 function ageLabel(item: Child) {
@@ -131,14 +140,16 @@ function goReserve(item: Child) {
     return
   }
   if (!item.remainingCount) {
-    toast('可用养护次数不足，请联系医院前台充值')
+    toast('可用次数不足，请联系医院授权预约次数')
     return
   }
   setReserveChildId(item.id)
   uni.switchTab({ url: '/pages/appointment/index' })
 }
 
-onShow(() => {
+onShow(async () => {
+  // 登录后自动认领同手机号档案，再拉取列表
+  await userStore.claimMyChildren()
   load()
 })
 
@@ -186,20 +197,41 @@ onPullDownRefresh(async () => {
   white-space: nowrap;
 }
 
+.name-boy {
+  color: #2563eb;
+}
+
+.name-girl {
+  color: #ec4899;
+}
+
 .remain {
-  font-size: 40rpx;
+  display: flex;
+  align-items: baseline;
+  flex: none;
+  margin-left: 12rpx;
+}
+
+.remain-label {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+.remain-num {
+  margin-left: 4rpx;
+  font-size: 36rpx;
   font-weight: 700;
   color: #14b8a6;
 }
 
-.remain-zero {
+.remain-slash {
+  margin: 0 8rpx;
+  font-size: 26rpx;
   color: #cbd5e1;
 }
 
-.remain-unit {
-  font-size: 22rpx;
-  font-weight: 400;
-  margin-left: 4rpx;
+.remain-zero {
+  color: #cbd5e1;
 }
 
 .child-meta {

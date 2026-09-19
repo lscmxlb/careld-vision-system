@@ -6,7 +6,7 @@
           <img v-if="appStore.systemSettings.logoUrl" :src="appStore.systemSettings.logoUrl" alt="Logo" class="brand-logo">
           <img v-else src="/src/assets/logo.svg" alt="Careld" class="brand-logo">
           <h1 class="brand-name">Careld</h1>
-          <p class="brand-slogan">{{ appStore.systemSettings.systemName || '可尔欧得视力养护服务系统' }}</p>
+          <p class="brand-slogan">{{ appStore.systemSettings.systemName || 'Careld诊约助手服务' }}</p>
         </div>
         <div class="features">
           <div class="feature-item">
