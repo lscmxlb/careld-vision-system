@@ -26,12 +26,16 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public StatisticsDtos.DashboardStats dashboard(Long storeId) {
-        return statisticsMapper.dashboard(storeId);
+        LocalDate today = LocalDate.now();
+        return statisticsMapper.dashboard(storeId,
+                today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()));
     }
 
     @Override
     public StatisticsDtos.WorkbenchStats workbenchStats(Long storeId) {
-        return statisticsMapper.workbenchStats(storeId);
+        LocalDate today = LocalDate.now();
+        return statisticsMapper.workbenchStats(storeId,
+                today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()));
     }
 
     @Override

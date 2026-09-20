@@ -14,11 +14,12 @@ import java.util.Map;
 public interface ReserveOrderMapper extends BaseMapper<ReserveOrder> {
 
     /**
-     * 预约统计：起止日期内每日预约总数与已完成数
+     * 预约统计：起止日期内每日预约总数、已养护数、取消数、待养护数
      */
     @Select("SELECT reserve_date AS statDate, COUNT(*) AS total, "
             + "SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS completed, "
-            + "SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) AS cancelled "
+            + "SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) AS cancelled, "
+            + "SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS pending "
             + "FROM reserve_order WHERE deleted_at IS NULL "
             + "AND reserve_date BETWEEN #{startDate} AND #{endDate} "
             + "AND (#{storeId} IS NULL OR store_id = #{storeId}) "

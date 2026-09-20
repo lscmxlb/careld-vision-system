@@ -94,6 +94,15 @@ public class StoreController {
         return Result.success(storeService.getCurrentStore(UserContext.getCurrentStoreId()));
     }
 
+    @Operation(summary = "修改当前门店名称（基础信息页）")
+    @OperationLog(module = "stores", action = "update", description = "修改医院名称")
+    @PutMapping("/current/name")
+    public Result<Void> updateCurrentName(@RequestBody Store store) {
+        // 仅允许修改本店名称，不开放其他门店字段（store:list:update 为运营中心权限，医院端无此权限）
+        storeService.updateCurrentStoreName(UserContext.getCurrentStoreId(), store.getStoreName());
+        return Result.success();
+    }
+
     @GetMapping("/{id}")
     @RequirePermission("store:list:view")
     public Result<Store> get(@PathVariable Long id) {

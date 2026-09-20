@@ -38,6 +38,8 @@ export const reserveApi = {
     keyword?: string
     page?: number
     size?: number
+    /** true 按预约日期倒序（取最近记录），默认升序 */
+    orderDesc?: boolean
   }): Promise<PageResult<Reserve>> => {
     return request.get('/schedules/reserves', { params })
   },
@@ -47,9 +49,12 @@ export const reserveApi = {
     return request.post('/schedules/reserves', data)
   },
 
-  // 取消预约
-  cancelReserve: (id: number, cancelReason: string): Promise<void> => {
-    return request.post(`/schedules/reserves/${id}/cancel`, { cancelReason })
+  // 取消预约（备注选填；cancelReasonType 1=家长原因 2=医院原因；refundFlag 1=返还次数 0=不返还）
+  cancelReserve: (
+    id: number,
+    payload: { cancelReason?: string; cancelReasonType?: number; refundFlag?: number }
+  ): Promise<void> => {
+    return request.post(`/schedules/reserves/${id}/cancel`, payload)
   },
 
   // 创建预约（新链路：slotId + childId，校验审核/次数/满额/每日一约）

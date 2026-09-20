@@ -6,19 +6,23 @@
       <div class="section">
         <div class="section-title">科室管理</div>
         <el-form ref="deptFormRef" :model="deptForm" :rules="deptRules" label-width="120px" style="max-width: 560px;">
-          <el-form-item label="科室编码" prop="deptCode">
-            <el-input v-model="deptForm.deptCode" placeholder="请输入科室编码" />
-          </el-form-item>
-          <el-form-item label="科室名称" prop="deptName">
-            <el-input v-model="deptForm.deptName" placeholder="请输入科室名称" />
+          <el-form-item label="医院名称" prop="storeName">
+            <el-input v-model="deptForm.storeName" placeholder="请输入医院名称" />
           </el-form-item>
           <el-form-item label="科室类型" prop="deptType">
             <el-select v-model="deptForm.deptType" placeholder="请选择科室类型">
-              <el-option label="门诊" :value="1" />
-              <el-option label="养护" :value="2" />
-              <el-option label="检测" :value="3" />
-              <el-option label="其他" :value="4" />
+              <el-option label="儿童保健科" :value="1" />
+              <el-option label="妇幼保健科" :value="2" />
+              <el-option label="中医科" :value="3" />
+              <el-option label="眼科" :value="4" />
+              <el-option label="其它科室" :value="5" />
             </el-select>
+          </el-form-item>
+          <el-form-item label="诊疗项目" prop="deptName">
+            <el-input v-model="deptForm.deptName" placeholder="请输入诊疗项目" />
+          </el-form-item>
+          <el-form-item label="服务电话" prop="servicePhone">
+            <el-input v-model="deptForm.servicePhone" placeholder="请输入服务电话" maxlength="32" />
           </el-form-item>
           <el-form-item label="收费标准">
             <el-input-number
@@ -29,7 +33,7 @@
               placeholder="0.00"
               style="width: 160px;"
             />
-            <span class="charge-unit">元</span>
+            <span class="charge-unit">元/次</span>
           </el-form-item>
         </el-form>
       </div>
@@ -93,7 +97,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { departmentApi, appointmentConfigApi } from '@/api'
+import { departmentApi, appointmentConfigApi, storeApi } from '@/api'
 
 const userStore = useUserStore()
 
@@ -103,17 +107,33 @@ const deptLoading = ref(false)
 
 const deptForm = reactive({
   id: null as number | null,
+  storeName: '',
+  /** 科室编码不对外展示：编辑时随记录带回，新建时由后端随机生成 */
   deptCode: '',
   deptName: '',
   deptType: 1,
+  servicePhone: '',
   chargeStandard: undefined as number | undefined,
   sortOrder: 0
 })
 
 const deptRules = {
-  deptCode: [{ required: true, message: '请输入科室编码', trigger: 'blur' }],
-  deptName: [{ required: true, message: '请输入科室名称', trigger: 'blur' }],
+  storeName: [{ required: true, message: '请输入医院名称', trigger: 'blur' }],
+  deptName: [{ required: true, message: '请输入诊疗项目', trigger: 'blur' }],
   deptType: [{ required: true, message: '请选择科室类型', trigger: 'change' }]
+}
+
+/** 医院名称加载时的快照，用于判断是否需要调用门店名称更新接口 */
+const loadedStoreName = ref('')
+
+const loadStoreName = async () => {
+  try {
+    const store = await storeApi.getCurrentStore()
+    deptForm.storeName = store?.storeName || ''
+    loadedStoreName.value = deptForm.storeName
+  } catch {
+    // 错误已在拦截器处理
+  }
 }
 
 const loadDepartment = async () => {
@@ -128,6 +148,7 @@ const loadDepartment = async () => {
       deptCode: current.deptCode,
       deptName: current.deptName,
       deptType: current.deptType,
+      servicePhone: current.servicePhone || '',
       chargeStandard: current.chargeStandard ?? undefined,
       sortOrder: current.sortOrder
     })
@@ -140,8 +161,11 @@ const loadDepartment = async () => {
 
 /** 科室信息是否已填写（门店无科室记录时据此决定是否新建，避免信息静默丢失） */
 const hasDeptInput = computed(
-  () => !!(deptForm.deptCode || deptForm.deptName || deptForm.chargeStandard != null)
+  () => !!(deptForm.deptName || deptForm.servicePhone || deptForm.chargeStandard != null)
 )
+
+/** 医院名称是否被修改 */
+const isStoreNameDirty = computed(() => deptForm.storeName.trim() !== loadedStoreName.value)
 
 // ---------- 预约规则 ----------
 const configFormRef = ref<FormInstance>()
@@ -202,9 +226,11 @@ const baseline = ref('')
 /** 两组表单的可比较快照（勾选组排序归一，避免点击顺序造成误判） */
 const takeSnapshot = () =>
   JSON.stringify({
+    storeName: deptForm.storeName,
     deptCode: deptForm.deptCode,
     deptName: deptForm.deptName,
     deptType: deptForm.deptType,
+    servicePhone: deptForm.servicePhone,
     chargeStandard: deptForm.chargeStandard ?? null,
     parentCancelHours: configForm.parentCancelHours,
     doctorCancelHours: configForm.doctorCancelHours,
@@ -218,9 +244,9 @@ const isDirty = computed(() => baseline.value !== '' && takeSnapshot() !== basel
 
 const handleSubmit = async () => {
   if (!deptFormRef.value || !configFormRef.value) return
-  // 无科室记录且未填写科室信息时不校验科室组，配置仍可保存
+  // 无科室记录且未填写科室信息时不校验科室组，配置仍可保存；医院名称有修改时需校验（名称必填）
   const validations: Promise<unknown>[] = [configFormRef.value.validate()]
-  if (deptForm.id || hasDeptInput.value) {
+  if (deptForm.id || hasDeptInput.value || isStoreNameDirty.value) {
     validations.push(deptFormRef.value.validate())
   }
   try {
@@ -230,12 +256,23 @@ const handleSubmit = async () => {
   }
   submitLoading.value = true
   try {
-    // chargeStandard 显式传 null：允许清空已配置的收费标准
+    const storeName = deptForm.storeName.trim()
+    // 1. 医院名称有修改时更新门店记录
+    if (isStoreNameDirty.value) {
+      await storeApi.updateCurrentStoreName(storeName)
+      loadedStoreName.value = storeName
+      // 同步导航栏展示，避免刷新前仍显示旧名称
+      if (userStore.userInfo) {
+        userStore.userInfo.storeName = storeName
+      }
+    }
+    // 2. 科室信息（编码由后端随机生成；chargeStandard/servicePhone 显式传 null：允许清空）
     const deptPayload = {
       storeId: userStore.storeId,
       deptCode: deptForm.deptCode,
       deptName: deptForm.deptName,
       deptType: deptForm.deptType,
+      servicePhone: deptForm.servicePhone.trim() || null,
       chargeStandard: deptForm.chargeStandard ?? null,
       sortOrder: deptForm.sortOrder
     }
@@ -273,7 +310,7 @@ onBeforeRouteLeave(async () => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadDepartment(), loadConfig()])
+  await Promise.all([loadStoreName(), loadDepartment(), loadConfig()])
   baseline.value = takeSnapshot()
 })
 </script>

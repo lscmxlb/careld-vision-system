@@ -51,6 +51,10 @@ public class ChildProfile extends BaseEntity {
     @TableField(exist = false)
     private String storeName;
 
+    /** 门店服务电话（取自门店科室，与医院端基础信息同源） */
+    @TableField(exist = false)
+    private String storeServicePhone;
+
     /** 年龄（由 birth_date 计算） */
     @TableField(exist = false)
     private Integer age;

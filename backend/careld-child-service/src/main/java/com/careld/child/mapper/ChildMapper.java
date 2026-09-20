@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import java.util.List;
+import java.util.Map;
 @Mapper
 public interface ChildMapper extends BaseMapper<ChildProfile> {
     @Select("<script>SELECT * FROM child_profile WHERE deleted_at IS NULL " +
@@ -45,6 +46,10 @@ public interface ChildMapper extends BaseMapper<ChildProfile> {
             "c.doctor_id, c.doctor_name, c.source_type, c.source_user_id, c.status, c.remaining_count, " +
             "c.created_by, c.updated_by, c.created_at, c.updated_at, c.deleted_at, " +
             "s.store_name AS store_name, " +
+            // 门店服务电话：取基础信息页维护的那条科室（该页取科室列表第一条：ORDER BY sort_order, id）
+            "(SELECT d.service_phone FROM store_department d " +
+            " WHERE d.store_id = c.store_id AND d.deleted_at IS NULL " +
+            " ORDER BY d.sort_order ASC, d.id ASC LIMIT 1) AS store_service_phone, " +
             "TIMESTAMPDIFF(YEAR, c.birth_date, CURDATE()) AS age, " +
             // 养护次数（含养护中：status 1=养护中 2=已完成）
             "(SELECT COUNT(*) FROM care_record cr WHERE cr.child_id = c.id AND cr.status IN (1, 2) AND cr.deleted_at IS NULL) AS care_count, " +
@@ -89,14 +94,22 @@ public interface ChildMapper extends BaseMapper<ChildProfile> {
     ParentUser selectUserByPhone(@Param("phone") String phone);
 
     /** 新建家长账号（username/phone 均为手机号，与 auth-service 短信自动注册口径一致） */
-    @Insert("INSERT INTO sys_user (username, password, real_name, phone, user_type, store_id, status) " +
-            "VALUES (#{username}, #{password}, #{realName}, #{phone}, #{userType}, #{storeId}, 1)")
+    @Insert("INSERT INTO sys_user (username, password, real_name, phone, user_type, store_id, center_id, agent_id, status) " +
+            "VALUES (#{username}, #{password}, #{realName}, #{phone}, #{userType}, #{storeId}, #{centerId}, #{agentId}, 1)")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertParentUser(ParentUser user);
 
-    /** 家长账号未绑定医院时补上门店（便于门店侧用户管理可见） */
-    @Update("UPDATE sys_user SET store_id = #{storeId} WHERE id = #{id} AND store_id IS NULL")
-    int fillStoreIfNull(@Param("id") Long id, @Param("storeId") Long storeId);
+    /** 门店→代理商→运营中心 组织链（建档同步家长账号组织信息用） */
+    @Select("SELECT s.agent_id AS agentId, a.center_id AS centerId FROM store_info s " +
+            "LEFT JOIN agent a ON a.id = s.agent_id AND a.deleted_at IS NULL " +
+            "WHERE s.id = #{storeId} AND s.deleted_at IS NULL")
+    Map<String, Object> selectStoreOrg(@Param("storeId") Long storeId);
+
+    /** 建档时按所选医院回写家长账号组织信息（每次覆盖，口径：以最近一次建档所选医院为准） */
+    @Update("UPDATE sys_user SET store_id = #{storeId}, center_id = #{centerId}, agent_id = #{agentId} " +
+            "WHERE id = #{id} AND deleted_at IS NULL")
+    int updateParentOrg(@Param("id") Long id, @Param("storeId") Long storeId,
+                        @Param("centerId") Long centerId, @Param("agentId") Long agentId);
 
     /** 监护人脱敏手机号一致且尚未绑定家长、未隐藏的档案（认领候选，再由服务层解密精确比对） */
     @Select("SELECT " + ENRICHED_COLUMNS +

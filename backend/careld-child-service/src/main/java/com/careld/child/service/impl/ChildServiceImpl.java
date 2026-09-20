@@ -52,9 +52,12 @@ public class ChildServiceImpl implements ChildService {
             profile.setSourceType(2);
             profile.setAuditStatus(1);
         }
-        // 医院侧建档（家长账号未知）：按监护人手机号同步家长账号并绑定，保证后台用户管理可见
-        if (profile.getParentUserId() == null && plainPhone != null && plainPhone.matches("^1[3-9]\\d{9}$")) {
-            Long parentUserId = ensureParentUser(plainPhone, profile.getParentName(), profile.getStoreId());
+        // 家长账号随建档所选医院同步组织信息：家长端建档回写本人账号，医院侧建档按监护人手机号建/绑账号
+        Long parentUserId = profile.getParentUserId();
+        if (parentUserId != null) {
+            syncParentOrg(parentUserId, profile.getStoreId());
+        } else if (plainPhone != null && plainPhone.matches("^1[3-9]\\d{9}$")) {
+            parentUserId = ensureParentUser(plainPhone, profile.getParentName(), profile.getStoreId());
             if (parentUserId != null) {
                 profile.setParentUserId(parentUserId);
             }
@@ -66,7 +69,7 @@ public class ChildServiceImpl implements ChildService {
     }
 
     /**
-     * 按监护人手机号取家长账号：已存在家长账号直接复用（顺带补门店），否则新建。
+     * 按监护人手机号取家长账号：已存在家长账号直接复用（顺带同步所属医院/代理商/运营中心），否则新建。
      * 手机号被非家长账号占用时返回 null（无法建号，档案保持未绑定）。
      */
     private Long ensureParentUser(String phone, String parentName, Long storeId) {
@@ -75,9 +78,7 @@ public class ChildServiceImpl implements ChildService {
             if (exist.getUserType() == null || exist.getUserType() != 3) {
                 return null;
             }
-            if (storeId != null) {
-                childMapper.fillStoreIfNull(exist.getId(), storeId);
-            }
+            syncParentOrg(exist.getId(), storeId);
             return exist.getId();
         }
         ParentUser parent = new ParentUser();
@@ -87,8 +88,42 @@ public class ChildServiceImpl implements ChildService {
         parent.setPhone(phone);
         parent.setUserType(3);
         parent.setStoreId(storeId);
+        fillParentOrg(parent);
         childMapper.insertParentUser(parent);
         return parent.getId();
+    }
+
+    /** 按所选医院回写家长账号的所属医院/代理商/运营中心（每次建档覆盖旧值） */
+    private void syncParentOrg(Long userId, Long storeId) {
+        if (userId == null || storeId == null) {
+            return;
+        }
+        StoreOrg org = resolveStoreOrg(storeId);
+        childMapper.updateParentOrg(userId, storeId, org.centerId(), org.agentId());
+    }
+
+    /** 新建账号落库前带上组织链（门店未挂代理商时 center/agent 留空） */
+    private void fillParentOrg(ParentUser parent) {
+        StoreOrg org = resolveStoreOrg(parent.getStoreId());
+        parent.setCenterId(org.centerId());
+        parent.setAgentId(org.agentId());
+    }
+
+    private record StoreOrg(Long agentId, Long centerId) {
+    }
+
+    private StoreOrg resolveStoreOrg(Long storeId) {
+        if (storeId == null) {
+            return new StoreOrg(null, null);
+        }
+        Map<String, Object> row = childMapper.selectStoreOrg(storeId);
+        if (row == null) {
+            return new StoreOrg(null, null);
+        }
+        Number agentId = (Number) row.get("agentId");
+        Number centerId = (Number) row.get("centerId");
+        return new StoreOrg(agentId == null ? null : agentId.longValue(),
+                centerId == null ? null : centerId.longValue());
     }
     @Override
     @Transactional

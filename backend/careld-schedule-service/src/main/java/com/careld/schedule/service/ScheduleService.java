@@ -11,7 +11,11 @@ public interface ScheduleService {
     void batchCreateSchedule(LocalDate startDate, LocalDate endDate, Long technicianId, List<Schedule> timeSlots);
     List<Schedule> getCalendar(Long storeId, LocalDate startDate, LocalDate endDate);
     Long createReserve(ReserveOrder order);
-    void cancelReserve(Long id, String reason);
+    /**
+     * 取消预约：备注非必填；cancelReasonType 1=家长原因 2=医院原因；
+     * refundFlag 1=返还预约次数 0=不返还（为空按返还处理，兼容家长端/管理端）
+     */
+    void cancelReserve(Long id, String cancelReason, Integer cancelReasonType, Integer refundFlag);
     void completeReserve(Long id);
     /**
      * 查询预约列表。storeId 为空时返回所有记录（家长端按 childId 过滤）。
@@ -19,8 +23,9 @@ public interface ScheduleService {
      * keyword 按儿童姓名/家长手机号模糊匹配（解密后内存过滤）
      * statuses 多状态过滤（1-5，5=已爽约）；非空时优先于 status/noShowFlag
      * noShowFlag=true 仅返回爽约记录；false 仅返回非爽约记录（"已取消"筛选需排除爽约）；null 不过滤
+     * orderDesc=true 按预约日期/开始时间/ID 倒序（取最近记录）；默认升序
      */
-    IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, List<Integer> statuses, Boolean noShowFlag, LocalDate date, LocalDate startDate, String keyword, Integer page, Integer size);
+    IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, List<Integer> statuses, Boolean noShowFlag, LocalDate date, LocalDate startDate, String keyword, Integer page, Integer size, Boolean orderDesc);
 
     /**
      * 预约详情

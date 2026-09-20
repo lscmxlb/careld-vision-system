@@ -414,6 +414,12 @@ scroll-view {
   z-index: 1000;
 }
 
+/* uni-app H5 的 picker 弹层自带 z-index:999，低于本端贴底弹层(1000/1001)，
+   在取消预约等弹层里打开会被遮罩盖住而无法选择，这里统一抬到弹层之上 */
+.uni-picker-container {
+  z-index: 1200 !important;
+}
+
 .sheet {
   position: fixed;
   left: 0;
@@ -425,6 +431,18 @@ scroll-view {
   max-height: 86vh;
   display: flex;
   flex-direction: column;
+}
+
+/* 居中弹层：在 .sheet 基础上改为页面正中（上下居中），左右留边、四角圆角 */
+.sheet-center {
+  left: 48rpx;
+  right: 48rpx;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  border-radius: 24rpx;
+  max-height: 80vh;
+  overflow: hidden;
 }
 
 .sheet-header {

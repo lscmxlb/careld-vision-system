@@ -7,7 +7,6 @@
           <el-button
             v-permission="'store:staff:create'"
             type="primary"
-            :disabled="!queryForm.storeId"
             @click="handleAdd"
           >
             <el-icon><Plus /></el-icon>新增医务人员
@@ -20,12 +19,13 @@
         <el-form-item label="所属医院">
           <el-select
             v-model="queryForm.storeId"
-            placeholder="请选择医院"
+            placeholder="全部医院"
+            clearable
             filterable
             style="width: 240px;"
             @change="handleStoreChange"
           >
-            <el-option v-for="s in stores" :key="s.id" :label="s.storeName" :value="s.id!" />
+            <el-option v-for="s in enabledStores" :key="s.id" :label="s.storeName" :value="s.id!" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
@@ -56,11 +56,10 @@
 
       <!-- 表格 -->
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="name" label="姓名" width="120" />
-        <el-table-column prop="phone" label="手机号（登录账号）" width="170" />
-        <el-table-column prop="gender" label="性别" width="80">
-          <template #default="{ row }">{{ getGenderText(row.gender) }}</template>
+        <el-table-column label="所属医院" min-width="160">
+          <template #default="{ row }">{{ storeNameMap[row.storeId] || row.storeId }}</template>
         </el-table-column>
+        <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="staffRole" label="角色" width="110">
           <template #default="{ row }">
             <el-tag :type="row.staffRole === 1 ? 'primary' : 'info'" size="small">
@@ -68,8 +67,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="所属医院" min-width="160">
-          <template #default="{ row }">{{ storeNameMap[row.storeId] || row.storeId }}</template>
+        <el-table-column prop="phone" label="手机号（登录账号）" width="170">
+          <template #default="{ row }">{{ maskPhone(row.phone) }}</template>
+        </el-table-column>
+        <el-table-column prop="gender" label="性别" width="80">
+          <template #default="{ row }">{{ getGenderText(row.gender) }}</template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90">
           <template #default="{ row }">
@@ -78,7 +80,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="170" />
+        <el-table-column prop="createdAt" label="创建时间" width="170">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <div class="operation-btns">
@@ -121,7 +125,13 @@
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
         <el-form-item label="所属医院" prop="storeId">
           <el-select v-model="formData.storeId" placeholder="请选择医院" filterable style="width: 100%;">
-            <el-option v-for="s in stores" :key="s.id" :label="s.storeName" :value="s.id!" />
+            <el-option
+              v-for="s in stores"
+              :key="s.id"
+              :label="s.status === 1 ? s.storeName : `${s.storeName}（已禁用）`"
+              :value="s.id!"
+              :disabled="s.status !== 1"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="姓名" prop="name">
@@ -205,27 +215,33 @@ const storeNameMap = computed(() => {
   return map
 })
 
+// 筛选下拉只列启用医院；弹窗需展示禁用医院名称（不可选为调入目标）
+const enabledStores = computed(() => stores.value.filter((s) => s.status === 1))
+
 const getGenderText = (gender: number) => ({ 0: '未知', 1: '男', 2: '女' })[gender] || '未知'
 const getRoleText = (role: number) => ({ 1: '医生', 2: '医生助理' })[role] || '未知'
 
+// 列表手机号脱敏显示（编辑弹窗仍用完整号码）
+const maskPhone = (phone?: string): string => {
+  if (!phone || phone.length !== 11) return phone || ''
+  return `${phone.slice(0, 3)}****${phone.slice(7)}`
+}
+
+// 创建时间：后端返回 ISO（2026-09-15T11:52:57），展示时把 T 换成空格
+const formatDateTime = (value?: string): string => {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 19)
+}
+
 const fetchStores = async () => {
   try {
-    stores.value = await storeApi.getAllStores()
-    const first = stores.value[0]
-    if (!queryForm.storeId && first?.id != null) {
-      queryForm.storeId = first.id
-    }
+    stores.value = await storeApi.getAllStores({ includeDisabled: true })
   } catch {
     // 错误已在拦截器处理
   }
 }
 
 const fetchData = async () => {
-  if (!queryForm.storeId) {
-    tableData.value = []
-    pagination.total = 0
-    return
-  }
   loading.value = true
   try {
     const res = await medicalStaffApi.getStaffList({
@@ -256,6 +272,7 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
+  queryForm.storeId = undefined
   queryForm.keyword = ''
   queryForm.staffRole = undefined
   queryForm.status = undefined
@@ -301,6 +318,7 @@ const handleSubmit = async () => {
   try {
     if (isEdit.value && editingId.value) {
       await medicalStaffApi.updateStaff(editingId.value, {
+        storeId: formData.storeId,
         name: formData.name,
         phone: formData.phone,
         gender: formData.gender,

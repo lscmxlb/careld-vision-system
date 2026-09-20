@@ -9,7 +9,7 @@ export function isReserveToday(row: Reserve): boolean {
   return row.scheduleDate === todayStr()
 }
 
-/** 已逾期：当前时间超过预约时段结束时间（逾期后不可调整/取消，只能标记爽约） */
+/** 已逾期：当前时间超过预约时段结束时间（逾期后不可调整，只能标记爽约） */
 export function isOverdue(row: Reserve): boolean {
   if (!row.scheduleDate || !row.timeSlotEnd) return false
   const end = new Date(`${row.scheduleDate}T${row.timeSlotEnd.slice(0, 8)}`)
@@ -34,13 +34,7 @@ export function canMarkNoShow(row: Reserve): boolean {
   return row.status === 1 && (isReserveToday(row) || isOverdue(row))
 }
 
-/** 取消预约：仅已预约且未逾期 */
+/** 取消预约：仅已预约（医院端不限时间，已开始/已逾期也可取消） */
 export function canCancel(row: Reserve): boolean {
-  return row.status === 1 && !isOverdue(row)
-}
-
-/** 取消/调整被禁用时的原因文案 */
-export function overdueTip(row: Reserve): string {
-  if (row.status === 1 && isOverdue(row)) return '已超过预约时段，不可取消/调整，仅可标记爽约'
-  return ''
+  return row.status === 1
 }

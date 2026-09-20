@@ -28,9 +28,11 @@
       <view class="card">
         <view class="section-title">档案信息</view>
         <view class="kv"><text class="kv-key">档案编号</text><text class="kv-value">{{ child.childCode || '—' }}</text></view>
-        <view class="kv"><text class="kv-key">儿童姓名</text><text class="kv-value" :class="genderNameClass(child.gender)">{{ child.name || '—' }}</text></view>
         <view class="kv"><text class="kv-key">建档医院</text><text class="kv-value">{{ child.storeName || '—' }}</text></view>
+        <view class="kv"><text class="kv-key">服务电话</text><text class="kv-value">{{ child.storeServicePhone || '—' }}</text></view>
         <view class="kv"><text class="kv-key">主治医师</text><text class="kv-value">{{ child.doctorName || '—' }}</text></view>
+        <view class="kv-divider"></view>
+        <view class="kv"><text class="kv-key">儿童姓名</text><text class="kv-value" :class="genderNameClass(child.gender)">{{ child.name || '—' }}</text></view>
         <view class="kv"><text class="kv-key">性别</text><text class="kv-value">{{ genderText(child.gender) }}</text></view>
         <view class="kv"><text class="kv-key">出生日期</text><text class="kv-value">{{ child.birthDate || '—' }}</text></view>
         <view class="kv"><text class="kv-key">家长姓名</text><text class="kv-value">{{ child.parentName || '—' }}</text></view>
@@ -288,6 +290,13 @@ onShow(load)
 .kv-value {
   flex: 1;
   color: #1e293b;
+}
+
+/** 档案信息分组分隔线：主治医师（医院侧信息）与儿童姓名（儿童信息）之间 */
+.kv-divider {
+  height: 2rpx;
+  margin: 16rpx 0;
+  background: #e2e8f0;
 }
 
 .name-boy {

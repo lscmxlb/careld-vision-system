@@ -246,12 +246,15 @@ function onCancel(row: Reserve) {
   cancelVisible.value = true
 }
 
-async function submitCancel(reason: string) {
+async function submitCancel(payload: { cancelReason: string; cancelReasonType: number; refundFlag: number }) {
   if (!cancelRow.value) return
   cancelLoading.value = true
   try {
-    await reserveApi.cancelReserve(cancelRow.value.id, reason)
-    uni.showToast({ title: '预约已取消，次数已退还', icon: 'none' })
+    await reserveApi.cancelReserve(cancelRow.value.id, payload)
+    uni.showToast({
+      title: payload.refundFlag === 1 ? '预约已取消，次数已返还' : '预约已取消，次数不返还',
+      icon: 'none',
+    })
     cancelVisible.value = false
     reload()
   } catch {

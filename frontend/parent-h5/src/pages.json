@@ -16,6 +16,18 @@
       }
     },
     {
+      "path": "pages/register/index",
+      "style": {
+        "navigationBarTitleText": "注册家长账号"
+      }
+    },
+    {
+      "path": "pages/login/forgot",
+      "style": {
+        "navigationBarTitleText": "忘记密码"
+      }
+    },
+    {
       "path": "pages/child/index",
       "style": {
         "navigationBarTitleText": "儿童档案",
@@ -87,7 +99,7 @@
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "Careld 家长端",
+    "navigationBarTitleText": "Careld诊约助手家长端",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F4F6F9"
   },

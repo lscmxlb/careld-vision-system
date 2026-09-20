@@ -7,6 +7,8 @@ import { clearAuth, getToken } from './auth'
 const BASE_URL = '/api/v1'
 const TIMEOUT = 30000
 const PAGE_LOGIN = '/pages/login/index'
+// 登录/注册/忘记密码页本身就允许未登录访问，401 时不要把用户从这里踢走
+const PUBLIC_ROUTES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot']
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
@@ -50,7 +52,7 @@ function redirectToLogin() {
   clearAuth()
   const pages = getCurrentPages()
   const current = pages.length ? (pages[pages.length - 1] as unknown as { route?: string }) : undefined
-  if (current && current.route === 'pages/login/index') {
+  if (current && PUBLIC_ROUTES.includes(current.route ?? '')) {
     redirecting = false
     return
   }

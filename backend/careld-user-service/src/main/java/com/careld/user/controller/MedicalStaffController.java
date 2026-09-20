@@ -39,10 +39,10 @@ public class MedicalStaffController {
             @RequestParam(value = "status", required = false) Integer status,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
-        // 数据权限：家长可为孩子选择任意医院建档，需按所选医院查医生；其他角色沿用原逻辑
+        // 数据权限：家长可为孩子选择任意医院建档，需按所选医院查医生；总部不传 storeId 时查询全部医院
         Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
         LambdaQueryWrapper<MedicalStaff> wrapper = new LambdaQueryWrapper<MedicalStaff>()
-                .eq(MedicalStaff::getStoreId, effectiveStoreId)
+                .eq(effectiveStoreId != null, MedicalStaff::getStoreId, effectiveStoreId)
                 .eq(staffRole != null, MedicalStaff::getStaffRole, staffRole)
                 .eq(status != null, MedicalStaff::getStatus, status)
                 .and(keyword != null && !keyword.isBlank(), w -> w
@@ -102,11 +102,22 @@ public class MedicalStaffController {
             if (!staff.getPhone().matches("^1\\d{10}$")) {
                 throw new BusinessException(400, "手机号格式不正确");
             }
-            MedicalStaff dup = medicalStaffMapper.selectByStoreAndPhone(storeId, staff.getPhone());
+            MedicalStaff dup = medicalStaffMapper.selectByStoreAndPhone(storeId != null ? storeId : exist.getStoreId(), staff.getPhone());
             if (dup != null && !dup.getId().equals(id)) {
                 throw new BusinessException(400, "该手机号已存在于本院医务人员中");
             }
             exist.setPhone(staff.getPhone());
+        }
+        // 调整所属医院：仅总部/超级管理员（storeId=null）可跨院调整，手机号需在目标医院内唯一
+        if (staff.getStoreId() != null && !staff.getStoreId().equals(exist.getStoreId())) {
+            if (storeId != null) {
+                throw new BusinessException(403, "无权变更医务人员的所属医院");
+            }
+            MedicalStaff dup = medicalStaffMapper.selectByStoreAndPhone(staff.getStoreId(), exist.getPhone());
+            if (dup != null && !dup.getId().equals(id)) {
+                throw new BusinessException(400, "该手机号已存在于目标医院医务人员中");
+            }
+            exist.setStoreId(staff.getStoreId());
         }
         if (staff.getName() != null && !staff.getName().isBlank()) {
             exist.setName(staff.getName());

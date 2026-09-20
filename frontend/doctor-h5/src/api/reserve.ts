@@ -25,8 +25,10 @@ export const reserveApi = {
   createReserveV2: (data: { childId: number; slotId: string; remark?: string }): Promise<number> =>
     post<number>('/schedules/reserves/v2', data as unknown as Record<string, unknown>),
 
-  cancelReserve: (id: number, cancelReason: string): Promise<void> =>
-    post<void>(`/schedules/reserves/${id}/cancel`, { cancelReason }),
+  cancelReserve: (
+    id: number,
+    payload: { cancelReason?: string; cancelReasonType?: number; refundFlag?: number },
+  ): Promise<void> => post<void>(`/schedules/reserves/${id}/cancel`, payload),
 
   /** 开始养护（录入养护前视力） */
   startCare: (

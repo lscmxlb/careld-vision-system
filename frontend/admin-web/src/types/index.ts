@@ -206,7 +206,11 @@ export interface Department {
   storeName?: string
   deptCode: string
   deptName: string
-  deptType: number // 1=门诊 2=养护 3=检测 4=其他
+  deptType: number // 1=儿童保健科 2=妇幼保健科 3=中医科 4=眼科 5=其它科室
+  /** 服务电话：医院端基础信息录入 */
+  servicePhone?: string | null
+  /** 收费标准(元/次)：预约授权自动计费用；null 表示未配置 */
+  chargeStandard?: number | null
   sortOrder: number
   status: number // 1=启用 0=禁用
   remark?: string

@@ -45,7 +45,9 @@ CREATE TABLE store_department (
 | store_id | BIGINT UNSIGNED | 所属门店ID（医院），外键关联 store_info.id |
 | dept_code | VARCHAR(32) | 科室编码 |
 | dept_name | VARCHAR(64) | 科室名称（如：养护科、检测科） |
-| dept_type | TINYINT | 科室类型：1门诊 / 2养护 / 3检测 / 4其他 |
+| dept_type | TINYINT | 科室类型：1儿童保健科 / 2妇幼保健科 / 3中医科 / 4眼科 / 5其它科室 |
+| service_phone | VARCHAR(32) | 服务电话（基础信息页手动录入，见迁移 23） |
+| charge_standard | DECIMAL(10,2) | 收费标准(元)（见迁移 18；预约授权自动计费用） |
 | sort_order | INT | 排序 |
 | status | TINYINT | 状态：0禁用 / 1启用 |
 | created_by | BIGINT UNSIGNED | 创建人 |

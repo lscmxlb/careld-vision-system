@@ -100,6 +100,13 @@
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="650px" destroy-on-close>
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="120px">
+        <el-form-item label="机构性质" prop="institutionType">
+          <el-radio-group v-model="formData.institutionType">
+            <el-radio :label="1">公立医疗机构</el-radio>
+            <el-radio :label="2">民营医疗机构</el-radio>
+            <el-radio :label="3">其他</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="医院编码" prop="storeCode">
           <el-input v-model="formData.storeCode" placeholder="请输入医院编码" />
         </el-form-item>
@@ -129,24 +136,51 @@
         <el-form-item label="详细地址" prop="address">
           <el-input v-model="formData.address" placeholder="请输入详细地址" />
         </el-form-item>
+        <!-- 以下三项为科室数据（与医院端基础信息同源），仅编辑已有科室的医院时可维护 -->
+        <el-form-item v-if="isEdit" label="服务电话">
+          <el-input
+            v-model="deptDialogForm.servicePhone"
+            :placeholder="deptDialogForm.id ? '请输入服务电话' : '该医院暂未创建科室，请先在医院端基础信息中维护'"
+            :disabled="!deptDialogForm.id"
+            maxlength="32"
+          />
+        </el-form-item>
         <el-form-item label="加盟时间" prop="joinDate">
           <el-date-picker v-model="formData.joinDate" type="date" value-format="YYYY-MM-DD" placeholder="选择加盟时间" />
         </el-form-item>
+        <el-form-item v-if="isEdit" label="科室类型">
+          <el-select
+            v-model="deptDialogForm.deptType"
+            :placeholder="deptDialogForm.id ? '请选择科室类型' : '该医院暂未创建科室'"
+            :disabled="!deptDialogForm.id"
+          >
+            <el-option label="儿童保健科" :value="1" />
+            <el-option label="妇幼保健科" :value="2" />
+            <el-option label="中医科" :value="3" />
+            <el-option label="眼科" :value="4" />
+            <el-option label="其它科室" :value="5" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="床位数量" prop="bedCount">
           <el-input-number v-model="formData.bedCount" :min="0" placeholder="请输入床位数量" />
+        </el-form-item>
+        <el-form-item v-if="isEdit" label="收费标准">
+          <el-input-number
+            v-model="deptDialogForm.chargeStandard"
+            :min="0"
+            :precision="2"
+            :step="10"
+            :disabled="!deptDialogForm.id"
+            placeholder="0.00"
+            style="width: 160px;"
+          />
+          <span class="charge-unit">元/次</span>
         </el-form-item>
         <el-form-item label="联系人" prop="contactName">
           <el-input v-model="formData.contactName" placeholder="请输入联系人姓名" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
           <el-input v-model="formData.contactPhone" placeholder="请输入联系电话" />
-        </el-form-item>
-        <el-form-item label="机构性质" prop="institutionType">
-          <el-radio-group v-model="formData.institutionType">
-            <el-radio :label="1">公立医疗机构</el-radio>
-            <el-radio :label="2">民营医疗机构</el-radio>
-            <el-radio :label="3">其他</el-radio>
-          </el-radio-group>
         </el-form-item>
         <!-- 新建模式：一体化创建店长登录账号 -->
         <template v-if="!isEdit">
@@ -246,7 +280,7 @@ defineOptions({ name: 'AdminStoreList' })
 import { ref, reactive, onMounted, computed, nextTick, h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { storeApi, orgApi, deviceApi, userApi, roleApi, statisticsApi } from '@/api'
+import { storeApi, orgApi, deviceApi, userApi, roleApi, statisticsApi, departmentApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import type { Store, StoreQuery, OpsCenter, Agent, Device, User, StoreOverview } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -336,6 +370,37 @@ const formRules: FormRules = {
 const institutionTypeLabel = (type?: number) => {
   const map: Record<number, string> = { 1: '公立医疗机构', 2: '民营医疗机构', 3: '其他' }
   return map[type ?? 0] || '未设置'
+}
+
+// 科室数据（科室类型/服务电话/收费标准）：存于科室记录，与医院端基础信息同源
+const deptDialogForm = reactive({
+  id: null as number | null,
+  deptType: undefined as number | undefined,
+  servicePhone: '',
+  chargeStandard: undefined as number | undefined
+})
+
+const resetDeptDialogForm = () => {
+  deptDialogForm.id = null
+  deptDialogForm.deptType = undefined
+  deptDialogForm.servicePhone = ''
+  deptDialogForm.chargeStandard = undefined
+}
+
+/** 取该医院第一个科室（医院端基础信息维护的即此条） */
+const loadStoreDepartment = async (storeId: number) => {
+  resetDeptDialogForm()
+  try {
+    const res = await departmentApi.getDepartmentList({ storeId, page: 1, size: 20 })
+    const current = res.list?.[0]
+    if (!current) return
+    deptDialogForm.id = current.id
+    deptDialogForm.deptType = current.deptType
+    deptDialogForm.servicePhone = current.servicePhone || ''
+    deptDialogForm.chargeStandard = current.chargeStandard ?? undefined
+  } catch (error) {
+    console.error('获取医院科室信息失败', error)
+  }
 }
 
 const institutionTypeTag = (type?: number) => {
@@ -460,6 +525,7 @@ const handleAdd = () => {
   Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [], createManagerAccount: true, managerUsername: '', managerRealName: '', managerPhone: '', managerPassword: '' })
   formAgentOptions.value = []
   currentId.value = null
+  resetDeptDialogForm()
   dialogVisible.value = true
 }
 
@@ -530,6 +596,7 @@ const handleEdit = async (row: Store) => {
   }
   formData.centerId = savedCenterId
   formData.agentId = savedAgentId
+  await loadStoreDepartment(row.id)
   // 先清空再设置，确保级联选择器正确回显
   formData.regionCodes = []
   dialogVisible.value = true
@@ -583,6 +650,14 @@ const handleSubmit = async () => {
       try {
         if (isEdit.value && currentId.value) {
           await storeApi.updateStore(currentId.value, formData)
+          // 科室类型/服务电话/收费标准 存于科室记录（与医院端基础信息同源）
+          if (deptDialogForm.id) {
+            await departmentApi.updateDepartment(deptDialogForm.id, {
+              deptType: deptDialogForm.deptType,
+              servicePhone: deptDialogForm.servicePhone.trim() || null,
+              chargeStandard: deptDialogForm.chargeStandard ?? null
+            })
+          }
           ElMessage.success('更新成功')
         } else {
           const newStoreId = await storeApi.createStore(formData)
@@ -658,6 +733,7 @@ onMounted(() => {
 .store-list-page {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
   .search-form { margin-bottom: 20px; }
+  .charge-unit { margin-left: 8px; color: #606266; font-size: 14px; }
   .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
   .action-buttons {
     display: flex;

@@ -22,5 +22,10 @@ export const storeApi = {
   // 获取当前用户所属医院
   getCurrentStore: (): Promise<Store> => {
     return request.get('/stores/current')
+  },
+
+  // 修改当前医院名称（基础信息页，仅限本店名称字段）
+  updateCurrentStoreName: (storeName: string): Promise<void> => {
+    return request.put('/stores/current/name', { storeName })
   }
 }

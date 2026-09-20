@@ -1,6 +1,7 @@
 <template>
   <div class="login-page">
     <div class="login-box">
+      <img :src="logoImg" alt="Careld" class="login-logo">
       <h2>Careld诊约助手服务登录</h2>
       <el-form :model="form" @keyup.enter="handleLogin">
         <el-form-item>
@@ -50,6 +51,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import logoImg from '@/assets/logo.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -105,6 +107,13 @@ onMounted(() => {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+
+    .login-logo {
+      width: 64px;
+      height: 64px;
+      display: block;
+      margin: 0 auto 16px;
+    }
 
     h2 {
       text-align: center;

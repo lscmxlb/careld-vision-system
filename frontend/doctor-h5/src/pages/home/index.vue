@@ -4,7 +4,10 @@
     <view class="hero" :style="{ paddingTop: statusBarHeight + 24 + 'px' }">
       <view class="hero-top">
         <view class="hero-left">
-          <text class="hero-store" :style="storeNameStyle">{{ storeNameText }}</text>
+          <view class="hero-store-row">
+            <image class="hero-store-icon" src="/static/his-white.png" mode="aspectFit" />
+            <text class="hero-store" :style="storeNameStyle">{{ storeNameText }}</text>
+          </view>
           <text class="hero-doctor">{{ userStore.displayName }}<text class="hero-role"> · {{ roleText }}</text></text>
         </view>
         <view class="hero-date">
@@ -20,7 +23,7 @@
       <!-- 数据统计：3 个球展示儿童档案 / 当前已预约 / 已完成养护 -->
       <view class="stats">
         <view v-for="item in statItems" :key="item.label" class="stats-item">
-          <view class="stats-ball" :class="item.ball">
+          <view class="stats-ball">
             <text class="stats-value" :class="valueSizeClass(item.value)">{{ item.value }}</text>
           </view>
           <text class="stats-label">{{ item.label }}</text>
@@ -64,7 +67,9 @@
           <view v-for="(cell, idx) in calCells" :key="cell.date || `blank-${idx}`" class="cal-cell">
             <view v-if="cell.day" class="cal-box">
               <text class="cal-day" :class="{ 'cal-day-today': cell.date === today }">{{ cell.day }}</text>
-              <text class="cal-ab" :class="{ 'cal-ab-empty': cell.ab === '-/-' }">{{ cell.ab }}</text>
+              <text class="cal-ab" :class="{ 'cal-ab-empty': cell.ab === '-/-' }" @click="openDayDetail(cell.date)">
+                {{ cell.ab }}
+              </text>
             </view>
           </view>
         </view>
@@ -72,17 +77,25 @@
 
       <view class="safe-bottom" />
     </view>
+
+    <DayReserveSheet
+      v-model:visible="daySheetVisible"
+      :date="daySheetDate"
+      :list="daySheetList"
+      :loading="daySheetLoading"
+    />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
-import { scheduleRuleApi, statisticsApi } from '@/api'
+import DayReserveSheet from '@/components/DayReserveSheet.vue'
+import { reserveApi, scheduleRuleApi, statisticsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { userRoleText } from '@/utils/dict'
 import { todayStr, weekdayLabel } from '@/utils/format'
-import type { SlotDailySummary, WorkbenchStats } from '@/types'
+import type { Reserve, SlotDailySummary, WorkbenchStats } from '@/types'
 
 const userStore = useUserStore()
 const statusBarHeight = ref(0)
@@ -97,13 +110,13 @@ const todayLabel = computed(() => today.slice(5).replace('-', '/'))
 
 const roleText = computed(() => userRoleText(userStore.userType, userStore.userInfo?.staffRole))
 
-/* ---------------- 数据统计（儿童档案 / 当前已预约 / 已完成养护） ---------------- */
+/* ---------------- 数据统计（儿童档案 / 本月预约 / 养护次数） ---------------- */
 const workbenchStats = ref<WorkbenchStats>({ childCount: 0, reservedCount: 0, completedCareCount: 0 })
 
 const statItems = computed(() => [
-  { label: '儿童档案数量', value: workbenchStats.value.childCount, ball: 'sb-primary' },
-  { label: '当前已预约数量', value: workbenchStats.value.reservedCount, ball: 'sb-emerald' },
-  { label: '已完成养护次数', value: workbenchStats.value.completedCareCount, ball: 'sb-violet' },
+  { label: '儿童档案', value: workbenchStats.value.childCount },
+  { label: '本月预约', value: workbenchStats.value.reservedCount },
+  { label: '养护次数', value: workbenchStats.value.completedCareCount },
 ])
 
 /** 位数过多时缩小字号，保证数值完整显示在球内 */
@@ -125,6 +138,9 @@ async function fetchWorkbenchStats() {
 /* ---------------- 医院名称自适应字号（字多时自动缩小，保证单行且不遮挡右侧日期） ---------------- */
 const STORE_BASE_RPX = 42
 const STORE_MIN_RPX = 24
+/** 医院名前置图标尺寸与间距（与样式表一致，参与可用宽度扣减） */
+const STORE_ICON_RPX = 64
+const STORE_ICON_GAP_RPX = 12
 
 const storeNameText = computed(() => userStore.storeName || '未分配门店')
 const baseFontPx = computed(() => uni.upx2px(STORE_BASE_RPX))
@@ -139,7 +155,8 @@ function fitStoreName() {
     query.exec((res) => {
       const leftRect = res?.[0] as { width?: number } | null
       const measureRect = res?.[1] as { width?: number } | null
-      const availWidth = (leftRect?.width || 0) - 8
+      const availWidth = (leftRect?.width || 0)
+        - uni.upx2px(STORE_ICON_RPX) - uni.upx2px(STORE_ICON_GAP_RPX) - 8
       const baseWidth = measureRect?.width || 0
       if (availWidth <= 0 || baseWidth <= 0) return
       // 同一字体下文字宽度与字号成正比，按可用宽度等比缩放
@@ -207,6 +224,33 @@ onShow(() => {
   userStore.fetchProfile().catch(() => undefined)
 })
 
+/* ---------------- 当天预约详情弹窗（点击日历 A/B 数字） ---------------- */
+const daySheetVisible = ref(false)
+const daySheetDate = ref('')
+const daySheetLoading = ref(false)
+const daySheetList = ref<Reserve[]>([])
+
+async function openDayDetail(date: string) {
+  if (!date) return
+  daySheetDate.value = date
+  daySheetVisible.value = true
+  daySheetLoading.value = true
+  daySheetList.value = []
+  try {
+    const res = await reserveApi.getReserveList({
+      storeId: userStore.storeId,
+      date,
+      page: 1,
+      size: 100,
+    })
+    daySheetList.value = res.list || []
+  } catch {
+    // 错误提示已在请求层处理
+  } finally {
+    daySheetLoading.value = false
+  }
+}
+
 onPullDownRefresh(async () => {
   await Promise.all([fetchWorkbenchStats(), fetchCalendar()])
   uni.stopPullDownRefresh()
@@ -256,8 +300,26 @@ function goGrant() {
   flex: 1;
 }
 
+.hero-store-row {
+  display: flex;
+  /* 图标与医院名称底部对齐 */
+  align-items: flex-end;
+}
+
+.hero-store-icon {
+  width: 64rpx;
+  height: 54rpx;
+  flex-shrink: 0;
+  margin-right: 12rpx;
+  /* 文字行框底部含约 0.25em 降部留白（汉字底边高于行框底边），上移 9rpx 让图标底边与汉字底边齐平 */
+  position: relative;
+  bottom: 9rpx;
+}
+
 .hero-store {
   display: block;
+  flex: 1;
+  min-width: 0;
   font-size: 42rpx;
   font-weight: 600;
   color: #fff;
@@ -280,16 +342,19 @@ function goGrant() {
 
 .hero-doctor {
   display: block;
+  /* 与医院名文字左对齐（图标 64rpx + 间距 12rpx） */
+  margin-left: 76rpx;
   margin-top: 10rpx;
-  font-size: 42rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #fff;
+  /* 浅灰：与角色小字同色（原 .hero-role 的 0.85 透明度折进 color，两段颜色完全一致） */
+  color: rgba(209, 213, 219, 0.85);
 }
 
 .hero-role {
   font-size: 24rpx;
   font-weight: 400;
-  opacity: 0.85;
+  /* 颜色继承 .hero-doctor，保持与姓名一致 */
 }
 
 .hero-date {
@@ -318,7 +383,7 @@ function goGrant() {
 
 .stats {
   display: flex;
-  background: #fff;
+  background: #eff6ff;
   border-radius: 20rpx;
   padding: 30rpx 0;
   box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06);
@@ -331,34 +396,47 @@ function goGrant() {
   align-items: center;
 }
 
+/* 透明玻璃球：半透明底 + 白高光边 + 顶部反光斑 + 底部内阴影 */
 .stats-ball {
+  position: relative;
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10rpx 20rpx rgba(15, 23, 42, 0.16), inset -4rpx -6rpx 14rpx rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.92) 0%, rgba(219, 234, 254, 0.58) 55%, rgba(191, 219, 254, 0.38) 100%);
+  border: 2rpx solid #93c5fd;
+  box-shadow: 0 10rpx 22rpx rgba(37, 99, 235, 0.16),
+    inset 0 8rpx 12rpx rgba(255, 255, 255, 0.95),
+    inset 0 -10rpx 18rpx rgba(96, 165, 250, 0.22);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
-.sb-primary {
-  background: radial-gradient(circle at 32% 26%, #bfdbfe 0%, #3b82f6 52%, #1d4ed8 100%);
-}
-
-.sb-emerald {
-  background: radial-gradient(circle at 32% 26%, #a7f3d0 0%, #10b981 52%, #047857 100%);
-}
-
-.sb-violet {
-  background: radial-gradient(circle at 32% 26%, #ddd6fe 0%, #8b5cf6 52%, #6d28d9 100%);
+/* 左上角反光斑（玻璃质感） */
+.stats-ball::after {
+  content: '';
+  position: absolute;
+  left: 16%;
+  top: 8%;
+  width: 42%;
+  height: 30%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+  transform: rotate(-18deg);
+  pointer-events: none;
 }
 
 .stats-value {
+  position: relative;
+  z-index: 1;
   font-size: 30rpx;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
-  text-shadow: 0 2rpx 4rpx rgba(15, 23, 42, 0.18);
+  color: #1e3a8a;
+  text-shadow: 0 1rpx 2rpx rgba(255, 255, 255, 0.9);
 }
 
 .stats-value-sm {
@@ -523,6 +601,7 @@ function goGrant() {
 
 .cal-ab {
   margin-top: 4rpx;
+  padding: 2rpx 10rpx;
   font-size: 20rpx;
   color: #2563eb;
 }

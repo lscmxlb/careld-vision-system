@@ -131,9 +131,9 @@ export interface ChildServiceRecord {
 export interface WorkbenchStats {
   /** 儿童档案数量 */
   childCount: number
-  /** 当前已预约数量 */
+  /** 本月预约数量（预约日期在本月且状态为已预约） */
   reservedCount: number
-  /** 已完成养护次数 */
+  /** 养护次数（已完成养护记录数） */
   completedCareCount: number
 }
 
@@ -171,6 +171,8 @@ export interface Reserve {
   remark?: string
   status: number
   cancelReason?: string
+  /** 取消原因类型：1家长原因 2医院原因 */
+  cancelReasonType?: number
   slotId?: string
   startTime?: string
   endTime?: string

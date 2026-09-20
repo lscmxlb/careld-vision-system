@@ -1,7 +1,8 @@
 <template>
   <view v-if="visible" class="cancel-root">
-    <view class="mask" @click="close" />
-    <view class="sheet">
+    <!-- 严格模态：遮罩只负责挡住下层（含 tabbar），点击/拖动都不关闭弹窗 -->
+    <view class="mask" @touchmove.stop.prevent="noop" />
+    <view class="sheet sheet-center">
       <view class="sheet-header">
         <text class="sheet-title">取消预约</text>
         <text class="sheet-close" @click="close">✕</text>
@@ -62,6 +63,8 @@ function close() {
   emit('update:visible', false)
 }
 
+function noop() {}
+
 function submit() {
   const text = reason.value.trim()
   if (!text || props.loading) return
@@ -70,9 +73,10 @@ function submit() {
 </script>
 
 <style lang="scss" scoped>
+// 本页是 tabbar 页，弹层层级需高于 uni-tabbar（z-index: 998）才能挡住底部导航
 .cancel-root {
   position: relative;
-  z-index: 90;
+  z-index: 1000;
 }
 
 .cancel-target {

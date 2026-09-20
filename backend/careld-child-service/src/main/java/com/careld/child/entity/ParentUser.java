@@ -19,5 +19,7 @@ public class ParentUser {
     private String phone;
     private Integer userType;
     private Long storeId;
+    private Long centerId;
+    private Long agentId;
     private Integer status;
 }

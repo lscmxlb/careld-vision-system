@@ -5,6 +5,7 @@ import com.careld.common.result.Result;
 import com.careld.common.security.UserContext;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.schedule.dto.BatchScheduleRequest;
+import com.careld.schedule.dto.CancelReserveRequest;
 import com.careld.schedule.entity.ReserveOrder;
 import com.careld.schedule.entity.Schedule;
 import com.careld.schedule.service.ScheduleService;
@@ -85,14 +86,15 @@ public class ScheduleController {
             @RequestParam(value = "startDate", required = false) LocalDate startDate,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
-            @RequestParam(value = "size", defaultValue = "20") Integer size) {
+            @RequestParam(value = "size", defaultValue = "20") Integer size,
+            @RequestParam(value = "orderDesc", required = false) Boolean orderDesc) {
         // 家长数据以本人孩子为准：不带具体孩子时不返回任何预约，避免跨院串看
         if (DataScopeHelper.isParent() && childId == null) {
             return Result.success(PageResult.of(List.of(), page, size, 0));
         }
         // 数据权限：家长按所选医院（可为异地），其他角色注入 storeId
         Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
-        var p = scheduleService.listReserves(effectiveStoreId, childId, status, statuses, noShowFlag, date, startDate, keyword, page, size);
+        var p = scheduleService.listReserves(effectiveStoreId, childId, status, statuses, noShowFlag, date, startDate, keyword, page, size, orderDesc);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 
@@ -112,8 +114,11 @@ public class ScheduleController {
     @OperationLog(module = "reserve", action = "cancel", description = "取消预约（取消服务）")
     @Operation(summary = "取消预约")
     @PostMapping("/reserves/{id}/cancel")
-    public Result<Void> cancel(@PathVariable Long id, @RequestBody Map<String, String> params) {
-        scheduleService.cancelReserve(id, params.get("cancelReason"));
+    public Result<Void> cancel(@PathVariable Long id, @RequestBody(required = false) CancelReserveRequest request) {
+        scheduleService.cancelReserve(id,
+                request == null ? null : request.getCancelReason(),
+                request == null ? null : request.getCancelReasonType(),
+                request == null ? null : request.getRefundFlag());
         return Result.success();
     }
 

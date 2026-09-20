@@ -16,7 +16,9 @@ import java.util.Map;
 public interface StatisticsMapper {
 
     /**
-     * 看板统计：今日预约 / 待审核档案 / 在线设备 / 今日检测
+     * 看板统计：今日预约 / 待审核档案 / 在线设备 / 今日检测 / 三组「本月+累计」指标
+     * 口径：本月预约=预约日期在本月（含已取消）；总预约=全部未删除记录；本月新增=建档时间在本月；
+     * 档案总数=未删除且非已隐藏(2)；本月养护=养护日期在本月；总养护=全部未删除养护记录
      */
     @Select("SELECT "
             + "(SELECT COUNT(*) FROM reserve_order WHERE reserve_date = CURDATE() "
@@ -26,21 +28,41 @@ public interface StatisticsMapper {
             + "(SELECT COUNT(*) FROM store_tv_device WHERE status = 1 "
             + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS activeDevices, "
             + "(SELECT COUNT(*) FROM vision_test_record WHERE DATE(created_at) = CURDATE() "
-            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS todayTests")
-    StatisticsDtos.DashboardStats dashboard(@Param("storeId") Long storeId);
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS todayTests, "
+            + "(SELECT COUNT(*) FROM reserve_order WHERE deleted_at IS NULL "
+            + "  AND reserve_date BETWEEN #{monthStart} AND #{monthEnd} "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS monthReserveCount, "
+            + "(SELECT COUNT(*) FROM reserve_order WHERE deleted_at IS NULL "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS totalReserveCount, "
+            + "(SELECT COUNT(*) FROM child_profile WHERE deleted_at IS NULL AND status <> 2 "
+            + "  AND created_at >= #{monthStart} AND created_at < DATE_ADD(#{monthEnd}, INTERVAL 1 DAY) "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS monthChildCount, "
+            + "(SELECT COUNT(*) FROM child_profile WHERE deleted_at IS NULL AND status <> 2 "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS totalChildCount, "
+            + "(SELECT COUNT(*) FROM care_record WHERE deleted_at IS NULL "
+            + "  AND care_date BETWEEN #{monthStart} AND #{monthEnd} "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS monthCareCount, "
+            + "(SELECT COUNT(*) FROM care_record WHERE deleted_at IS NULL "
+            + "  AND (#{storeId} IS NULL OR store_id = #{storeId})) AS totalCareCount")
+    StatisticsDtos.DashboardStats dashboard(@Param("storeId") Long storeId,
+                                            @Param("monthStart") LocalDate monthStart,
+                                            @Param("monthEnd") LocalDate monthEnd);
 
     /**
      * 医生端工作台统计
-     * 口径：儿童档案=未删除且非已隐藏(2)；当前已预约=status 1；已完成养护=care_record.status 2
+     * 口径：儿童档案=未删除且非已隐藏(2)；本月预约=预约日期在本月且状态为已预约(1)；养护次数=care_record.status 2
      */
     @Select("SELECT "
             + "(SELECT COUNT(*) FROM child_profile cp WHERE cp.store_id = #{storeId} "
             + "  AND cp.deleted_at IS NULL AND cp.status <> 2) AS childCount, "
             + "(SELECT COUNT(*) FROM reserve_order ro WHERE ro.store_id = #{storeId} "
-            + "  AND ro.status = 1 AND ro.deleted_at IS NULL) AS reservedCount, "
+            + "  AND ro.status = 1 AND ro.deleted_at IS NULL "
+            + "  AND ro.reserve_date BETWEEN #{monthStart} AND #{monthEnd}) AS reservedCount, "
             + "(SELECT COUNT(*) FROM care_record cr WHERE cr.store_id = #{storeId} "
             + "  AND cr.status = 2 AND cr.deleted_at IS NULL) AS completedCareCount")
-    StatisticsDtos.WorkbenchStats workbenchStats(@Param("storeId") Long storeId);
+    StatisticsDtos.WorkbenchStats workbenchStats(@Param("storeId") Long storeId,
+                                                 @Param("monthStart") LocalDate monthStart,
+                                                 @Param("monthEnd") LocalDate monthEnd);
 
     /**
      * 医院数据统计：医院基本信息（含运营中心/代理商名称）+ 动态统计

@@ -16,6 +16,10 @@ public interface MedicalStaffMapper extends BaseMapper<MedicalStaff> {
     @Select("SELECT * FROM medical_staff WHERE phone = #{phone} AND status = 1 AND deleted_at IS NULL ORDER BY id LIMIT 1")
     MedicalStaff selectEnabledByPhone(String phone);
 
+    /** 按手机号查询任意状态的医务人员（家长端注册查重，禁用账号同样占用手机号） */
+    @Select("SELECT * FROM medical_staff WHERE phone = #{phone} AND deleted_at IS NULL ORDER BY id LIMIT 1")
+    MedicalStaff selectByPhone(String phone);
+
     /** 记录登录时间，供医院活跃统计使用 */
     @Update("UPDATE medical_staff SET last_login_time = #{time} WHERE id = #{id}")
     int updateLastLoginTime(@Param("id") Long id, @Param("time") LocalDateTime time);

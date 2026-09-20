@@ -50,38 +50,74 @@
 
       <!-- 用户表格 -->
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="username" label="用户名" width="120" />
-        <el-table-column prop="realName" label="真实姓名" width="100" />
-        <el-table-column prop="userType" label="用户类型" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getUserTypeTag(row.userType)">{{ getUserTypeLabel(row.userType) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="centerName" label="运营中心" width="140">
-          <template #default="{ row }">{{ row.centerName || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="agentName" label="代理商" width="140">
-          <template #default="{ row }">{{ row.agentName || '-' }}</template>
-        </el-table-column>
-        <el-table-column prop="storeName" label="所属医院">
-          <template #default="{ row }">{{ row.storeName || '-' }}</template>
-        </el-table-column>
-        <el-table-column v-if="queryForm.userType === 3" prop="childCount" label="儿童档案数量" width="110">
-          <template #default="{ row }">{{ row.childCount ?? 0 }}</template>
-        </el-table-column>
-        <el-table-column prop="phone" label="手机号" width="130">
-          <template #default="{ row }">{{ row.userType === 3 ? maskPhone(row.phone) : row.phone }}</template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '正常' : '禁用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastLoginTime" label="最后登录" width="160">
-          <template #default="{ row }">
-            {{ row.lastLoginTime ? formatDate(row.lastLoginTime) : '从未' }}
-          </template>
-        </el-table-column>
+        <!-- 家长用户：运营中心/代理商/所属医院前置，隐藏用户名，增加注册时间 -->
+        <template v-if="queryForm.userType === 3">
+          <el-table-column prop="centerName" label="运营中心" width="140">
+            <template #default="{ row }">{{ row.centerName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="agentName" label="代理商" width="140">
+            <template #default="{ row }">{{ row.agentName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="storeName" label="所属医院" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.storeName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="realName" label="真实姓名" width="100" show-overflow-tooltip />
+          <el-table-column prop="userType" label="用户类型" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getUserTypeTag(row.userType)">{{ getUserTypeLabel(row.userType) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="childCount" label="儿童档案" width="100">
+            <template #default="{ row }">{{ row.childCount ?? 0 }}</template>
+          </el-table-column>
+          <el-table-column prop="phone" label="手机号" width="130">
+            <template #default="{ row }">{{ maskPhone(row.phone) }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '正常' : '禁用' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="注册时间" width="160">
+            <template #default="{ row }">{{ row.createdAt ? formatDate(row.createdAt) : '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="lastLoginTime" label="最后登录" width="160">
+            <template #default="{ row }">
+              {{ row.lastLoginTime ? formatDate(row.lastLoginTime) : '从未' }}
+            </template>
+          </el-table-column>
+        </template>
+        <template v-else>
+          <el-table-column prop="username" label="用户名" width="120" show-overflow-tooltip />
+          <el-table-column prop="realName" label="真实姓名" width="100" show-overflow-tooltip />
+          <el-table-column prop="userType" label="用户类型" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getUserTypeTag(row.userType)">{{ getUserTypeLabel(row.userType) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="centerName" label="运营中心" width="140">
+            <template #default="{ row }">{{ row.centerName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="agentName" label="代理商" width="140">
+            <template #default="{ row }">{{ row.agentName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="storeName" label="所属医院" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.storeName || '-' }}</template>
+          </el-table-column>
+          <el-table-column prop="phone" label="手机号" width="130">
+            <template #default="{ row }">{{ row.userType === 3 ? maskPhone(row.phone) : row.phone }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '正常' : '禁用' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="lastLoginTime" label="最后登录" width="160">
+            <template #default="{ row }">
+              {{ row.lastLoginTime ? formatDate(row.lastLoginTime) : '从未' }}
+            </template>
+          </el-table-column>
+        </template>
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button v-if="canEditUser(row.userType)" type="primary" size="small" @click="handleEdit(row)" v-permission="'user:update'">编辑</el-button>

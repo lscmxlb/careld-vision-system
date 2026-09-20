@@ -4,11 +4,26 @@ import uviewPlus from 'uview-plus'
 import App from './App.vue'
 import { getToken } from '@/utils/auth'
 
-const PAGE_LOGIN = '/pages/login/index'
+// 浏览器标签标题固定为品牌名（uni-app 会按页面 navigationBarTitleText 改写 document.title，
+// 拦截赋值以保证各页面标签标题统一；页面内导航栏标题不受影响）
+const APP_TITLE = 'Careld诊约助手家长端'
+const applyAppTitle = () => {
+  const el = document.querySelector('title')
+  if (el && el.textContent !== APP_TITLE) el.textContent = APP_TITLE
+}
+applyAppTitle()
+Object.defineProperty(document, 'title', {
+  get: () => APP_TITLE,
+  set: applyAppTitle,
+})
 
-function isLoginPage(url?: string) {
+const PAGE_LOGIN = '/pages/login/index'
+// 未登录也可进入的公开页（注册、忘记密码都是登录入口的分支）
+const PUBLIC_PAGES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot']
+
+function isPublicPage(url?: string) {
   if (!url) return false
-  return url.split('?')[0].replace(/^\//, '') === 'pages/login/index'
+  return PUBLIC_PAGES.includes(url.split('?')[0].replace(/^\//, ''))
 }
 
 let redirecting = false
@@ -31,11 +46,11 @@ export function createApp() {
   app.use(createPinia())
   app.use(uviewPlus)
 
-  // 未登录保护：深链直接进入业务页时统一拉回登录页
+  // 未登录保护：深链直接进入业务页时统一拉回登录页（注册/忘记密码为公开页）
   ;(['navigateTo', 'redirectTo', 'reLaunch', 'switchTab'] as const).forEach((api) => {
     uni.addInterceptor(api, {
       invoke(args: { url?: string }) {
-        if (isLoginPage(args.url) || getToken()) return args
+        if (isPublicPage(args.url) || getToken()) return args
         redirectToLogin()
         return false
       },

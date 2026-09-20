@@ -18,6 +18,18 @@ public final class StatisticsDtos {
         private long pendingChildren;
         private long activeDevices;
         private long todayTests;
+        /** 本月预约（按预约日期，含已取消） */
+        private long monthReserveCount;
+        /** 总预约数量（含已取消） */
+        private long totalReserveCount;
+        /** 本月新增档案（按建档时间） */
+        private long monthChildCount;
+        /** 档案总数（未删除且非已隐藏） */
+        private long totalChildCount;
+        /** 本月养护（按养护日期） */
+        private long monthCareCount;
+        /** 总养护数量 */
+        private long totalCareCount;
     }
 
     @Data
@@ -89,15 +101,15 @@ public final class StatisticsDtos {
     }
 
     /**
-     * 医生端工作台统计：儿童档案数量 / 当前已预约数量 / 已完成养护次数
+     * 医生端工作台统计：儿童档案 / 本月预约 / 养护次数
      */
     @Data
     public static class WorkbenchStats {
         /** 儿童档案数量（未删除且非已隐藏） */
         private long childCount;
-        /** 当前已预约数量（已预约状态） */
+        /** 本月预约数量（预约日期在本月且状态为已预约） */
         private long reservedCount;
-        /** 已完成养护次数（养护记录已完成） */
+        /** 养护次数（养护记录已完成） */
         private long completedCareCount;
     }
 

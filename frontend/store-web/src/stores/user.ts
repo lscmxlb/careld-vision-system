@@ -38,6 +38,12 @@ export const useUserStore = defineStore('user', () => {
     const res = await authApi.login(loginData)
     setToken(res.accessToken, res.refreshToken)
     userInfo.value = res.user
+    // 登录响应不含门店名等展示字段（仅在 /users/me 中补齐），登录后立即补拉一次
+    try {
+      await fetchUserInfo()
+    } catch {
+      // 补拉失败保留登录响应中的基础信息
+    }
     return res
   }
 

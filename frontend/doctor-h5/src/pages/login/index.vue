@@ -2,11 +2,10 @@
   <view class="login">
     <view class="login-hero">
       <view class="hero-logo">
-        <view class="logo-ring"></view>
-        <view class="logo-dot"></view>
+        <image class="hero-logo-img" src="/static/logo.png" mode="aspectFit" />
       </view>
-      <view class="hero-title">Careld 儿童视力养护</view>
-      <view class="hero-sub">医生工作端 · 移动接诊</view>
+      <view class="hero-title">Careld 儿童视力养护诊约助手</view>
+      <view class="hero-sub">医生工作端 · 移动终端</view>
     </view>
 
     <view class="login-card">
@@ -125,21 +124,9 @@ async function handleLogin() {
   margin-bottom: 32rpx;
 }
 
-.logo-ring {
-  width: 62rpx;
-  height: 62rpx;
-  border: 8rpx solid #fff;
-  border-radius: 50%;
-}
-
-.logo-dot {
-  position: absolute;
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 50%;
-  background: #fff;
-  right: 34rpx;
-  bottom: 34rpx;
+.hero-logo-img {
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .hero-title {

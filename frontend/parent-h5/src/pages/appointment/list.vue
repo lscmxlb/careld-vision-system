@@ -33,7 +33,7 @@
           <text class="rc-meta-item">养护人：{{ item.executorName }}</text>
         </view>
         <view v-if="item.status === 4 && item.cancelReason" class="rc-meta">
-          <text class="rc-meta-item rc-reason">取消原因：{{ item.cancelReason }}</text>
+          <text class="rc-meta-item rc-reason">取消原因：{{ cancelPrefix(item) }}{{ item.cancelReason }}</text>
         </view>
         <view v-if="statusValue(item) === 5" class="rc-noshow-tip">已爽约，本次预约次数不退还</view>
         <view v-if="item.remark" class="rc-meta">
@@ -115,6 +115,15 @@ function statusLabel(item: Reserve) {
 
 function statusTag(item: Reserve) {
   return reserveStatusTag(item)
+}
+
+/**
+ * 取消原因前缀：2=医院原因 → [医院取消]；1 或历史无类型数据 → [家长取消]。
+ * 爽约由系统自动标记，不属于取消，不加前缀。
+ */
+function cancelPrefix(item: Reserve) {
+  if (item.noShowFlag === 1) return ''
+  return item.cancelReasonType === 2 ? '[医院取消]' : '[家长取消]'
 }
 
 function compareId(a: number | string, b: number | string) {

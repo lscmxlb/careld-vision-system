@@ -1,8 +1,9 @@
 /**
- * 登录态 Store（家长端：纯短信验证码登录）
+ * 登录态 Store（家长端：手机号+密码登录，注册使用独立页面）
  */
 import { defineStore } from 'pinia'
 import { authApi, childApi, userApi } from '@/api'
+import type { ParentRegisterPayload, ParentResetPasswordPayload } from '@/api/auth'
 import { clearAuth, getToken, getUserInfo, setRefreshToken, setToken, setUserInfo } from '@/utils/auth'
 import type { User } from '@/types'
 
@@ -38,10 +39,34 @@ export const useUserStore = defineStore('user', {
       return authApi.sendSms(phone)
     },
 
-    async loginBySms(phone: string, code: string) {
-      const res = await authApi.smsLogin(phone, code)
+    /** 手机号+密码登录（未注册/其它身份由后端返回明确提示） */
+    async loginByPassword(phone: string, password: string) {
+      const res = await authApi.parentLogin(phone, password)
       this.applyLogin(res)
       return res
+    },
+
+    /** 注册即登录（手机号、验证码、用户名称、登录密码） */
+    async register(payload: ParentRegisterPayload) {
+      const res = await authApi.parentRegister(payload)
+      this.applyLogin(res)
+      return res
+    },
+
+    /** 忘记密码：手机号+验证码重置登录密码 */
+    resetPassword(payload: ParentResetPasswordPayload) {
+      return authApi.parentResetPassword(payload)
+    },
+
+    /** 修改手机号：新手机号+验证码，成功后刷新本地用户信息 */
+    async changePhone(newPhone: string, code: string) {
+      await authApi.parentChangePhone({ phone: newPhone, code })
+      await this.fetchProfile()
+    },
+
+    /** 修改登录密码：需原密码 */
+    changePassword(oldPassword: string, newPassword: string) {
+      return userApi.changeMyPassword({ oldPassword, newPassword })
     },
 
     applyLogin(res: { accessToken: string; refreshToken?: string; user: User }) {

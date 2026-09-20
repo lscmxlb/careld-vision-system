@@ -22,22 +22,28 @@
         </div>
       </template>
       <el-row :gutter="20" class="summary-row">
-        <el-col :span="8">
+        <el-col :span="6">
           <div class="summary-item">
             <div class="summary-value">{{ summary.total }}</div>
             <div class="summary-label">预约总数</div>
           </div>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <div class="summary-item success">
             <div class="summary-value">{{ summary.completed }}</div>
-            <div class="summary-label">完成数</div>
+            <div class="summary-label">已养护数</div>
           </div>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <div class="summary-item danger">
             <div class="summary-value">{{ summary.cancelled }}</div>
             <div class="summary-label">取消数</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="summary-item warning">
+            <div class="summary-value">{{ summary.pending }}</div>
+            <div class="summary-label">待养护数量</div>
           </div>
         </el-col>
       </el-row>
@@ -46,8 +52,8 @@
     <!-- 预约日历 -->
     <el-card class="calendar-card">
       <template #header>
-        <div class="card-header">
-          <span>预约日历 - {{ currentMonthLabel }}</span>
+        <div class="card-header calendar-header">
+          <span class="calendar-title">预约日历 - {{ currentMonthLabel }}</span>
           <div class="header-actions">
             <el-button size="small" @click="handlePrevMonth">上个月</el-button>
             <el-button size="small" @click="handleToday">今天</el-button>
@@ -194,7 +200,7 @@ const userStore = useUserStore()
 // ==================== 顶部：日期范围汇总统计 ====================
 const dateRange = ref<string[]>([])
 const summaryLoading = ref(false)
-const summary = reactive({ total: 0, completed: 0, cancelled: 0 })
+const summary = reactive({ total: 0, completed: 0, cancelled: 0, pending: 0 })
 
 const fetchSummary = async () => {
   if (!dateRange.value || dateRange.value.length < 2) return
@@ -204,6 +210,7 @@ const fetchSummary = async () => {
     summary.total = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.total || 0), 0)
     summary.completed = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.completed || 0), 0)
     summary.cancelled = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.cancelled || 0), 0)
+    summary.pending = list.reduce((sum: number, item: ReserveDailyStatistics) => sum + (item.pending || 0), 0)
   } catch {
     // 错误已在拦截器处理
   } finally {
@@ -302,6 +309,17 @@ const getReserveStatusText = (status: number) => {
   return map[status] || '未知'
 }
 
+/** 默认排序：有效预约在上、已取消在下，组内按开始时间升序 */
+const sortDetailList = (list: Reserve[]) =>
+  [...list].sort((a, b) => {
+    const bucket = (s: number) => (s === 4 ? 1 : 0)
+    if (bucket(a.status) !== bucket(b.status)) {
+      return bucket(a.status) - bucket(b.status)
+    }
+    const byTime = (a.timeSlotStart || '').localeCompare(b.timeSlotStart || '')
+    return byTime !== 0 ? byTime : (a.id || 0) - (b.id || 0)
+  })
+
 const handleDetail = async (day: string) => {
   detailDate.value = day
   detailVisible.value = true
@@ -314,7 +332,7 @@ const handleDetail = async (day: string) => {
       page: 1,
       size: 100
     })
-    detailList.value = res.list
+    detailList.value = sortDetailList(res.list)
   } catch {
     // 错误已在拦截器处理
   } finally {
@@ -501,6 +519,21 @@ onMounted(() => {
     :deep(.el-calendar__header) {
       display: none;
     }
+
+    .calendar-header {
+      position: relative;
+
+      /* 标题绝对定位居中，不受右侧操作按钮宽度影响 */
+      .calendar-title {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 20px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+    }
   }
 
   .summary-row {
@@ -516,6 +549,10 @@ onMounted(() => {
 
       &.danger {
         background: #fef0f0;
+      }
+
+      &.warning {
+        background: #fdf6ec;
       }
 
       .summary-value {

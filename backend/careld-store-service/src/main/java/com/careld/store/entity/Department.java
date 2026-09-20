@@ -31,9 +31,14 @@ public class Department extends BaseEntity {
     private String deptName;
 
     /**
-     * 科室类型:1门诊 2养护 3检测 4其他
+     * 科室类型:1儿童保健科 2妇幼保健科 3中医科 4眼科 5其它科室
      */
     private Integer deptType;
+
+    /**
+     * 服务电话
+     */
+    private String servicePhone;
 
     /**
      * 收费标准(元)

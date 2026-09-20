@@ -67,11 +67,14 @@
             <el-tag v-else :type="getReserveStatusType(row.status)">
               {{ getReserveStatusText(row.status) }}
             </el-tag>
-            <el-tooltip
-              v-if="row.status === 4 && row.cancelReason"
-              :content="row.noShowFlag === 1 ? row.cancelReason : `取消原因：${row.cancelReason}`"
-              placement="top"
-            >
+            <el-tooltip v-if="cancelTipVisible(row)" placement="top">
+              <template #content>
+                <template v-if="row.noShowFlag === 1">{{ row.cancelReason }}</template>
+                <template v-else>
+                  <div>取消原因：{{ row.cancelReasonType ? CANCEL_REASON_TYPE_TEXT[row.cancelReasonType] : '-' }}</div>
+                  <div v-if="row.cancelReason">备注：{{ row.cancelReason }}</div>
+                </template>
+              </template>
               <el-icon class="cancel-reason-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </template>
@@ -131,7 +134,7 @@
               type="danger"
               plain
               size="small"
-              :disabled="row.status !== 1 || isOverdue(row)"
+              :disabled="row.status !== 1"
               @click="handleCancelReserve(row)"
             >取消预约</el-button>
           </template>
@@ -365,10 +368,36 @@
     </el-dialog>
 
     <!-- 取消预约弹窗 -->
-    <el-dialog v-model="cancelVisible" title="取消预约" width="400px">
-      <el-form :model="cancelForm" :rules="cancelRules" ref="cancelFormRef" label-width="80px">
-        <el-form-item label="取消原因" prop="cancelReason">
-          <el-input v-model="cancelForm.cancelReason" type="textarea" :rows="3" placeholder="请输入取消原因（必填）" />
+    <el-dialog
+      v-model="cancelVisible"
+      title="取消预约"
+      width="440px"
+      align-center
+      :close-on-click-modal="false"
+      class="cancel-dialog"
+    >
+      <el-form :model="cancelForm" label-width="80px">
+        <el-form-item label="取消原因">
+          <el-select v-model="cancelForm.cancelReasonType" style="width: 100%">
+            <el-option :value="2" label="医院原因，无法接待" />
+            <el-option :value="1" label="家长原因，主动要求取消预约" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预约次数">
+          <el-select v-model="cancelForm.refundFlag" style="width: 100%" placeholder="请选择">
+            <el-option :value="1" label="返还预约次数至原账号" />
+            <el-option :value="0" label="预约次数扣减不予返还" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            v-model="cancelForm.cancelReason"
+            type="textarea"
+            :rows="3"
+            maxlength="100"
+            show-word-limit
+            placeholder="请输入备注（选填）"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -454,7 +483,7 @@ const isReserveToday = (row: Reserve) => row.scheduleDate === todayStr()
 /** 养护按钮（同一按钮二态）：已预约当天可开始养护；养护中可完成养护 */
 const canOperateCare = (row: Reserve) => row.status === 2 || (row.status === 1 && isReserveToday(row))
 
-/** 已逾期：当前时间超过预约时段结束时间（逾期后不可调整/取消，只能标记爽约） */
+/** 已逾期：当前时间超过预约时段结束时间（逾期后不可调整，只能标记爽约） */
 const isOverdue = (row: Reserve) => {
   if (!row.scheduleDate || !row.timeSlotEnd) return false
   return new Date(`${row.scheduleDate}T${row.timeSlotEnd}`) < new Date()
@@ -917,30 +946,47 @@ const handleAdjustSubmit = async () => {
 }
 
 // ==================== 取消预约 ====================
+const CANCEL_REASON_TYPE_TEXT: Record<number, string> = {
+  1: '家长原因，主动要求取消预约',
+  2: '医院原因，无法接待'
+}
+
+/** 状态列提示图标：取消显示原因类型+备注，爽约显示爽约原因 */
+const cancelTipVisible = (row: Reserve) =>
+  row.status === 4 && (!!row.cancelReason || (row.noShowFlag !== 1 && !!row.cancelReasonType))
+
 const cancelVisible = ref(false)
 const cancelLoading = ref(false)
 const cancelingReserveId = ref<number | null>(null)
-const cancelFormRef = ref<FormInstance>()
-const cancelForm = reactive({ cancelReason: '' })
-
-const cancelRules = {
-  cancelReason: [{ required: true, message: '请填写取消原因', trigger: 'blur' }]
-}
+/** cancelReasonType 默认「医院原因，无法接待」；refundFlag 为必选项，null=未选择 */
+const cancelForm = reactive<{ cancelReasonType: number; refundFlag: number | null; cancelReason: string }>({
+  cancelReasonType: 2,
+  refundFlag: null,
+  cancelReason: ''
+})
 
 const handleCancelReserve = (row: Reserve) => {
   cancelingReserveId.value = row.id
+  cancelForm.cancelReasonType = 2
+  cancelForm.refundFlag = null
   cancelForm.cancelReason = ''
   cancelVisible.value = true
 }
 
 const handleCancelSubmit = async () => {
   if (!cancelingReserveId.value) return
-  if (!cancelFormRef.value) return
-  await cancelFormRef.value.validate()
+  if (cancelForm.refundFlag === null) {
+    ElMessage.warning('请选择预约次数是否返还')
+    return
+  }
   cancelLoading.value = true
   try {
-    await reserveApi.cancelReserve(cancelingReserveId.value, cancelForm.cancelReason.trim())
-    ElMessage.success('预约已取消')
+    await reserveApi.cancelReserve(cancelingReserveId.value, {
+      cancelReason: cancelForm.cancelReason.trim() || undefined,
+      cancelReasonType: cancelForm.cancelReasonType,
+      refundFlag: cancelForm.refundFlag
+    })
+    ElMessage.success(cancelForm.refundFlag === 1 ? '预约已取消，次数已返还' : '预约已取消，次数不返还')
     cancelVisible.value = false
     fetchReserves()
   } catch {
@@ -981,7 +1027,10 @@ onMounted(async () => {
     padding: 0 4px;
   }
 
-  :deep(.el-table .cell .el-button + .el-button) {
+  /* 逾期行的「预约调整」被 el-tooltip 包了一层 span，相邻兄弟选择器断链，需补回间距保证各行按钮纵向对齐 */
+  :deep(.el-table .cell .el-button + .el-button),
+  :deep(.el-table .cell .el-button + span),
+  :deep(.el-table .cell span + .el-button) {
     margin-left: 8px;
   }
 
@@ -1041,6 +1090,30 @@ onMounted(async () => {
   .el-dialog__body {
     max-height: calc(97vh - 130px);
     overflow-y: auto;
+  }
+}
+
+/* 取消预约弹窗：右上角关闭按钮做醒目圆钮（红底红叉），提示这是唯一的关闭方式 */
+.cancel-dialog {
+  .el-dialog__headerbtn {
+    width: 36px;
+    height: 36px;
+    top: 14px;
+    right: 14px;
+    border-radius: 50%;
+    background: #fee2e2;
+    transition: background-color 0.2s;
+  }
+
+  .el-dialog__headerbtn:hover,
+  .el-dialog__headerbtn:focus-visible {
+    background: #fecaca;
+  }
+
+  .el-dialog__close {
+    color: #ef4444;
+    font-size: 20px;
+    font-weight: 700;
   }
 }
 </style>

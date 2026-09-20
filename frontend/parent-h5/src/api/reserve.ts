@@ -25,8 +25,9 @@ export const reserveApi = {
   createReserveV2: (data: { childId: number; slotId: string; remark?: string }): Promise<number> =>
     post<number>('/schedules/reserves/v2', data as unknown as Record<string, unknown>),
 
+  /** 家长端取消恒为家长原因（cancelReasonType=1），便于列表区分医院取消/家长取消 */
   cancelReserve: (id: number, cancelReason: string): Promise<void> =>
-    post<void>(`/schedules/reserves/${id}/cancel`, { cancelReason }),
+    post<void>(`/schedules/reserves/${id}/cancel`, { cancelReason, cancelReasonType: 1 }),
 
   /** 开始养护（录入养护前视力） */
   startCare: (

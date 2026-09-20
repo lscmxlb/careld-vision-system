@@ -68,6 +68,8 @@ export interface Child {
   auditRemark?: string
   storeId?: number
   storeName?: string
+  /** 建档医院服务电话（医院端基础信息维护，随档案详情下发） */
+  storeServicePhone?: string
   doctorId?: number
   doctorName?: string
   sourceType?: number
@@ -159,6 +161,8 @@ export interface Reserve {
   remark?: string
   status: number
   cancelReason?: string
+  /** 取消原因类型：1家长原因 2医院原因 */
+  cancelReasonType?: number
   slotId?: string
   startTime?: string
   endTime?: string

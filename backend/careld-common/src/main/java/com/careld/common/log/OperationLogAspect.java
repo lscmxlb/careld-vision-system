@@ -194,6 +194,9 @@ public class OperationLogAspect {
 
     private void record(HttpServletRequest request, OperationLog annotation, Object[] args,
                         Object result, long startedAt, Throwable error) {
+        if (OperationLogSuppressor.isSuppressed(request)) {
+            return;
+        }
         String uri = request.getRequestURI();
         String moduleKey = resolveModuleKey(annotation, uri);
         String action = resolveAction(annotation, uri, moduleKey, request.getMethod());

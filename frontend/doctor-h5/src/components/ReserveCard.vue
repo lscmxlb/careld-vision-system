@@ -19,15 +19,18 @@
       <text class="rc-meta-item">{{ row.parentPhone || '' }}</text>
     </view>
     <view v-if="statusValue === 4" class="rc-meta">
-      <text class="rc-meta-item rc-reason">取消原因：{{ row.cancelReason || '-' }}</text>
+      <text v-if="row.noShowFlag === 1" class="rc-meta-item rc-reason">爽约原因：{{ row.cancelReason || '-' }}</text>
+      <template v-else>
+        <text class="rc-meta-item rc-reason">取消原因：{{ reasonTypeText }}</text>
+        <text v-if="row.cancelReason" class="rc-meta-item rc-reason">备注：{{ row.cancelReason }}</text>
+      </template>
     </view>
 
     <view v-if="!readonly && (row.status === 1 || row.status === 2 || sameDayNoShow)" class="rc-actions">
       <template v-if="row.status === 1">
         <view
           class="btn btn-sm btn-danger-plain rc-btn"
-          :class="{ 'is-disabled': !cancelable }"
-          @click="emitIf('cancel', cancelable)"
+          @click="onCancel"
         >
           取消预约
         </view>
@@ -58,7 +61,7 @@ import { computed } from 'vue'
 import type { Reserve } from '@/types'
 import { reserveStatusLabel, reserveStatusTag, reserveStatusValue } from '@/utils/dict'
 import { formatHm } from '@/utils/format'
-import { canAdjust, canCancel, canMarkNoShow, canOperateCare, isOverdue, isReserveToday } from '@/utils/reserve-rules'
+import { canAdjust, canMarkNoShow, canOperateCare, isOverdue, isReserveToday } from '@/utils/reserve-rules'
 import { toast } from '@/utils/request'
 
 const props = defineProps<{
@@ -77,6 +80,14 @@ const emit = defineEmits<{
 const statusValue = computed(() => reserveStatusValue(props.row))
 const statusLabel = computed(() => reserveStatusLabel(props.row))
 const statusTag = computed(() => reserveStatusTag(props.row))
+/** 取消原因类型文案（1家长原因 2医院原因，与取消弹层选项一致） */
+const reasonTypeText = computed(() =>
+  props.row.cancelReasonType === 1
+    ? '家长原因，主动要求取消预约'
+    : props.row.cancelReasonType === 2
+      ? '医院原因，无法接待'
+      : '-',
+)
 const showOverdue = computed(() => props.row.status === 1 && isOverdue(props.row))
 /** 当天已爽约：仍允许开始养护（客户当天到店） */
 const sameDayNoShow = computed(
@@ -86,7 +97,6 @@ const sameDayNoShow = computed(
 const canCare = computed(() => canOperateCare(props.row))
 const adjustable = computed(() => canAdjust(props.row))
 const noShowable = computed(() => canMarkNoShow(props.row))
-const cancelable = computed(() => canCancel(props.row))
 
 function onCare() {
   if (!canCare.value) {
@@ -96,16 +106,18 @@ function onCare() {
   emit('care', props.row)
 }
 
-function emitIf(type: 'adjust' | 'noshow' | 'cancel', enabled: boolean) {
+function onCancel() {
+  emit('cancel', props.row)
+}
+
+function emitIf(type: 'adjust' | 'noshow', enabled: boolean) {
   if (!enabled) {
     if (type === 'adjust') toast('已超过预约时段，不可调整')
-    else if (type === 'cancel') toast('已超过预约时段，不可取消，仅可标记爽约')
     else toast('仅预约当天或逾期后可标记爽约')
     return
   }
   if (type === 'adjust') emit('adjust', props.row)
-  else if (type === 'noshow') emit('noshow', props.row)
-  else emit('cancel', props.row)
+  else emit('noshow', props.row)
 }
 </script>
 

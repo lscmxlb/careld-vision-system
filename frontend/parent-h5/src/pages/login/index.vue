@@ -2,8 +2,7 @@
   <view class="login">
     <view class="login-hero">
       <view class="hero-logo">
-        <view class="logo-ring"></view>
-        <view class="logo-dot"></view>
+        <image class="hero-logo-img" src="/static/logo.png" mode="aspectFit" />
       </view>
       <view class="hero-title">Careld 儿童视力养护</view>
       <view class="hero-sub">家长服务端 · 查档案 · 约养护</view>
@@ -25,31 +24,30 @@
       </view>
 
       <view class="input-wrap">
-        <text class="input-icon">🔑</text>
+        <text class="input-icon">🔒</text>
         <input
-          v-model="form.code"
+          v-model="form.password"
           class="input"
-          type="number"
-          maxlength="6"
-          placeholder="请输入短信验证码"
+          :password="!showPassword"
+          maxlength="20"
+          placeholder="请输入登录密码"
           placeholder-class="ph"
           @confirm="handleLogin"
         />
-        <text
-          class="code-btn"
-          :class="{ 'code-btn-disabled': countdown > 0 || sending }"
-          @click="handleSendCode"
-        >
-          {{ countdown > 0 ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
+        <text class="pwd-toggle" @click="showPassword = !showPassword">
+          {{ showPassword ? '隐藏' : '显示' }}
         </text>
       </view>
 
-      <view class="login-btn" :class="{ 'is-disabled': !canSubmit || loading }" @click="handleLogin">
-        {{ loading ? '登录中…' : '登 录' }}
+      <view class="login-actions">
+        <view class="btn btn-ghost" @click="goRegister">注册</view>
+        <view class="btn btn-primary" :class="{ 'is-disabled': !canSubmit || loading }" @click="handleLogin">
+          {{ loading ? '登录中…' : '登 录' }}
+        </view>
       </view>
 
-      <view class="login-tip">
-        未注册的手机号将自动创建家长账号；登录后请先完善儿童档案，待医院审核通过即可预约养护。
+      <view class="forgot-row">
+        <text class="forgot-btn" @click="goForgot">忘记密码？</text>
       </view>
     </view>
 
@@ -59,31 +57,17 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
 import { getToken } from '@/utils/auth'
 import { toast } from '@/utils/request'
 
 const userStore = useUserStore()
-const form = reactive({ phone: '', code: '' })
+const form = reactive({ phone: '', password: '' })
+const showPassword = ref(false)
 const loading = ref(false)
-const sending = ref(false)
-const countdown = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
 
-const canSubmit = computed(() => /^1[3-9]\d{9}$/.test(form.phone) && form.code.length >= 4)
-
-function startCountdown() {
-  countdown.value = 60
-  if (timer) clearInterval(timer)
-  timer = setInterval(() => {
-    countdown.value -= 1
-    if (countdown.value <= 0 && timer) {
-      clearInterval(timer)
-      timer = null
-    }
-  }, 1000)
-}
+const canSubmit = computed(() => /^1[3-9]\d{9}$/.test(form.phone) && form.password.length >= 6)
 
 onLoad(() => {
   if (getToken()) {
@@ -91,26 +75,12 @@ onLoad(() => {
   }
 })
 
-onUnload(() => {
-  if (timer) clearInterval(timer)
-})
+function goRegister() {
+  uni.navigateTo({ url: '/pages/register/index' })
+}
 
-async function handleSendCode() {
-  if (countdown.value > 0 || sending.value) return
-  if (!/^1[3-9]\d{9}$/.test(form.phone)) {
-    toast('请输入正确的11位手机号')
-    return
-  }
-  sending.value = true
-  try {
-    await userStore.sendSms(form.phone)
-    toast('验证码已发送，请注意查收')
-    startCountdown()
-  } catch {
-    // 错误提示已在请求层处理（含频控提示）
-  } finally {
-    sending.value = false
-  }
+function goForgot() {
+  uni.navigateTo({ url: '/pages/login/forgot' })
 }
 
 async function handleLogin() {
@@ -119,13 +89,13 @@ async function handleLogin() {
     toast('请输入正确的11位手机号')
     return
   }
-  if (!form.code) {
-    toast('请输入短信验证码')
+  if (!form.password) {
+    toast('请输入登录密码')
     return
   }
   loading.value = true
   try {
-    await userStore.loginBySms(form.phone, form.code)
+    await userStore.loginByPassword(form.phone, form.password)
     // 登录后自动认领同手机号未绑定档案（含默认名回填家长姓名）
     await userStore.claimMyChildren()
     toast('登录成功')
@@ -133,7 +103,7 @@ async function handleLogin() {
       uni.switchTab({ url: '/pages/appointment/list' })
     }, 300)
   } catch {
-    // 错误提示已在请求层处理
+    // 未注册/其它身份等错误提示已由请求层弹出
   } finally {
     loading.value = false
   }
@@ -166,21 +136,9 @@ async function handleLogin() {
   margin-bottom: 32rpx;
 }
 
-.logo-ring {
-  width: 62rpx;
-  height: 62rpx;
-  border: 8rpx solid #fff;
-  border-radius: 50%;
-}
-
-.logo-dot {
-  position: absolute;
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 50%;
-  background: #fff;
-  right: 34rpx;
-  bottom: 34rpx;
+.hero-logo-img {
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .hero-title {
@@ -199,7 +157,7 @@ async function handleLogin() {
 .login-card {
   background: #fff;
   border-radius: 28rpx;
-  padding: 40rpx 36rpx 48rpx;
+  padding: 40rpx 36rpx 40rpx;
   box-shadow: 0 16rpx 48rpx rgba(15, 23, 42, 0.1);
 }
 
@@ -238,43 +196,60 @@ async function handleLogin() {
   font-size: 30rpx;
 }
 
-.code-btn {
+.pwd-toggle {
   flex: none;
   padding-left: 20rpx;
   font-size: 26rpx;
-  color: #14b8a6;
+  color: #94a3b8;
 }
 
-.code-btn-disabled {
-  color: #b7bfc9;
-}
-
-.login-btn {
+.login-actions {
+  display: flex;
+  align-items: center;
   margin-top: 40rpx;
+}
+
+.btn {
+  flex: 1;
   height: 96rpx;
   border-radius: 48rpx;
-  background: linear-gradient(135deg, #2dd4bf, #14b8a6);
-  color: #fff;
   font-size: 32rpx;
   font-weight: 500;
-  letter-spacing: 4rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn-ghost {
+  margin-right: 24rpx;
+  color: #14b8a6;
+  background: #fff;
+  border: 2rpx solid #14b8a6;
+  letter-spacing: 4rpx;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+  letter-spacing: 4rpx;
   box-shadow: 0 10rpx 24rpx rgba(20, 184, 166, 0.32);
 }
 
-.login-btn.is-disabled {
+.btn-primary.is-disabled {
   background: #dfe5ea;
   color: #a9b1bd;
   box-shadow: none;
 }
 
-.login-tip {
-  margin-top: 32rpx;
-  font-size: 23rpx;
-  line-height: 1.6;
-  color: #9ca3af;
+.forgot-row {
+  margin-top: 28rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-btn {
+  font-size: 26rpx;
+  color: #14b8a6;
 }
 
 .login-foot {

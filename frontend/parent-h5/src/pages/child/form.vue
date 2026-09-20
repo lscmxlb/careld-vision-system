@@ -378,7 +378,7 @@ async function submit() {
     capture()
     uni.showToast({ title: '已提交，待医院审核', icon: 'none', duration: 2500 })
     leaving.value = true
-    setTimeout(() => uni.navigateBack(), 600)
+    setTimeout(() => goBack(), 600)
   } catch {
     // 错误提示已在请求层处理
   } finally {
@@ -397,6 +397,15 @@ async function syncAccountName(realName: string) {
   }
 }
 
+/** 返回上一级；无上一级（直接打开或刷新本页）时回到儿童档案列表 */
+function goBack() {
+  if (getCurrentPages().length > 1) {
+    uni.navigateBack()
+    return
+  }
+  uni.switchTab({ url: '/pages/child/index' })
+}
+
 function confirmDiscard() {
   uni.showModal({
     title: '提示',
@@ -406,7 +415,7 @@ function confirmDiscard() {
     success: (res) => {
       if (res.confirm) {
         leaving.value = true
-        uni.navigateBack()
+        goBack()
       }
     },
   })
@@ -415,7 +424,7 @@ function confirmDiscard() {
 function cancel() {
   if (leaving.value || !isDirty()) {
     leaving.value = true
-    uni.navigateBack()
+    goBack()
     return
   }
   confirmDiscard()

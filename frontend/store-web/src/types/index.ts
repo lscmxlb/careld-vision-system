@@ -148,6 +148,10 @@ export interface Reserve {
   id: number
   childId: number
   childName: string
+  /** 儿童性别（1=男 0=女） */
+  childGender?: number
+  /** 儿童年龄（岁） */
+  childAge?: number
   scheduleId?: number
   scheduleDate: string
   timeSlotStart: string
@@ -159,6 +163,8 @@ export interface Reserve {
   remark?: string
   status: number // 1=已预约 2=养护中 3=已完成 4=已取消
   cancelReason?: string
+  /** 取消原因类型：1家长原因 2医院原因 */
+  cancelReasonType?: number
   /** 新链路：物化时段ID */
   slotId?: string
   /** 开始养护时间 */
@@ -249,7 +255,9 @@ export interface Department {
   storeName?: string
   deptCode: string
   deptName: string
-  deptType: number // 1=门诊 2=养护 3=检测 4=其他
+  deptType: number // 1=儿童保健科 2=妇幼保健科 3=中医科 4=眼科 5=其它科室
+  /** 服务电话 */
+  servicePhone?: string | null
   /** 收费标准(元)：预约授权自动计费用；null 表示未配置 */
   chargeStandard?: number | null
   sortOrder: number
@@ -264,6 +272,18 @@ export interface DashboardStats {
   pendingChildren: number
   activeDevices: number
   todayTests: number
+  /** 本月预约（按预约日期，含已取消） */
+  monthReserveCount: number
+  /** 总预约数量（含已取消） */
+  totalReserveCount: number
+  /** 本月新增档案（按建档时间） */
+  monthChildCount: number
+  /** 档案总数（未删除且非已隐藏） */
+  totalChildCount: number
+  /** 本月养护（按养护日期） */
+  monthCareCount: number
+  /** 总养护数量 */
+  totalCareCount: number
 }
 
 export interface WeeklyTrend {
@@ -431,6 +451,8 @@ export interface ReserveDailyStatistics {
   total: number
   completed: number
   cancelled: number
+  /** 待养护数量（状态为已预约 1） */
+  pending: number
 }
 
 // ==================== 日志记录 ====================

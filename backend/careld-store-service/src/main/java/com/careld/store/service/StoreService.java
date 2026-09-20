@@ -20,4 +20,9 @@ public interface StoreService {
      * 当前登录用户所属门店
      */
     Store getCurrentStore(Long storeId);
+
+    /**
+     * 修改当前门店名称（基础信息页专用，仅允许改本店名称字段）
+     */
+    void updateCurrentStoreName(Long storeId, String storeName);
 }

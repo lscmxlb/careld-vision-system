@@ -418,4 +418,39 @@ scroll-view {
   padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 16rpx);
   background: #fff;
 }
+
+/* 居中弹窗：不贴底、上下左右居中，去掉自身底部安全区内边距 */
+.sheet-center {
+  left: 48rpx;
+  right: 48rpx;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  border-radius: 24rpx;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.sheet-center .sheet-footer {
+  padding-bottom: 16rpx;
+}
+
+/* 右上角关闭按钮：红底红叉圆钮，醒目且是唯一关闭入口（点遮罩无效） */
+.sheet-close-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sheet-close-icon {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #ef4444;
+  line-height: 1;
+}
 </style>

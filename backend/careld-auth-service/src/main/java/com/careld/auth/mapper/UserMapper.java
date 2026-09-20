@@ -22,4 +22,11 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Select("SELECT * FROM sys_user WHERE phone = #{phone} AND deleted_at IS NULL")
     User selectByPhone(String phone);
+
+    /**
+     * 根据主键查询用户：显式 SELECT *（本库 sys_user 无 dept_id 等实体字段，
+     * MyBatis-Plus 全列查询会报 Unknown column）
+     */
+    @Select("SELECT * FROM sys_user WHERE id = #{id} AND deleted_at IS NULL")
+    User selectUserById(Long id);
 }

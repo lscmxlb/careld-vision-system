@@ -183,7 +183,7 @@ const queryForm = reactive({
   phone: '',
   minCareCount: undefined as number | undefined
 })
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: 1, size: 10, total: 0 })
 
 const fetchData = async () => {
   loading.value = true

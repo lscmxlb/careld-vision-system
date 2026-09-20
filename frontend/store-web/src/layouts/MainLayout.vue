@@ -2,6 +2,7 @@
   <el-container class="main-layout">
     <el-aside width="200px" class="sidebar">
       <div class="logo">
+        <img :src="logoImg" alt="Careld" class="logo-img">
         <span>Careld诊约助手服务</span>
       </div>
       <el-menu
@@ -40,19 +41,21 @@
           </template>
           <el-menu-item index="/basic-info">基础信息</el-menu-item>
           <el-menu-item index="/medical-staff">医务人员</el-menu-item>
-          <el-menu-item index="/device">设备管理</el-menu-item>
           <el-menu-item v-if="canViewLogs" index="/log-record">日志记录</el-menu-item>
         </el-sub-menu>
       </el-menu>
       <div class="sidebar-footer">
-        <div class="footer-line">系统服务电话：</div>
+        <div class="footer-line">系统服务电话</div>
         <div class="footer-phone">400 999 3608</div>
       </div>
     </el-aside>
 
     <el-container>
       <el-header class="header">
-        <div class="header-left">{{ userStore.userInfo?.storeName }}</div>
+        <div class="header-left">
+          <img :src="hisLogo" alt="" class="header-logo">
+          <span>{{ userStore.userInfo?.storeName }}</span>
+        </div>
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
@@ -85,6 +88,8 @@ import {
   Setting
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import logoImg from '@/assets/logo.png'
+import hisLogo from '@/assets/his.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -115,10 +120,17 @@ const handleCommand = async (command: string) => {
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       color: #fff;
       font-size: 16px;
       font-weight: bold;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+      .logo-img {
+        width: 30px;
+        height: 30px;
+        flex: none;
+      }
     }
 
     .el-menu {
@@ -154,11 +166,23 @@ const handleCommand = async (command: string) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    height: auto;
+    padding: 18px 20px;
 
     .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       font-size: 28px;
       font-weight: 700;
+      line-height: 1.3;
       color: #001529;
+
+      .header-logo {
+        width: 30px;
+        height: 30px;
+        flex: none;
+      }
     }
 
     .header-right {

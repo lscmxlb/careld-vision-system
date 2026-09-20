@@ -3,6 +3,10 @@ package com.careld.auth.controller;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
+import com.careld.auth.dto.ParentChangePhoneRequest;
+import com.careld.auth.dto.ParentLoginRequest;
+import com.careld.auth.dto.ParentRegisterRequest;
+import com.careld.auth.dto.ParentResetPasswordRequest;
 import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.service.AuthService;
 import com.careld.common.result.Result;
@@ -75,5 +79,36 @@ public class AuthController {
     @PostMapping("/sms/login")
     public Result<LoginResponse> smsLogin(@Valid @RequestBody SmsLoginRequest request) {
         return Result.success(authService.smsLogin(request));
+    }
+
+    @OperationLog(module = "auth", action = "parent-login", description = "家长端密码登录", logType = 2)
+    @Operation(summary = "家长端手机号+密码登录")
+    @PostMapping("/parent/login")
+    public Result<LoginResponse> parentLogin(@Valid @RequestBody ParentLoginRequest request) {
+        return Result.success(authService.parentLogin(request));
+    }
+
+    @OperationLog(module = "auth", action = "parent-register", description = "家长端注册", logType = 2)
+    @Operation(summary = "家长端注册（手机号+验证码+用户名称+登录密码）")
+    @PostMapping("/parent/register")
+    public Result<LoginResponse> parentRegister(@Valid @RequestBody ParentRegisterRequest request) {
+        return Result.success(authService.parentRegister(request));
+    }
+
+    @OperationLog(module = "auth", action = "parent-reset-password", description = "家长端重置密码")
+    @Operation(summary = "家长端忘记密码（手机号+验证码重新设置密码）")
+    @PostMapping("/parent/reset-password")
+    public Result<Void> parentResetPassword(@Valid @RequestBody ParentResetPasswordRequest request) {
+        authService.parentResetPassword(request);
+        return Result.success();
+    }
+
+    @OperationLog(module = "auth", action = "parent-change-phone", description = "家长端修改手机号")
+    @Operation(summary = "家长端修改手机号（新手机号+验证码，旧手机号不验证）")
+    @PostMapping("/parent/change-phone")
+    public Result<Void> parentChangePhone(@RequestAttribute("userId") Long userId,
+                                          @Valid @RequestBody ParentChangePhoneRequest request) {
+        authService.parentChangePhone(userId, request);
+        return Result.success();
     }
 }

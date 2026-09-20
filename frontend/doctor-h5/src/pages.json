@@ -95,7 +95,7 @@
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "Careld 医生端",
+    "navigationBarTitleText": "Careld诊约助手医师手机端",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F4F6F9"
   },

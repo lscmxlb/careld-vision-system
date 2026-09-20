@@ -44,8 +44,8 @@
         <view class="sheet-body">
           <view class="about-line">Careld 儿童视力养护管理系统 · 医生端</view>
           <view class="about-line about-sub">版本 v2.0.1（H5 / uni-app）</view>
-          <view class="about-line about-sub">登录密码可在「我的」页面自助修改。</view>
-          <view class="about-line about-sub about-phone">系统服务支持电话：400-999-3608</view>
+          <view class="about-line about-sub about-contact">系统服务商：可尔欧得医疗科技</view>
+          <view class="about-line about-sub">服务支持电话：400-999-3608</view>
         </view>
         <view class="sheet-footer">
           <view class="btn btn-primary btn-block" @click="showAbout = false">知道了</view>
@@ -107,10 +107,13 @@
             placeholder="请再次输入新密码"
             placeholder-class="edit-placeholder"
           />
+          <view class="pwd-hint-row">
+            <text class="pwd-hint" :class="pwdMismatch ? 'is-bad' : 'is-ok'">{{ pwdHintText }}</text>
+          </view>
         </view>
         <view class="modal-footer">
           <view class="btn btn-plain" @click="pwdVisible = false">取消</view>
-          <view class="btn btn-primary" :class="{ 'is-disabled': pwdSubmitting }" @click="submitPassword">
+          <view class="btn btn-primary" :class="{ 'is-disabled': pwdSubmitting || pwdMismatch }" @click="submitPassword">
             {{ pwdSubmitting ? '提交中…' : '确认修改' }}
           </view>
         </view>
@@ -139,6 +142,13 @@ const pwdSubmitting = ref(false)
 const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
 const user = computed(() => userStore.userInfo)
+
+/** 二次新密码实时比对：非空即提示一致/不一致 */
+const pwdMismatch = computed(() => !!pwdForm.value.confirmPassword && pwdForm.value.confirmPassword !== pwdForm.value.newPassword)
+const pwdHintText = computed(() => {
+  if (!pwdForm.value.confirmPassword) return ''
+  return pwdMismatch.value ? '两次输入的新密码不一致' : '两次输入的新密码一致'
+})
 
 const displayName = computed(() => userStore.displayName)
 
@@ -382,7 +392,25 @@ onShow(() => {
   color: #94a3b8;
 }
 
-.about-phone {
+.about-contact {
   margin-top: 16rpx;
+}
+
+.pwd-hint-row {
+  display: flex;
+  align-items: center;
+  min-height: 40rpx;
+}
+
+.pwd-hint {
+  font-size: 24rpx;
+}
+
+.pwd-hint.is-bad {
+  color: #ef4444;
+}
+
+.pwd-hint.is-ok {
+  color: #16a34a;
 }
 </style>

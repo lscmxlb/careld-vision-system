@@ -4,6 +4,19 @@ import uviewPlus from 'uview-plus'
 import App from './App.vue'
 import { getToken } from '@/utils/auth'
 
+// 浏览器标签标题固定为品牌名（uni-app 会按页面 navigationBarTitleText 改写 document.title，
+// 拦截赋值以保证各页面标签标题统一；页面内导航栏标题不受影响）
+const APP_TITLE = 'Careld诊约助手医师手机端'
+const applyAppTitle = () => {
+  const el = document.querySelector('title')
+  if (el && el.textContent !== APP_TITLE) el.textContent = APP_TITLE
+}
+applyAppTitle()
+Object.defineProperty(document, 'title', {
+  get: () => APP_TITLE,
+  set: applyAppTitle,
+})
+
 const PAGE_LOGIN = '/pages/login/index'
 
 function isLoginPage(url?: string) {

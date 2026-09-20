@@ -147,4 +147,22 @@ public class StoreServiceImpl implements StoreService {
         }
         return store;
     }
+
+    @Override
+    public void updateCurrentStoreName(Long storeId, String storeName) {
+        if (storeId == null) {
+            throw new BusinessException(400, "当前用户未绑定门店");
+        }
+        if (storeName == null || storeName.isBlank()) {
+            throw new BusinessException(400, "医院名称不能为空");
+        }
+        String name = storeName.trim();
+        if (name.length() > 128) {
+            throw new BusinessException(400, "医院名称不能超过128个字符");
+        }
+        Store store = new Store();
+        store.setId(storeId);
+        store.setStoreName(name);
+        storeMapper.updateById(store);
+    }
 }

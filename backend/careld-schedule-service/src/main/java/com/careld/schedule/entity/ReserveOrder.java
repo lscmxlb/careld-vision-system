@@ -34,7 +34,10 @@ public class ReserveOrder extends BaseEntity {
     private Integer status;
     private Integer source;
     private String remark;
+    /** 备注（取消时填写，非必填） */
     private String cancelReason;
+    /** 取消原因类型：1家长原因 2医院原因 */
+    private Integer cancelReasonType;
     private LocalDateTime cancelledAt;
     private LocalDateTime completedAt;
     /** 开始养护时间 */
@@ -44,7 +47,7 @@ public class ReserveOrder extends BaseEntity {
     private String executorName;
     /** 是否爽约 */
     private Integer noShowFlag;
-    /** 爽约次数是否已退还 */
+    /** 预约次数是否已退还（1=已退还/返还，0=未退还；取消/爽约） */
     private Integer refundFlag;
     /** 关联每日时段（新链路） */
     private Long slotId;
@@ -64,6 +67,14 @@ public class ReserveOrder extends BaseEntity {
     // 以下字段不映射数据库列，用于前端展示
     @TableField(exist = false)
     private String childName;
+
+    /** 儿童性别（1=男 0=女） */
+    @TableField(exist = false)
+    private Integer childGender;
+
+    /** 儿童年龄（按出生日期计算，岁） */
+    @TableField(exist = false)
+    private Integer childAge;
 
     @TableField(exist = false)
     private String storeName;

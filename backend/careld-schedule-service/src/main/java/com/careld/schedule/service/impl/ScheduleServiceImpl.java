@@ -113,32 +113,29 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional
-    public void cancelReserve(Long id, String reason) {
+    public void cancelReserve(Long id, String cancelReason, Integer cancelReasonType, Integer refundFlag) {
         ReserveOrder order = reserveOrderMapper.selectById(id);
         if (order == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        if (!StringUtils.hasText(reason)) {
-            throw new BusinessException(400, "请填写取消原因");
-        }
         if (order.getStatus() == null || order.getStatus() != 1) {
             throw new BusinessException(4004, "当前状态不可取消");
         }
-        // 取消时间窗：家长（user_type=3）距开始不足 N 小时不可取消；医院侧预约开始前可取消
+        // 取消时间窗：仅家长（user_type=3）距开始不足 N 小时不可取消；医院侧不限制时间，已开始/已逾期也可取消
         Integer userType = UserContext.getCurrentUserType();
         AppointmentConfig config = configMapper.selectByStoreId(order.getStoreId());
         int parentHours = config == null || config.getParentCancelHours() == null ? 24 : config.getParentCancelHours();
         LocalDateTime startDateTime = LocalDateTime.of(order.getReserveDate(), order.getReserveTimeStart());
         LocalDateTime now = LocalDateTime.now();
-        if (userType != null && userType == 3) {
-            if (now.isAfter(startDateTime.minusHours(parentHours))) {
-                throw new BusinessException(4005, "距预约开始不足 " + parentHours + " 小时，不可取消");
-            }
-        } else if (!now.isBefore(startDateTime)) {
-            throw new BusinessException(4006, "预约已开始，不可取消，请使用开始养护或爽约处理");
+        if (userType != null && userType == 3 && now.isAfter(startDateTime.minusHours(parentHours))) {
+            throw new BusinessException(4005, "距预约开始不足 " + parentHours + " 小时，不可取消");
         }
         order.setStatus(4);
-        order.setCancelReason(reason);
+        order.setCancelReason(StringUtils.hasText(cancelReason) ? cancelReason.trim() : null);
+        order.setCancelReasonType(cancelReasonType);
+        // 是否返还预约次数：默认返还（家长端/管理端不传该字段）
+        boolean refund = refundFlag == null || refundFlag == 1;
+        order.setRefundFlag(refund ? 1 : 0);
         order.setCancelledAt(now);
         // 记录取消操作人账户（与创建预约同一套姓名解析规则）
         order.setCancelOperatorId(UserContext.getCurrentUserId());
@@ -155,11 +152,16 @@ public class ScheduleServiceImpl implements ScheduleService {
         reserveOrderMapper.updateById(order);
 
         if (order.getSlotId() != null) {
-            // 新链路：释放时段名额并自动退还次数
+            // 新链路：释放时段名额；按「是否返还预约次数」决定是否退还（不返还时仅写 0 次流水留痕）
             slotMapper.decrementBooked(order.getSlotId());
-            quotaMapper.changeRemaining(order.getChildId(), 1);
-            quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 3, 1,
-                    order.getId(), UserContext.getCurrentUserId(), "取消预约退还");
+            if (refund) {
+                quotaMapper.changeRemaining(order.getChildId(), 1);
+                quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 3, 1,
+                        order.getId(), UserContext.getCurrentUserId(), "取消预约退还");
+            } else {
+                quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 3, 0,
+                        order.getId(), UserContext.getCurrentUserId(), "取消预约不退还");
+            }
         } else {
             // 旧链路（技师排班）：仅释放名额
             scheduleMapper.decrementReserved(order.getScheduleId());
@@ -472,7 +474,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, List<Integer> statuses, Boolean noShowFlag, LocalDate date, LocalDate startDate, String keyword, Integer page, Integer size) {
+    public IPage<ReserveOrder> listReserves(Long storeId, Long childId, Integer status, List<Integer> statuses, Boolean noShowFlag, LocalDate date, LocalDate startDate, String keyword, Integer page, Integer size, Boolean orderDesc) {
         LambdaQueryWrapper<ReserveOrder> wrapper = new LambdaQueryWrapper<>();
         if (storeId != null) {
             wrapper.eq(ReserveOrder::getStoreId, storeId);
@@ -505,9 +507,15 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
             wrapper.in(ReserveOrder::getChildId, matchedChildIds);
         }
-        wrapper.orderByAsc(ReserveOrder::getReserveDate)
-                .orderByAsc(ReserveOrder::getReserveTimeStart)
-                .orderByAsc(ReserveOrder::getId);
+        if (Boolean.TRUE.equals(orderDesc)) {
+            wrapper.orderByDesc(ReserveOrder::getReserveDate)
+                    .orderByDesc(ReserveOrder::getReserveTimeStart)
+                    .orderByDesc(ReserveOrder::getId);
+        } else {
+            wrapper.orderByAsc(ReserveOrder::getReserveDate)
+                    .orderByAsc(ReserveOrder::getReserveTimeStart)
+                    .orderByAsc(ReserveOrder::getId);
+        }
         IPage<ReserveOrder> p = reserveOrderMapper.selectPage(new Page<>(page, size), wrapper);
 
         // 从排班表补充 technicianName（storeName 由门店服务提供，此处暂不填充）
@@ -652,16 +660,24 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (order == null || order.getChildId() == null) {
             return;
         }
-        java.util.Map<String, String> mask = quotaMapper.selectChildMask(order.getChildId());
+        java.util.Map<String, Object> mask = quotaMapper.selectChildMask(order.getChildId());
         // 姓名解密显示全名，解密失败回退掩码；手机号保持掩码展示
         String plainName = decryptForSearch(quotaMapper.selectChildNameEncrypted(order.getChildId()));
         order.setChildName(StringUtils.hasText(plainName) ? plainName
-                : (mask == null ? null : mask.get("nameMask")));
+                : (mask == null || mask.get("nameMask") == null ? null : String.valueOf(mask.get("nameMask"))));
         if (mask != null) {
-            order.setParentPhone(mask.get("phoneMask"));
+            if (mask.get("phoneMask") != null) {
+                order.setParentPhone(String.valueOf(mask.get("phoneMask")));
+            }
             // 家长姓名以档案为准；档案未维护时保留订单自身值
-            if (StringUtils.hasText(mask.get("parentName"))) {
-                order.setParentName(mask.get("parentName"));
+            if (mask.get("parentName") instanceof String parentName && StringUtils.hasText(parentName)) {
+                order.setParentName(parentName);
+            }
+            if (mask.get("gender") instanceof Number gender) {
+                order.setChildGender(gender.intValue());
+            }
+            if (mask.get("age") instanceof Number age) {
+                order.setChildAge(age.intValue());
             }
         }
     }

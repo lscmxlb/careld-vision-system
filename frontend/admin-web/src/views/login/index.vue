@@ -4,7 +4,7 @@
       <div class="login-left">
         <div class="brand">
           <img v-if="appStore.systemSettings.logoUrl" :src="appStore.systemSettings.logoUrl" alt="Logo" class="brand-logo">
-          <img v-else src="/src/assets/logo.svg" alt="Careld" class="brand-logo">
+          <img v-else :src="defaultLogo" alt="Careld" class="brand-logo">
           <h1 class="brand-name">Careld</h1>
           <p class="brand-slogan">{{ appStore.systemSettings.systemName || 'Careld诊约助手服务' }}</p>
         </div>
@@ -96,6 +96,7 @@ import { useAppStore } from '@/stores/app'
 import { usePermissionStore } from '@/stores/permission'
 import { authApi } from '@/api'
 import type { FormInstance, FormRules } from 'element-plus'
+import defaultLogo from '@/assets/logo.png'
 
 const router = useRouter()
 const userStore = useUserStore()

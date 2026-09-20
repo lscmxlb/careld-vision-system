@@ -30,6 +30,10 @@
           <text class="child-store-key">建档医院</text>
           <text class="child-store-value">{{ item.storeName || '—' }}</text>
         </view>
+        <view class="child-store">
+          <text class="child-store-key">服务电话</text>
+          <text class="child-store-value">{{ item.storeServicePhone || '—' }}</text>
+        </view>
 
         <view v-if="item.auditStatus === 2 && item.auditRemark" class="reject-tip">
           驳回原因：{{ item.auditRemark }}
