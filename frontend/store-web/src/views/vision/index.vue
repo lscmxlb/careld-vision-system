@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <el-button type="primary" @click="handleExport">
+          <el-button type="primary" :loading="exporting" @click="handleExport">
             <el-icon><Download /></el-icon>导出记录
           </el-button>
         </div>
@@ -32,7 +32,11 @@
       <!-- 表格 -->
       <el-table :data="tableData" v-loading="loading" stripe scrollbar-always-on>
         <el-table-column prop="childName" label="儿童姓名" width="100" />
-        <el-table-column prop="testTime" label="检测时间" width="160" />
+        <el-table-column prop="testTime" label="检测时间" width="160">
+          <template #default="{ row }">
+            {{ formatTestTime(row.testTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="左眼视力" width="100">
           <template #default="{ row }">
             <span :class="getVisionClass(row.leftEye)">{{ row.leftEye }}</span>
@@ -76,7 +80,7 @@
       <div v-if="currentRecord">
         <h4>{{ currentRecord.childName }} - 视力变化</h4>
         <el-descriptions :column="2" border style="margin-top: 20px;">
-          <el-descriptions-item label="检测时间">{{ currentRecord.testTime }}</el-descriptions-item>
+          <el-descriptions-item label="检测时间">{{ formatTestTime(currentRecord.testTime) }}</el-descriptions-item>
           <el-descriptions-item label="检测人">{{ currentRecord.testerName }}</el-descriptions-item>
           <el-descriptions-item label="左眼视力">{{ currentRecord.leftEye }}</el-descriptions-item>
           <el-descriptions-item label="右眼视力">{{ currentRecord.rightEye }}</el-descriptions-item>
@@ -107,8 +111,12 @@ import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 const loading = ref(false)
+const exporting = ref(false)
 const compareVisible = ref(false)
 const currentRecord = ref<VisionRecord | null>(null)
+
+// 导出上限，与后端单页最大条数一致
+const EXPORT_LIMIT = 1000
 
 const queryForm = reactive({
   childName: '',
@@ -129,28 +137,43 @@ const getVisionClass = (vision: string | undefined) => {
 
 const getImprovementClass = (improvement: string | undefined) => {
   if (!improvement) return ''
-  return improvement.startsWith('+') ? 'improvement-up' : 'improvement-down'
+  if (improvement.startsWith('+')) return 'improvement-up'
+  if (improvement.startsWith('-')) return 'improvement-down'
+  return ''
+}
+
+const formatTestTime = (time: string | undefined) => {
+  if (!time) return '-'
+  return time.replace('T', ' ').slice(0, 16)
+}
+
+const buildParams = (page: number, size: number) => {
+  const params: {
+    storeId?: number
+    childName?: string
+    page?: number
+    size?: number
+    startDate?: string
+    endDate?: string
+  } = {
+    storeId: userStore.storeId,
+    page,
+    size
+  }
+  if (queryForm.childName.trim()) {
+    params.childName = queryForm.childName.trim()
+  }
+  if (queryForm.dateRange.length === 2) {
+    params.startDate = queryForm.dateRange[0]
+    params.endDate = queryForm.dateRange[1]
+  }
+  return params
 }
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const params: {
-      storeId?: number
-      page?: number
-      size?: number
-      startDate?: string
-      endDate?: string
-    } = {
-      storeId: userStore.storeId,
-      page: pagination.page,
-      size: pagination.size
-    }
-    if (queryForm.dateRange.length === 2) {
-      params.startDate = queryForm.dateRange[0]
-      params.endDate = queryForm.dateRange[1]
-    }
-    const res = await visionApi.getVisionRecords(params)
+    const res = await visionApi.getVisionRecords(buildParams(pagination.page, pagination.size))
     tableData.value = res.list
     pagination.total = res.pagination.total
   } catch {
@@ -177,18 +200,52 @@ const handleCurrentChange = (val: number) => {
   fetchData()
 }
 
-const handleView = async (row: VisionRecord) => {
-  try {
-    const detail = await visionApi.getVisionRecordDetail(row.id)
-    currentRecord.value = detail
-  } catch {
-    currentRecord.value = row
-  }
+const handleView = (row: VisionRecord) => {
+  currentRecord.value = row
   compareVisible.value = true
 }
 
-const handleExport = () => {
-  ElMessage.success('导出功能开发中')
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`
+
+const handleExport = async () => {
+  exporting.value = true
+  try {
+    const res = await visionApi.getVisionRecords(buildParams(1, EXPORT_LIMIT))
+    if (!res.list.length) {
+      ElMessage.warning('当前筛选条件下没有可导出的记录')
+      return
+    }
+    const header = ['儿童姓名', '检测时间', '养护阶段', '左眼视力', '右眼视力', '检测人', '备注']
+    const rows = res.list.map((row) =>
+      [
+        row.childName,
+        formatTestTime(row.testTime),
+        row.beforeAfter === 'before' ? '养护前' : '养护后',
+        row.leftEye,
+        row.rightEye,
+        row.testerName,
+        row.remark
+      ]
+        .map(csvCell)
+        .join(',')
+    )
+    const csv = '\uFEFF' + [header.map(csvCell).join(','), ...rows].join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `视力记录_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    if (res.pagination.total > res.list.length) {
+      ElMessage.warning(`已导出前 ${res.list.length} 条，共 ${res.pagination.total} 条`)
+    } else {
+      ElMessage.success(`已导出 ${res.list.length} 条记录`)
+    }
+  } catch {
+    // 错误已在拦截器处理
+  } finally {
+    exporting.value = false
+  }
 }
 
 onMounted(fetchData)

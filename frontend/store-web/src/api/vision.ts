@@ -5,16 +5,17 @@ import request from './request'
 import type { VisionRecord, VisionCompare, PageResult } from '@/types'
 
 export const visionApi = {
-  // 获取视力记录列表
+  // 获取视力记录列表（同一次检测的左右眼已合并为一行）
   getVisionRecords: (params: {
     childId?: number
+    childName?: string
     storeId?: number
     startDate?: string
     endDate?: string
     page?: number
     size?: number
   }): Promise<PageResult<VisionRecord>> => {
-    return request.get('/vision/records', { params })
+    return request.get('/vision/records/grouped', { params })
   },
 
   // 获取视力记录详情

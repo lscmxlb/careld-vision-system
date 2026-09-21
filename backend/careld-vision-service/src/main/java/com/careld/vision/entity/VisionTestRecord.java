@@ -1,4 +1,5 @@
 package com.careld.vision.entity;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.careld.common.entity.BaseEntity;
 import lombok.Data;
@@ -28,4 +29,15 @@ public class VisionTestRecord extends BaseEntity {
     private String deviceLocalId;
     private LocalDateTime syncedAt;
     private String remark;
+
+    // ===== 关联查询回显字段（非表字段） =====
+    @TableField(exist = false)
+    private String childName;
+    @TableField(exist = false)
+    private String childNameEncrypted;
+    @TableField(exist = false)
+    private String storeName;
+    /** 检测时间：表中无独立列，取 created_at */
+    @TableField(exist = false)
+    private LocalDateTime testTime;
 }
