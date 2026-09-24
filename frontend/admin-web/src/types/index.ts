@@ -71,6 +71,7 @@ export interface Store {
   institutionType?: number // 1=公立医疗机构 2=民营医疗机构 3=其他
   agentName?: string
   centerName?: string
+  balance?: number
   createdAt: string
 }
 

@@ -8,6 +8,7 @@ import com.careld.store.mapper.StoreMapper;
 import com.careld.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,6 +60,7 @@ public class StoreServiceImpl implements StoreService {
         wrapper.orderByDesc(Store::getId);
         IPage<Store> result = storeMapper.selectPage(new Page<>(page, size), wrapper);
         enrichStoresWithOrgNames(result.getRecords());
+        enrichStoresWithBalance(result.getRecords());
         return result;
     }
 
@@ -103,7 +105,21 @@ public class StoreServiceImpl implements StoreService {
         }
         List<Store> stores = storeMapper.selectList(wrapper);
         enrichStoresWithOrgNames(stores);
+        enrichStoresWithBalance(stores);
         return stores;
+    }
+
+    /** 短信服务可用余额（store_notify_account，医院未开通或无记录时按 0 展示） */
+    private void enrichStoresWithBalance(List<Store> stores) {
+        if (stores == null || stores.isEmpty()) return;
+        Map<Long, BigDecimal> balanceMap = storeMapper.selectStoreBalances().stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r.get("store_id")).longValue(),
+                        r -> r.get("balance") == null ? BigDecimal.ZERO : new BigDecimal(r.get("balance").toString()),
+                        (a, b) -> a));
+        for (Store store : stores) {
+            store.setBalance(balanceMap.getOrDefault(store.getId(), BigDecimal.ZERO));
+        }
     }
 
     private void enrichStoresWithOrgNames(List<Store> stores) {

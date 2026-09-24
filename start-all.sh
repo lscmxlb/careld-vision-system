@@ -26,9 +26,10 @@ declare -A SVC=(
   [8285]="careld-schedule-service"
   [8286]="careld-vision-service"
   [8287]="careld-sync-service"
+  [8288]="careld-notify-service"
 )
 # auth 必须先启动，其余按此顺序(并行)
-BOOT_ORDER=("8281" "8282" "8283" "8284" "8285" "8286" "8287")
+BOOT_ORDER=("8281" "8282" "8283" "8284" "8285" "8286" "8287" "8288")
 
 # 前端: 目录 -> 端口
 declare -A WEB=(
@@ -111,11 +112,11 @@ start_backend 8281 || true
 if wait_port 8281 90; then ok "auth-service :8281 就绪"; else err "auth-service :8281 启动失败，见 $LOG_DIR/careld-auth-service.log"; fi
 
 # 其余并行启动
-for p in 8282 8283 8284 8285 8286 8287; do start_backend "$p" || true; done
+for p in 8282 8283 8284 8285 8286 8287 8288; do start_backend "$p" || true; done
 
 # 等待其余端口
 fail=0
-for p in 8282 8283 8284 8285 8286 8287; do
+for p in 8282 8283 8284 8285 8286 8287 8288; do
   if wait_port "$p" 90; then ok "${SVC[$p]} :$p 就绪"; else err "${SVC[$p]} :$p 失败"; fail=1; fi
 done
 
@@ -139,7 +140,7 @@ fi
 
 # ---------- 5. 汇总 ----------
 section "服务清单"
-for p in 8281 8282 8283 8284 8285 8286 8287; do
+for p in 8281 8282 8283 8284 8285 8286 8287 8288; do
   port_up "$p" && ok ":$p  ${SVC[$p]}" || err ":$p  ${SVC[$p]} 未运行"
 done
 if [ $WITH_FRONTEND -eq 1 ]; then

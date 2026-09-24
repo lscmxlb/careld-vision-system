@@ -1,0 +1,38 @@
+server:
+  port: 8288
+spring:
+  application:
+    name: careld-notify-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/careld_vision?useUnicode=true&characterEncoding=utf-8&useSSL=${MYSQL_USE_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deletedAt
+      logic-delete-value: "NOW()"
+      logic-not-delete-value: "NULL"
+
+encryption:
+  key: ${ENCRYPTION_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+careld:
+  notify:
+    # 待发送任务轮询间隔（毫秒）
+    dispatch-interval-ms: 10000
+    dispatch-initial-delay-ms: 5000
+    # 单次轮询最多处理任务数
+    batch-size: 20
+    # 处理失败后的最大重试次数
+    max-retry: 3

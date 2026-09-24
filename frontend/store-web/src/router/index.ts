@@ -79,6 +79,12 @@ const router = createRouter({
           meta: { title: '设备管理', icon: 'Monitor', managerOnly: true }
         },
         {
+          path: 'notify',
+          name: 'Notify',
+          component: () => import('@/views/notify/index.vue'),
+          meta: { title: '通知服务', icon: 'Bell', managerOnly: true }
+        },
+        {
           path: 'log-record',
           name: 'LogRecord',
           component: () => import('@/views/log-record/index.vue'),

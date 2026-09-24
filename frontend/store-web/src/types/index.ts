@@ -490,3 +490,118 @@ export interface OperationLogQuery {
   page?: number
   size?: number
 }
+
+// ==================== 通知服务 ====================
+/** 通知通道：1=手机短信 2=微信消息 */
+export type NotifyChannel = 1 | 2
+
+/** 通知服务配置 */
+export interface NotifyConfig {
+  storeId?: number
+  smsEnabled: number
+  wechatEnabled: number
+  enabledTypes: string[]
+}
+
+/** 通知记录（列表行） */
+export interface NotifyRecord {
+  id: number
+  taskId: number
+  eventType: string
+  eventLabel: string
+  channel: NotifyChannel
+  channelLabel: string
+  childId?: number
+  childName?: string
+  recipient?: string
+  title?: string
+  content?: string
+  status: number // 1=成功 0=失败
+  statusLabel: string
+  fee: number
+  remark?: string
+  failReason?: string
+  sentAt: string
+}
+
+/** 通知记录查询条件 */
+export interface NotifyRecordQuery {
+  childNameLike?: string
+  eventType?: string
+  channel?: number
+  status?: number
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
+}
+
+/** 通知记录分页结果（含费用汇总与余额） */
+export interface NotifyRecordPage {
+  list: NotifyRecord[]
+  pagination: Pagination
+  filterFee: number
+  totalFee: number
+  balance: number
+  totalRecharge: number
+  smsUnitPrice: number
+}
+
+/** 短信费用账户 */
+export interface NotifyAccount {
+  id?: number
+  storeId: number
+  balance: number
+  totalFee: number
+  totalRecharge: number
+}
+
+// ==================== 短信服务充值（微信扫码支付） ====================
+/** 支付环境状态 */
+export interface PayStatus {
+  /** 真实微信支付是否已配置就绪 */
+  realReady: boolean
+  /** 是否处于模拟支付（联调）模式 */
+  mockEnabled: boolean
+  /** 未就绪原因说明 */
+  notReadyReason?: string
+  /** 短信单价（元/条） */
+  unitPrice?: number
+}
+
+/** 充值订单（前端展示用） */
+export interface RechargeOrder {
+  orderNo: string
+  storeId?: number
+  storeName?: string
+  amount: number
+  /** 0=待支付 1=已支付 2=已关闭 */
+  status: number
+  /** Native 支付二维码链接 */
+  codeUrl?: string
+  transactionId?: string
+  tradeState?: string
+  paidAt?: string
+  expireAt?: string
+  mock?: boolean
+  createdAt?: string
+}
+
+/** 充值订单分页结果 */
+export interface RechargeOrderPage {
+  list: RechargeOrder[]
+  pagination: Pagination
+  /** 已支付金额合计 */
+  paidAmount: number
+}
+
+/** 充值订单查询条件 */
+export interface RechargeOrderQuery {
+  storeId?: number
+  status?: number
+  orderNo?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
+}

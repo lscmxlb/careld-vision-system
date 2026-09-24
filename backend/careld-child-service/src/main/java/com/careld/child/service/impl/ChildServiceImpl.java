@@ -7,6 +7,8 @@ import com.careld.child.mapper.ChildMapper;
 import com.careld.child.mapper.ChildServiceRecordMapper;
 import com.careld.child.service.ChildService;
 import com.careld.common.exception.BusinessException;
+import com.careld.common.notify.NotifyEventTypes;
+import com.careld.common.notify.NotifyTaskWriter;
 import com.careld.common.security.AesUtil;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
@@ -21,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +40,7 @@ public class ChildServiceImpl implements ChildService {
 
     private final ChildMapper childMapper;
     private final ChildServiceRecordMapper serviceRecordMapper;
+    private final NotifyTaskWriter notifyTaskWriter;
     @Override
     @Transactional
     public Long createProfile(ChildProfile profile, String aesKey) {
@@ -65,6 +69,14 @@ public class ChildServiceImpl implements ChildService {
         profile.setStatus(1);
         profile.setChildCode(generateChildCode());
         childMapper.insert(profile);
+        // 建档成功通知：医生/医院侧建档即时生效；家长端建档在审核通过时另行通知
+        if (profile.getAuditStatus() != null && profile.getAuditStatus() == 1) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("childCode", profile.getChildCode());
+            payload.put("doctorName", profile.getDoctorName());
+            notifyTaskWriter.push(profile.getStoreId(), profile.getId(),
+                    NotifyEventTypes.CHILD_CREATED, profile.getId(), payload);
+        }
         return profile.getId();
     }
 
@@ -155,6 +167,10 @@ public class ChildServiceImpl implements ChildService {
         if (auditStatus == 1 && doctorId == null) {
             throw new BusinessException(400, "审核通过前请指定主治医生");
         }
+        ChildProfile exist = childMapper.selectById(id);
+        if (exist == null) {
+            throw new BusinessException(404, "档案不存在");
+        }
         ChildProfile profile = new ChildProfile();
         profile.setId(id);
         profile.setAuditStatus(auditStatus);
@@ -166,6 +182,13 @@ public class ChildServiceImpl implements ChildService {
             profile.setDoctorName(doctorName);
         }
         childMapper.updateById(profile);
+        // 建档成功通知：仅「待审核 → 通过」时推送一次，重复审核通过不重复通知
+        if (auditStatus == 1 && exist.getAuditStatus() != null && exist.getAuditStatus() == 0) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("childCode", exist.getChildCode());
+            payload.put("doctorName", doctorName != null ? doctorName : exist.getDoctorName());
+            notifyTaskWriter.push(exist.getStoreId(), id, NotifyEventTypes.CHILD_CREATED, id, payload);
+        }
     }
     @Override
     public ChildProfile getProfile(Long id, String aesKey) {

@@ -22,6 +22,7 @@
         <module>careld-schedule-service</module>
         <module>careld-vision-service</module>
         <module>careld-sync-service</module>
+        <module>careld-notify-service</module>
     </modules>
 
     <properties>

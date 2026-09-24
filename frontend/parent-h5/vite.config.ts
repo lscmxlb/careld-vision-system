@@ -25,6 +25,7 @@ export default defineConfig({
       '/api/v1/vision': apiProxy('http://127.0.0.1:8286'),
       '/api/v1/care-records': apiProxy('http://127.0.0.1:8286'),
       '/api/v1/sync': apiProxy('http://127.0.0.1:8287'),
+      '/api/v1/notify': apiProxy('http://127.0.0.1:8288'),
       '/api': apiProxy('http://127.0.0.1:8281'),
     },
   },

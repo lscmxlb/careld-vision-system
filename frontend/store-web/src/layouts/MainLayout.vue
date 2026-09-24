@@ -41,6 +41,7 @@
           </template>
           <el-menu-item index="/basic-info">基础信息</el-menu-item>
           <el-menu-item index="/medical-staff">医务人员</el-menu-item>
+          <el-menu-item index="/notify">通知服务</el-menu-item>
           <el-menu-item v-if="canViewLogs" index="/log-record">日志记录</el-menu-item>
         </el-sub-menu>
       </el-menu>

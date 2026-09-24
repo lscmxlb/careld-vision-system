@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
+import com.careld.common.notify.NotifyEventTypes;
+import com.careld.common.notify.NotifyTaskWriter;
 import com.careld.common.security.UserContext;
 import com.careld.schedule.dto.BatchScheduleRequest;
 import com.careld.schedule.entity.AppointmentConfig;
@@ -31,6 +33,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +49,15 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final CareRecordMapper careRecordMapper;
     private final AppointmentConfigMapper configMapper;
     private final OperatorMapper operatorMapper;
+    private final NotifyTaskWriter notifyTaskWriter;
 
     @Value("${encryption.key:careld-vision-encrypt-key-32byte}")
     private String aesKey;
 
     private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("HH:mm");
+
+    /** 阿里云通知短信单个变量内容的长度上限 */
+    private static final int SMS_REASON_MAX_LENGTH = 35;
 
     @Override
     public Long createSchedule(Schedule schedule) {
@@ -108,6 +115,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         // 递增已预约数
         scheduleMapper.incrementReserved(schedule.getId());
 
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("reserveDate", String.valueOf(order.getReserveDate()));
+        payload.put("timeStart", order.getReserveTimeStart() == null ? null : order.getReserveTimeStart().format(HM));
+        payload.put("timeEnd", order.getReserveTimeEnd() == null ? null : order.getReserveTimeEnd().format(HM));
+        notifyTaskWriter.push(order.getStoreId(), order.getChildId(),
+                NotifyEventTypes.RESERVE_CREATED, order.getId(), payload);
+
         return order.getId();
     }
 
@@ -150,6 +164,14 @@ public class ScheduleServiceImpl implements ScheduleService {
             order.setCancelOperatorName(StringUtils.hasText(cancelName) ? cancelName : cancelUsername);
         }
         reserveOrderMapper.updateById(order);
+
+        Map<String, Object> cancelPayload = new LinkedHashMap<>();
+        cancelPayload.put("reserveDate", String.valueOf(order.getReserveDate()));
+        cancelPayload.put("timeStart", order.getReserveTimeStart() == null ? null : order.getReserveTimeStart().format(HM));
+        cancelPayload.put("timeEnd", order.getReserveTimeEnd() == null ? null : order.getReserveTimeEnd().format(HM));
+        cancelPayload.put("reason", cancelReasonText(order.getCancelReason(), order.getCancelReasonType()));
+        notifyTaskWriter.push(order.getStoreId(), order.getChildId(),
+                NotifyEventTypes.RESERVE_CANCELLED, order.getId(), cancelPayload);
 
         if (order.getSlotId() != null) {
             // 新链路：释放时段名额；按「是否返还预约次数」决定是否退还（不返还时仅写 0 次流水留痕）
@@ -237,6 +259,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         quotaMapper.changeRemaining(order.getChildId(), -1);
         quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 2, -1,
                 order.getId(), UserContext.getCurrentUserId(), "预约扣减");
+
+        Map<String, Object> createdPayload = new LinkedHashMap<>();
+        createdPayload.put("reserveDate", String.valueOf(order.getReserveDate()));
+        createdPayload.put("timeStart", order.getReserveTimeStart() == null ? null : order.getReserveTimeStart().format(HM));
+        createdPayload.put("timeEnd", order.getReserveTimeEnd() == null ? null : order.getReserveTimeEnd().format(HM));
+        notifyTaskWriter.push(order.getStoreId(), order.getChildId(),
+                NotifyEventTypes.RESERVE_CREATED, order.getId(), createdPayload);
         return order.getId();
     }
 
@@ -318,6 +347,30 @@ public class ScheduleServiceImpl implements ScheduleService {
         return careRecordMapper.selectByAppointmentId(reserveId);
     }
 
+    /**
+     * 取消短信「取消原因」取值：原因类型文案 + 备注；类型缺失时只用备注
+     *
+     * <p>阿里云通知模板要求变量有值且不超过 35 字符（超长/空值会整条拒发）。</p>
+     */
+    private static String cancelReasonText(String cancelReason, Integer cancelReasonType) {
+        String type = cancelReasonType == null ? ""
+                : (cancelReasonType == 1 ? "家长原因" : cancelReasonType == 2 ? "医院原因" : "");
+        String remark = StringUtils.hasText(cancelReason) ? cancelReason.trim() : "";
+        String text;
+        if (StringUtils.hasText(type) && StringUtils.hasText(remark)) {
+            text = type + "（" + remark + "）";
+        } else if (StringUtils.hasText(type)) {
+            text = type;
+        } else if (StringUtils.hasText(remark)) {
+            text = remark;
+        } else {
+            text = "未填写";
+        }
+        return text.length() > SMS_REASON_MAX_LENGTH
+                ? text.substring(0, SMS_REASON_MAX_LENGTH - 1) + "…"
+                : text;
+    }
+
     /** 解析当前登录人真实姓名：医务人员按手机号查名册，其余查 sys_user，兜底用户名 */
     private String resolveCurrentUserRealName() {
         String username = UserContext.get() == null ? null : UserContext.get().getUsername();
@@ -350,6 +403,36 @@ public class ScheduleServiceImpl implements ScheduleService {
                 params == null ? null : params.get("visionAfterLeft"),
                 params == null ? null : params.get("visionAfterRight"),
                 params == null ? null : params.get("visionAfterBoth"));
+
+        Map<String, Object> carePayload = new LinkedHashMap<>();
+        carePayload.put("reserveDate", String.valueOf(order.getReserveDate()));
+        carePayload.put("visionInfo", visionInfo(params));
+        notifyTaskWriter.push(order.getStoreId(), order.getChildId(),
+                NotifyEventTypes.CARE_COMPLETED, order.getId(), carePayload);
+    }
+
+    /** 养护后视力描述（无检测值时为空，通知文案自动省略） */
+    private String visionInfo(Map<String, String> params) {
+        if (params == null) {
+            return null;
+        }
+        String left = params.get("visionAfterLeft");
+        String right = params.get("visionAfterRight");
+        String both = params.get("visionAfterBoth");
+        if (!StringUtils.hasText(left) && !StringUtils.hasText(right) && !StringUtils.hasText(both)) {
+            return null;
+        }
+        StringBuilder info = new StringBuilder("养护后裸眼视力");
+        if (StringUtils.hasText(left)) {
+            info.append(" 左眼").append(left);
+        }
+        if (StringUtils.hasText(right)) {
+            info.append(" 右眼").append(right);
+        }
+        if (StringUtils.hasText(both)) {
+            info.append(" 双眼").append(both);
+        }
+        return info.toString();
     }
 
     @Override
@@ -447,6 +530,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new BusinessException(5002, "预约已满");
         }
 
+        LocalDate oldReserveDate = order.getReserveDate();
+        LocalTime oldTimeStart = order.getReserveTimeStart();
+        LocalTime oldTimeEnd = order.getReserveTimeEnd();
         order.setReserveDate(slot.getSlotDate());
         order.setReserveTimeStart(slot.getSlotStartTime());
         order.setReserveTimeEnd(slot.getSlotEndTime());
@@ -466,6 +552,16 @@ public class ScheduleServiceImpl implements ScheduleService {
             order.setAdjustOperatorName(StringUtils.hasText(adjustName) ? adjustName : adjustUsername);
         }
         reserveOrderMapper.updateById(order);
+
+        Map<String, Object> adjustPayload = new LinkedHashMap<>();
+        adjustPayload.put("reserveDate", String.valueOf(order.getReserveDate()));
+        adjustPayload.put("timeStart", order.getReserveTimeStart() == null ? null : order.getReserveTimeStart().format(HM));
+        adjustPayload.put("timeEnd", order.getReserveTimeEnd() == null ? null : order.getReserveTimeEnd().format(HM));
+        adjustPayload.put("oldReserveDate", oldReserveDate == null ? null : String.valueOf(oldReserveDate));
+        adjustPayload.put("oldTimeStart", oldTimeStart == null ? null : oldTimeStart.format(HM));
+        adjustPayload.put("oldTimeEnd", oldTimeEnd == null ? null : oldTimeEnd.format(HM));
+        notifyTaskWriter.push(order.getStoreId(), order.getChildId(),
+                NotifyEventTypes.RESERVE_ADJUSTED, order.getId(), adjustPayload);
     }
 
     @Override

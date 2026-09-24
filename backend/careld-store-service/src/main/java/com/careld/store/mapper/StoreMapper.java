@@ -20,4 +20,8 @@ public interface StoreMapper extends BaseMapper<Store> {
 
     @Select("SELECT id, center_id FROM agent WHERE deleted_at IS NULL")
     List<Map<String, Object>> selectAgentCenterMapping();
+
+    /** 短信服务账户余额（notify-service 维护的 store_notify_account，仅读取展示用） */
+    @Select("SELECT store_id, balance FROM store_notify_account WHERE deleted_at IS NULL")
+    List<Map<String, Object>> selectStoreBalances();
 }

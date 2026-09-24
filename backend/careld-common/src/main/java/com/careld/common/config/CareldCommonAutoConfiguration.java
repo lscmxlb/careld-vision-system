@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import com.careld.common.exception.GlobalExceptionHandler;
 import com.careld.common.log.OperationLogAspect;
 import com.careld.common.log.OperationLogWriter;
+import com.careld.common.notify.NotifyTaskWriter;
 import com.careld.common.security.AuthenticationSetter;
 import com.careld.common.security.JwtAuthFilter;
 import com.careld.common.security.PermissionAspect;
@@ -26,7 +27,7 @@ import org.springframework.context.annotation.Import;
 @EnableAspectJAutoProxy
 @MapperScan("com.careld.common.mapper")
 @Import({GlobalExceptionHandler.class, CareldMetaObjectHandler.class, PermissionAspect.class,
-        OperationLogWriter.class, OperationLogAspect.class})
+        OperationLogWriter.class, OperationLogAspect.class, NotifyTaskWriter.class})
 public class CareldCommonAutoConfiguration {
 
     /**

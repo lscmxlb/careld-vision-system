@@ -4,9 +4,14 @@
       <template #header>
         <div class="card-header">
           <span>用户管理</span>
-          <el-button type="primary" @click="handleAdd" v-permission="'user:create'">
-            <el-icon><Plus /></el-icon>新增用户
-          </el-button>
+          <div>
+            <el-button @click="openPhoneLookup" v-permission="'user:view'">
+              <el-icon><Phone /></el-icon>手机号码查询
+            </el-button>
+            <el-button type="primary" @click="handleAdd" v-permission="'user:create'">
+              <el-icon><Plus /></el-icon>新增用户
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -187,6 +192,68 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 手机号码查询弹窗 -->
+    <el-dialog v-model="phoneLookupVisible" title="手机号码查询" width="860px" destroy-on-close>
+      <div class="phone-lookup-bar">
+        <el-input v-model="phoneLookupInput" placeholder="输入手机号码，支持模糊查询（可只输入其中几位）" clearable
+          style="width: 320px" @keyup.enter="handlePhoneLookup" />
+        <el-button type="primary" :loading="phoneLookupLoading" @click="handlePhoneLookup">
+          <el-icon><Search /></el-icon>查询
+        </el-button>
+      </div>
+
+      <div v-if="phoneLookupResult" class="phone-lookup-result">
+        <el-alert v-if="!phoneLookupResult.found" type="warning" :closable="false" show-icon
+          :title="`未查询到手机号码包含「${phoneLookupResult.phone}」的账号`" />
+        <template v-else>
+          <el-alert type="success" :closable="false" show-icon
+            :title="`手机号码包含「${phoneLookupResult.phone}」的账号共命中 ${phoneLookupResult.identities.length} 个身份`" />
+          <el-table :data="phoneLookupResult.identities" stripe size="small" style="margin-top: 12px">
+            <el-table-column label="身份" width="150">
+              <template #default="{ row }">
+                <el-tag :type="row.source === 'medical_staff' ? 'warning' : 'primary'" size="small">
+                  {{ row.userTypeName }}
+                </el-tag>
+                <el-tag v-if="row.staffRoleName" type="warning" effect="plain" size="small" style="margin-left: 4px">
+                  {{ row.staffRoleName }}
+                </el-tag>
+                <span v-if="row.userType === 3" class="child-count">档案 {{ row.childCount ?? 0 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="phone" label="手机号" width="130">
+              <template #default="{ row }">{{ row.phone || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="realName" label="姓名" width="100">
+              <template #default="{ row }">{{ row.realName || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="username" label="登录账号" min-width="120">
+              <template #default="{ row }">{{ row.username || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="角色" min-width="120">
+              <template #default="{ row }">{{ row.roleNames?.length ? row.roleNames.join('、') : '-' }}</template>
+            </el-table-column>
+            <el-table-column label="所属组织" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">{{ orgText(row) }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+                  {{ row.status === 1 ? '正常' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="注册时间" width="150">
+              <template #default="{ row }">{{ row.createdAt ? formatDate(row.createdAt) : '-' }}</template>
+            </el-table-column>
+            <el-table-column label="最后登录" width="150">
+              <template #default="{ row }">{{ row.lastLoginTime ? formatDate(row.lastLoginTime) : '从未' }}</template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </div>
+      <el-empty v-else description="输入完整或部分手机号码后点击查询，支持模糊匹配，查看该号码的注册身份与角色" :image-size="80" />
+    </el-dialog>
   </div>
 </template>
 
@@ -194,8 +261,9 @@
 defineOptions({ name: 'AdminUser' })
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Plus, Search, Phone } from '@element-plus/icons-vue'
 import { userApi, storeApi, orgApi, roleApi } from '@/api'
+import type { PhoneLookupIdentity, PhoneLookupResult } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import type { User, Store, OpsCenter, Agent, Role } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -610,6 +678,39 @@ const fetchRoles = async () => {
   try { roleOptions.value = await roleApi.getRoleList() } catch (e) { console.error('获取角色列表失败', e) }
 }
 
+// ===== 手机号码查询 =====
+const phoneLookupVisible = ref(false)
+const phoneLookupInput = ref('')
+const phoneLookupLoading = ref(false)
+const phoneLookupResult = ref<PhoneLookupResult | null>(null)
+
+const openPhoneLookup = () => {
+  phoneLookupVisible.value = true
+  phoneLookupInput.value = ''
+  phoneLookupResult.value = null
+}
+
+const handlePhoneLookup = async () => {
+  const phone = phoneLookupInput.value.trim()
+  if (!phone) {
+    ElMessage.warning('请输入要查询的手机号码')
+    return
+  }
+  phoneLookupLoading.value = true
+  try {
+    phoneLookupResult.value = await userApi.phoneLookup(phone)
+  } catch (error) {
+    console.error('手机号码查询失败', error)
+  } finally {
+    phoneLookupLoading.value = false
+  }
+}
+
+const orgText = (row: PhoneLookupIdentity) => {
+  const parts = [row.centerName, row.agentName, row.storeName].filter(Boolean)
+  return parts.length ? parts.join(' / ') : '-'
+}
+
 onMounted(async () => {
   await userStore.fetchUserInfo()
   fetchCenters()
@@ -627,5 +728,7 @@ onMounted(async () => {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
   .search-form { margin-bottom: 20px; }
   .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
+  .phone-lookup-bar { display: flex; gap: 12px; margin-bottom: 16px; }
+  .child-count { margin-left: 6px; color: #909399; font-size: 12px; }
 }
 </style>

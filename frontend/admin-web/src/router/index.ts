@@ -101,6 +101,12 @@ const router = createRouter({
           meta: { title: '系统设置', icon: 'Setting', permission: 'settings:view' }
         },
         {
+          path: 'settings/recharge',
+          name: 'SettingsRecharge',
+          component: () => import('@/views/settings/recharge.vue'),
+          meta: { title: '充值记录', icon: 'Money', permission: 'settings:view' }
+        },
+        {
           path: 'settings/role',
           name: 'RoleManagement',
           component: () => import('@/views/settings/role.vue'),

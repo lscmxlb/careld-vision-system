@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>开启微信通知</title>
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background: #f1f5f9; color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { min-height: 100vh; padding: 32px 20px 48px; display: flex; flex-direction: column; align-items: center; }
+    .logo { width: 64px; height: 64px; border-radius: 18px; background: #14b8a6; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; margin-bottom: 14px; }
+    h1 { font-size: 20px; margin: 0 0 6px; text-align: center; }
+    .sub { font-size: 13px; color: #64748b; text-align: center; line-height: 1.7; margin-bottom: 20px; }
+    .card { width: 100%; max-width: 420px; background: #fff; border-radius: 16px; padding: 18px 16px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06); margin-bottom: 14px; }
+    .step { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; }
+    .step:last-child { border-bottom: none; }
+    .step .idx { flex: 0 0 22px; height: 22px; border-radius: 50%; background: #ccfbf1; color: #0f766e;
+      font-size: 12px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .step .txt { flex: 1; font-size: 14px; line-height: 1.6; }
+    .step .txt small { display: block; color: #94a3b8; font-size: 12px; margin-top: 2px; }
+    .state-ok { color: #0f766e; }
+    .btn { display: block; width: 100%; padding: 13px 16px; border: none; border-radius: 999px;
+      background: #14b8a6; color: #fff; font-size: 16px; font-weight: 600; text-align: center;
+      text-decoration: none; margin-top: 6px; }
+    .btn.ghost { background: #fff; color: #0f766e; border: 1px solid #99f6e4; }
+    .btn[disabled] { opacity: .55; }
+    .tag-wrap { width: 100%; margin-top: 4px; }
+    .tag-wrap wx-open-subscribe { display: block; width: 100%; }
+    .hint { font-size: 12px; color: #94a3b8; line-height: 1.7; margin-top: 10px; text-align: center; }
+    .alert { font-size: 13px; line-height: 1.7; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+      width: 100%; max-width: 420px; }
+    .alert-warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .alert-err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .alert-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .hide { display: none !important; }
+    .spinner { width: 22px; height: 22px; border: 3px solid #ccfbf1; border-top-color: #14b8a6;
+      border-radius: 50%; animation: spin 0.9s linear infinite; margin: 18px auto 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="logo">可</div>
+  <h1>开启微信通知</h1>
+  <div class="sub">
+    绑定公众号并开启订阅授权后，预约、养护等消息会通过<br />
+    「<span id="account-name">公众号</span>」推送到微信
+  </div>
+
+  <div id="alert" class="alert alert-warn hide"></div>
+
+  <div class="card">
+    <div class="step">
+      <div class="idx">1</div>
+      <div class="txt">绑定微信（获取 openid）<small id="bind-state">正在检查…</small></div>
+    </div>
+    <div class="step">
+      <div class="idx">2</div>
+      <div class="txt">开启订阅授权<small id="auth-state">绑定成功后即可开启</small></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tag-wrap" id="tag-wrap"></div>
+    <div id="action-area">
+      <a class="btn" id="main-btn" href="javascript:void(0)">正在准备…</a>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div id="loading" class="spinner"></div>
+</div>
+
+<script>
+(function () {
+  var TOKEN_KEY = 'careld_parent_token';
+  var API = '/api/v1/notify/wechat';
+  var token = localStorage.getItem(TOKEN_KEY) || '';
+  var inWechat = /micromessenger/i.test(navigator.userAgent);
+  var pageConfig = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  function showAlert(text, kind) {
+    var el = $('alert');
+    el.className = 'alert alert-' + (kind || 'warn');
+    el.innerHTML = text;
+    el.classList.remove('hide');
+  }
+  function setHint(text) { $('hint').innerHTML = text || ''; }
+  function stopLoading() { $('loading').classList.add('hide'); }
+
+  function api(path, options) {
+    var opts = options || {};
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {}, token ? { Authorization: 'Bearer ' + token } : {});
+    return fetch(API + path, opts).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (!res.ok || (body && body.code && body.code !== 200)) {
+          var msg = (body && (body.message || body.msg)) || ('HTTP ' + res.status);
+          var err = new Error(msg);
+          err.body = body;
+          throw err;
+        }
+        return body && Object.prototype.hasOwnProperty.call(body, 'data') ? body.data : body;
+      });
+    });
+  }
+
+  /** 当前页面地址（不含 # 片段），JS-SDK 签名与网页授权回调都用它 */
+  function currentUrl() { return location.href.split('#')[0]; }
+
+  function query(name) {
+    var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function renderSubscribeTag() {
+    if (!pageConfig || !pageConfig.appId || !pageConfig.signature) {
+      setHint('订阅授权暂不可用：' + ((pageConfig && pageConfig.hint) || '请稍后重试'));
+      return;
+    }
+    wx.config({
+      debug: false,
+      appId: pageConfig.appId,
+      timestamp: pageConfig.timestamp,
+      nonceStr: pageConfig.nonceStr,
+      signature: pageConfig.signature,
+      jsApiList: pageConfig.jsApiList || ['checkJsApi'],
+      openTagList: pageConfig.openTagList || ['wx-open-subscribe']
+    });
+    wx.ready(function () {
+      var wrap = $('tag-wrap');
+      wrap.innerHTML =
+        '<wx-open-subscribe template="' + pageConfig.templateId + '" id="subscribe-btn">' +
+        '  <script type="text/wxtag-template">' +
+        '    <style>.sub-btn{display:block;width:100%;padding:14px 16px;border-radius:999px;' +
+        '       background:#14b8a6;color:#fff;font-size:16px;font-weight:600;text-align:center;' +
+        '       font-family:-apple-system,"PingFang SC",sans-serif;}</style>' +
+        '    <div class="sub-btn">开启消息通知授权</div>' +
+        '  <\/script>' +
+        '</wx-open-subscribe>';
+      var tag = document.getElementById('subscribe-btn');
+      if (tag) {
+        tag.addEventListener('success', function (e) {
+          var accepted = true;
+          try {
+            var detail = JSON.parse(e.detail);
+            var key = Object.keys(detail)[0];
+            var item = detail[key];
+            if (typeof item === 'string') { item = JSON.parse(item); }
+            if (item && item.status) { accepted = item.status !== 'reject'; }
+          } catch (err) { }
+          $('auth-state').textContent = accepted ? '已开启订阅授权' : '用户拒绝了授权';
+          $('auth-state').className = accepted ? 'state-ok' : '';
+          showAlert(accepted
+            ? '订阅授权已开启。预约、养护等通知会通过本公众号推送给您，可随时在公众号内关闭。'
+            : '本次授权被拒绝：未开启通知，可重新点击上方按钮授权。', accepted ? 'ok' : 'warn');
+        });
+        tag.addEventListener('error', function (e) {
+          var msg = '订阅授权标签加载失败';
+          try { msg += '：' + (JSON.parse(e.detail).errMsg || ''); } catch (err) { }
+          setHint(msg + '（多为 JS 接口安全域名未配置或签名不匹配）');
+        });
+      } else {
+        setHint('当前离线调试环境不支持订阅授权标签，请在微信内打开本页。');
+      }
+      $('main-btn').textContent = inWechat ? '已绑定，点上方按钮开启通知' : '请在微信中打开';
+      $('main-btn').setAttribute('disabled', 'disabled');
+    });
+    wx.error(function (res) {
+      setHint('wx.config 失败：' + (res && res.errMsg ? res.errMsg : '') + '（请检查 JS 接口安全域名与签名地址）');
+    });
+  }
+
+  function loadSubscribeConfig() {
+    return api('/subscribe-config?url=' + encodeURIComponent(currentUrl())).then(function (data) {
+      pageConfig = data || {};
+      if (pageConfig.accountName) { $('account-name').textContent = pageConfig.accountName; }
+      renderSubscribeTag();
+    }).catch(function (err) {
+      setHint('读取订阅配置失败：' + err.message);
+    });
+  }
+
+  function startWebAuth() {
+    api('/oauth/url?redirect=' + encodeURIComponent(currentUrl())).then(function (data) {
+      if (data && data.url) {
+        $('main-btn').textContent = '正在跳转微信授权…';
+        location.replace(data.url);
+      } else {
+        setHint('未取到微信授权地址，请稍后重试');
+      }
+    }).catch(function (err) {
+      setHint('发起微信授权失败：' + err.message);
+    });
+  }
+
+  function boot() {
+    if (!token) {
+      stopLoading();
+      $('bind-state').textContent = '未登录';
+      showAlert('未检测到家长端登录状态：请先返回家长端登录，再从公众号菜单或「我的 → 微信公众号」重新进入本页。', 'warn');
+      $('main-btn').textContent = '返回家长端登录';
+      $('main-btn').setAttribute('href', '/');
+      return;
+    }
+    if (!inWechat) {
+      stopLoading();
+      $('bind-state').textContent = '非微信环境';
+      $('main-btn').textContent = '请在微信中打开';
+      $('main-btn').setAttribute('disabled', 'disabled');
+      setHint('当前不在微信内：请在微信中打开本页（可从公众号菜单进入），否则无法完成绑定与授权。');
+      loadSubscribeConfig();
+      return;
+    }
+
+    var code = query('code');
+    if (code) {
+      $('bind-state').textContent = '正在绑定…';
+      api('/oauth/bind', { method: 'POST', body: JSON.stringify({ code: code }) }).then(function (data) {
+        stopLoading();
+        $('bind-state').textContent = '已绑定（openid 尾号 ' + ((data && data.openidTail) || '') + '）';
+        $('bind-state').className = 'state-ok';
+        $('auth-state').textContent = '请点击下方按钮完成订阅授权';
+        var clean = location.href.split('?')[0];
+        try { history.replaceState(null, '', clean); } catch (e) { }
+        loadSubscribeConfig();
+      }).catch(function (err) {
+        stopLoading();
+        $('bind-state').textContent = '绑定失败';
+        showAlert('微信绑定失败：' + err.message + '<br>若提示 redirect_uri 参数错误，说明当前访问域名还未在公众平台「网页授权域名」中配置。', 'err');
+        loadSubscribeConfig();
+      });
+      return;
+    }
+
+    // 首次进入：先在微信内静默授权拿 openid
+    $('bind-state').textContent = '正在跳转微信授权…';
+    startWebAuth();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

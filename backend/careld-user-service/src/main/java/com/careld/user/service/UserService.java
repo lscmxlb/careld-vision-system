@@ -1,6 +1,7 @@
 package com.careld.user.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.careld.user.dto.PhoneLookupResponse;
 import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
 import com.careld.user.entity.User;
@@ -82,4 +83,9 @@ public interface UserService {
      * 修改医务人员本人手机号（登录账号，店内唯一）
      */
     void updateMyStaffPhone(Long staffId, String phone);
+
+    /**
+     * 手机号码查询：查该号码是否已注册及注册身份/角色（含系统账号与医务人员两类来源）
+     */
+    PhoneLookupResponse lookupByPhone(String phone);
 }

@@ -19,6 +19,7 @@ declare -A PORTS=(
   [8285]="careld-schedule-service"
   [8286]="careld-vision-service"
   [8287]="careld-sync-service"
+  [8288]="careld-notify-service"
   [5173]="parent-web"
   [5174]="admin-web"
   [5175]="store-web"
@@ -33,7 +34,7 @@ pid_on_port() { (ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep ":$1 
 
 echo "=== 停止 Careld 服务 ==="
 # 先停前端, 再停后端
-for p in 5173 5174 5175 8282 8283 8284 8285 8286 8287 8281; do
+for p in 5173 5174 5175 8282 8283 8284 8285 8286 8287 8288 8281; do
   pid=$(pid_on_port "$p")
   if [ -z "$pid" ]; then
     log ":$p ${PORTS[$p]} 未运行"
@@ -45,7 +46,7 @@ done
 
 # 等待优雅退出, 仍未退出的强制结束
 sleep 3
-for p in 5173 5174 5175 8281 8282 8283 8284 8285 8286 8287; do
+for p in 5173 5174 5175 8281 8282 8283 8284 8285 8286 8287 8288; do
   pid=$(pid_on_port "$p")
   [ -n "$pid" ] && { log ":$p 仍存活 pid=$pid -> SIGKILL"; kill -9 "$pid" 2>/dev/null; }
 done
@@ -53,7 +54,7 @@ sleep 1
 
 echo
 down=1
-for p in 8281 8282 8283 8284 8285 8286 8287 5173 5174 5175; do
+for p in 8281 8282 8283 8284 8285 8286 8287 8288 5173 5174 5175; do
   pid=$(pid_on_port "$p")
   if [ -n "$pid" ]; then err ":$p ${PORTS[$p]} 仍在运行 pid=$pid"; down=0; fi
 done

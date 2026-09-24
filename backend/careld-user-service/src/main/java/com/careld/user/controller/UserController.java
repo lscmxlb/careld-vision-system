@@ -7,6 +7,7 @@ import com.careld.common.result.Result;
 import com.careld.common.security.RequirePermission;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
+import com.careld.user.dto.PhoneLookupResponse;
 import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
 import com.careld.user.service.PermissionService;
@@ -158,6 +159,14 @@ public class UserController {
         Page<UserResponse> result = userService.listUsers(userType, effectiveStoreId, effectiveCenterId, effectiveAgentId,
                 status, keyword, page, size, excludePeerType, currentUserId, excludeHq, onlyUserId);
         return Result.success(PageResult.of(result.getRecords(), result.getCurrent(), result.getSize(), result.getTotal()));
+    }
+
+    @Operation(summary = "手机号码查询")
+    @GetMapping("/phone-lookup")
+    @RequirePermission("user:view")
+    public Result<PhoneLookupResponse> lookupByPhone(
+            @Parameter(description = "手机号码") @RequestParam(value = "phone", required = false) String phone) {
+        return Result.success(userService.lookupByPhone(phone));
     }
 
     @Operation(summary = "用户详情")

@@ -255,3 +255,19 @@ export interface CareRecord {
   remark?: string
   createdAt?: string
 }
+
+// ==================== 微信公众号绑定 ====================
+export interface WechatStatus {
+  bound: boolean
+  openidTail?: string | null
+  boundAt?: string | null
+  officialAccountName?: string
+}
+
+export interface WechatBindQr {
+  configured: boolean
+  scene?: string
+  qrImageUrl?: string
+  expireSeconds?: number
+  hint?: string
+}

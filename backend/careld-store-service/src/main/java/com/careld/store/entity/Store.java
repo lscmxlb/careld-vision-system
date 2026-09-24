@@ -40,4 +40,8 @@ public class Store extends BaseEntity {
 
     @TableField(exist = false)
     private String centerId;
+
+    /** 短信服务可用余额（元，来自 store_notify_account，无记录时按 0 计） */
+    @TableField(exist = false)
+    private BigDecimal balance;
 }

@@ -65,6 +65,11 @@
         <el-table-column label="业务负责人" width="120">
           <template #default="{ row }">{{ getAgentContactName(row.agentId) }}</template>
         </el-table-column>
+        <el-table-column label="可用余额" width="110" align="right">
+          <template #default="{ row }">
+            <span :class="{ 'balance-low': Number(row.balance ?? 0) < 1 }">￥{{ formatBalance(row.balance) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="joinDate" label="加盟时间" width="120" />
         <el-table-column prop="bedCount" label="床位数" width="80" />
         <el-table-column prop="deviceCount" label="设备数" width="80" />
@@ -452,6 +457,9 @@ const getAgentContactName = (agentId?: number) => {
   return agent?.contactName || '-'
 }
 
+/** 短信服务可用余额（元），无账户记录按 0 展示 */
+const formatBalance = (balance?: number) => Number(balance ?? 0).toFixed(2)
+
 const expireStatusLabel = (status?: number) => {
   const map: Record<number, string> = { 0: '正常', 1: '即将到期', 2: '已到期' }
   return map[status ?? 0] || '正常'
@@ -734,6 +742,7 @@ onMounted(() => {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
   .search-form { margin-bottom: 20px; }
   .charge-unit { margin-left: 8px; color: #606266; font-size: 14px; }
+  .balance-low { color: #f56c6c; }
   .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
   .action-buttons {
     display: flex;

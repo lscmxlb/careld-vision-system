@@ -30,6 +30,13 @@
           <text class="kv-action">修改</text>
         </view>
       </view>
+      <view class="kv kv-editable" @click="openWechat">
+        <text class="kv-key">微信公众号</text>
+        <view class="kv-right">
+          <text class="kv-value" :class="{ 'is-bound': wechat.bound }">{{ wechat.bound ? '已绑定' : '未绑定' }}</text>
+          <text class="kv-action">{{ wechat.bound ? '查看' : '设置' }}</text>
+        </view>
+      </view>
       <view class="kv"><text class="kv-key">绑定儿童</text><text class="kv-value">{{ childCount }} 个</text></view>
       <view class="kv"><text class="kv-key">剩余可用次数</text><text class="kv-value">{{ totalRemaining }} 次</text></view>
     </view>
@@ -195,6 +202,49 @@
         </view>
       </view>
     </view>
+
+    <view v-if="showWechat" class="mask" @touchmove.stop.prevent="noop" />
+    <view v-if="showWechat" class="sheet sheet-center">
+      <view class="sheet-header">
+        <text class="sheet-title">微信公众号</text>
+        <view class="sheet-close-btn" @click="closeWechat">
+          <text class="sheet-close-icon">✕</text>
+        </view>
+      </view>
+      <view class="sheet-body">
+        <view class="wechat-account">{{ wechat.officialAccountName || '可尔欧得视力养护' }}</view>
+        <view v-if="wechat.bound" class="wechat-bound">
+          <text class="wechat-bound-line">已绑定（账号尾号 {{ wechat.openidTail || '—' }}）</text>
+          <text class="wechat-bound-line wechat-bound-sub">绑定时间：{{ wechatBoundAtText }}</text>
+          <text class="wechat-tip wechat-bound-tip">微信要求「先授权后下发」：请在微信内点下方按钮完成订阅授权（可在公众号内随时关闭），之后预约成功、取消、养护完成等消息才会推送给您。</text>
+        </view>
+        <template v-else>
+          <view class="wechat-qr">
+            <image v-if="qrImage" class="wechat-qr-img" :src="qrImage" mode="aspectFit" />
+            <view v-else class="wechat-qr-img wechat-qr-empty">
+              <text class="wechat-qr-empty-text">{{ qrLoading ? '二维码生成中…' : '二维码暂不可用' }}</text>
+            </view>
+            <text class="wechat-qr-tip">{{ qrTip }}</text>
+            <text v-if="qrCountdownText" class="wechat-qr-sub">{{ qrCountdownText }}</text>
+          </view>
+          <view class="wechat-tip">{{ qrTipDetail }}</view>
+          <view v-if="bindQr?.configured" class="wechat-refresh" @click="loadBindQr">
+            <text class="wechat-refresh-text">二维码识别不了或已过期？点此刷新</text>
+          </view>
+        </template>
+      </view>
+      <view class="sheet-footer">
+        <view class="btn btn-primary" :class="{ 'is-disabled': bindingWechat }" @click="openWechatAuth">
+          {{ wechat.bound ? '开启消息通知授权' : '微信内一键绑定并授权' }}
+        </view>
+        <view v-if="wechat.bound" class="btn btn-plain" :class="{ 'is-disabled': bindingWechat }" @click="unbindWechat">
+          {{ bindingWechat ? '处理中…' : '解除绑定' }}
+        </view>
+        <view v-else-if="showConfirmBind" class="btn btn-plain" :class="{ 'is-disabled': bindingWechat }" @click="bindWechat">
+          {{ bindingWechat ? '绑定中…' : '我已关注，确认绑定' }}
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -202,7 +252,8 @@
 import { computed, ref } from 'vue'
 import { onShow, onUnload } from '@dcloudio/uni-app'
 import { childApi } from '@/api/child'
-import { userApi } from '@/api'
+import { notifyApi, userApi } from '@/api'
+import type { WechatBindQr, WechatStatus } from '@/types'
 import { useUserStore } from '@/stores/user'
 import { toast } from '@/utils/request'
 
@@ -380,6 +431,165 @@ async function savePassword() {
   }
 }
 
+/* ---------------- 微信公众号 ---------------- */
+const showWechat = ref(false)
+const bindingWechat = ref(false)
+const wechat = ref<WechatStatus>({ bound: false })
+const bindQr = ref<WechatBindQr | null>(null)
+const qrLoading = ref(false)
+const qrExpireAt = ref(0)
+const nowTs = ref(Date.now())
+let pollTimer: ReturnType<typeof setInterval> | null = null
+let tickTimer: ReturnType<typeof setInterval> | null = null
+
+const wechatBoundAtText = computed(() => {
+  const raw = wechat.value.boundAt
+  if (!raw) return '—'
+  return String(raw).replace('T', ' ').slice(0, 16)
+})
+
+/** 公众号官方关注二维码（动态带参二维码不可用时的兜底展示） */
+const OFFICIAL_QR = '/static/wechat-official-qr.jpg'
+
+const qrImage = computed(() => {
+  if (bindQr.value?.qrImageUrl) return bindQr.value.qrImageUrl
+  return OFFICIAL_QR
+})
+
+const qrTip = computed(() =>
+  bindQr.value?.configured ? '用微信扫一扫关注公众号，关注后自动完成绑定' : '微信扫一扫或长按识别，关注公众号',
+)
+
+const qrTipDetail = computed(() => {
+  if (bindQr.value?.hint) return bindQr.value.hint
+  if (bindQr.value?.configured) {
+    return '绑定后孩子的建档、预约与养护完成通知将通过微信消息推送给您；已关注过公众号的家长，再扫一次即可完成绑定。'
+  }
+  return '关注公众号后，点击下方「我已关注，确认绑定」完成绑定。绑定后孩子的建档、预约与养护完成通知将通过微信消息推送给您。'
+})
+
+/** 只有公众号凭据未配置时才展示模拟绑定按钮（真实凭据下走扫码自动绑定） */
+const showConfirmBind = computed(() => !!bindQr.value && !bindQr.value.configured)
+
+const qrCountdownText = computed(() => {
+  if (!qrExpireAt.value || !bindQr.value?.qrImageUrl) return ''
+  const remain = Math.floor((qrExpireAt.value - nowTs.value) / 1000)
+  if (remain <= 0) return '二维码已过期，请点下方刷新'
+  return `二维码 ${Math.floor(remain / 60)} 分 ${String(remain % 60).padStart(2, '0')} 秒后失效`
+})
+
+function stopWatchers() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  if (tickTimer) {
+    clearInterval(tickTimer)
+    tickTimer = null
+  }
+}
+
+/** 停留期间轮询绑定状态：扫码关注完成后自动提示成功 */
+function startWatchers() {
+  stopWatchers()
+  tickTimer = setInterval(() => {
+    nowTs.value = Date.now()
+  }, 1000)
+  pollTimer = setInterval(async () => {
+    if (wechat.value.bound) {
+      stopWatchers()
+      return
+    }
+    await loadWechat()
+    if (wechat.value.bound) {
+      stopWatchers()
+      bindQr.value = null
+      toast('微信公众号绑定成功')
+    }
+  }, 3000)
+}
+
+async function loadWechat() {
+  try {
+    wechat.value = await notifyApi.wechatStatus()
+  } catch {
+    // 通知服务不可用时不影响「我的」页其它功能
+  }
+}
+
+async function loadBindQr() {
+  if (qrLoading.value) return
+  qrLoading.value = true
+  try {
+    const res = await notifyApi.wechatBindQr()
+    bindQr.value = res
+    qrExpireAt.value = res.configured && res.qrImageUrl ? Date.now() + (res.expireSeconds || 600) * 1000 : 0
+    nowTs.value = Date.now()
+  } catch {
+    bindQr.value = null
+    qrExpireAt.value = 0
+  } finally {
+    qrLoading.value = false
+  }
+}
+
+function openWechat() {
+  showWechat.value = true
+  bindQr.value = null
+  qrExpireAt.value = 0
+  loadWechat()
+  loadBindQr()
+  startWatchers()
+}
+
+function closeWechat() {
+  showWechat.value = false
+  stopWatchers()
+}
+
+async function bindWechat() {
+  if (bindingWechat.value) return
+  bindingWechat.value = true
+  try {
+    wechat.value = await notifyApi.bindWechat()
+    toast('微信公众号已绑定，可接收通知')
+  } catch {
+    // 错误提示已在请求层处理
+  } finally {
+    bindingWechat.value = false
+  }
+}
+
+function unbindWechat() {
+  uni.showModal({
+    title: '解除绑定',
+    content: '解绑后将无法收到微信消息通知，确认解除绑定吗？',
+    confirmText: '解除',
+    success: async (res) => {
+      if (!res.confirm || bindingWechat.value) return
+      bindingWechat.value = true
+      try {
+        wechat.value = await notifyApi.unbindWechat()
+        toast('已解除绑定')
+      } catch {
+        // 错误提示已在请求层处理
+      } finally {
+        bindingWechat.value = false
+      }
+    },
+  })
+}
+
+/** 微信内授权页：静默网页授权绑定 openid + 开放标签拉起订阅授权（须在微信中打开） */
+function openWechatAuth() {
+  const inWechat = typeof navigator !== 'undefined' && /micromessenger/i.test(navigator.userAgent)
+  if (!inWechat) {
+    toast('请在微信中打开家长端后再操作')
+    return
+  }
+  window.location.href = '/static/wechat-auth.html'
+}
+
 /* ---------------- 其它 ---------------- */
 const displayName = computed(() =>
   userStore.userInfo?.realName || (userStore.phone ? `家长 ${userStore.phoneMask}` : '家长'),
@@ -416,10 +626,12 @@ onShow(async () => {
   await userStore.claimMyChildren()
   await userStore.fetchProfile()
   loadChildren()
+  loadWechat()
 })
 
 onUnload(() => {
   if (timer) clearInterval(timer)
+  stopWatchers()
 })
 </script>
 
@@ -631,5 +843,96 @@ onUnload(() => {
 
 .about-contact {
   margin-top: 16rpx;
+}
+
+.kv-value.is-bound {
+  color: #14b8a6;
+}
+
+.wechat-account {
+  padding: 8rpx 0 20rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.wechat-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx 0 24rpx;
+}
+
+.wechat-qr-img {
+  width: 320rpx;
+  height: 320rpx;
+  padding: 16rpx;
+  background: #fff;
+  border: 2rpx solid #e2e8f0;
+  border-radius: 16rpx;
+}
+
+.wechat-qr-tip {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.wechat-qr-sub {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #cbd5e1;
+}
+
+.wechat-qr-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wechat-qr-empty-text {
+  font-size: 24rpx;
+  color: #cbd5e1;
+}
+
+.wechat-refresh {
+  padding: 8rpx 0 12rpx;
+  text-align: center;
+}
+
+.wechat-refresh-text {
+  font-size: 24rpx;
+  color: #14b8a6;
+}
+
+.wechat-bound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12rpx 0;
+}
+
+.wechat-bound-line {
+  font-size: 27rpx;
+  color: #14b8a6;
+}
+
+.wechat-bound-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.wechat-bound-tip {
+  margin-top: 14rpx;
+  text-align: left;
+}
+
+.wechat-tip {
+  padding: 4rpx 0 12rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #94a3b8;
 }
 </style>

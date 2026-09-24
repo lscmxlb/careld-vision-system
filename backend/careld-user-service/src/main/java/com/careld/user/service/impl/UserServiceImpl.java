@@ -2,6 +2,7 @@ package com.careld.user.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.common.exception.BusinessException;
+import com.careld.user.dto.PhoneLookupResponse;
 import com.careld.user.dto.UserCreateRequest;
 import com.careld.user.dto.UserResponse;
 import com.careld.user.entity.MedicalStaff;
@@ -316,6 +317,109 @@ public class UserServiceImpl implements UserService {
         }
         user.setRealName(name);
         userMapper.updateById(user);
+    }
+
+    @Override
+    public PhoneLookupResponse lookupByPhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            throw new BusinessException(400, "请输入手机号码");
+        }
+        String target = phone.trim();
+        String like = escapeLike(target);
+        PhoneLookupResponse result = new PhoneLookupResponse();
+        result.setPhone(target);
+
+        // 系统账号：家长账号用户名为手机号，故同时按 username 匹配
+        for (User user : userMapper.selectByPhoneOrUsernameLike(like)) {
+            PhoneLookupResponse.Identity identity = new PhoneLookupResponse.Identity();
+            identity.setSource("sys_user");
+            identity.setId(user.getId());
+            identity.setUsername(user.getUsername());
+            identity.setRealName(user.getRealName());
+            identity.setPhone(user.getPhone());
+            identity.setUserType(user.getUserType());
+            identity.setUserTypeName(userTypeName(user.getUserType()));
+            identity.setCenterName(user.getCenterName());
+            identity.setAgentName(user.getAgentName());
+            identity.setStoreName(user.getStoreName());
+            identity.setStatus(user.getStatus());
+            identity.setCreatedAt(user.getCreatedAt());
+            identity.setLastLoginTime(user.getLastLoginTime());
+            identity.setRoleNames(queryRoleNames(user.getId()));
+            if (user.getUserType() != null && user.getUserType() == 3) {
+                identity.setChildCount(countChildProfiles(user.getId()));
+            }
+            result.getIdentities().add(identity);
+        }
+
+        // 医务人员账号（medical_staff，与 sys_user 无关联，手机号 + 密码登录）
+        for (MedicalStaff staff : medicalStaffMapper.selectListByPhoneLike(like)) {
+            PhoneLookupResponse.Identity identity = new PhoneLookupResponse.Identity();
+            identity.setSource("medical_staff");
+            identity.setId(staff.getId());
+            identity.setUsername(staff.getPhone());
+            identity.setRealName(staff.getName());
+            identity.setPhone(staff.getPhone());
+            identity.setUserType(6);
+            identity.setUserTypeName(userTypeName(6));
+            identity.setStaffRole(staff.getStaffRole());
+            identity.setStaffRoleName(staffRoleName(staff.getStaffRole()));
+            identity.setStoreName(selectStoreName(staff.getStoreId()));
+            identity.setStatus(staff.getStatus());
+            identity.setCreatedAt(staff.getCreatedAt());
+            result.getIdentities().add(identity);
+        }
+
+        result.setFound(!result.getIdentities().isEmpty());
+        return result;
+    }
+
+    /** 转义 LIKE 通配符：避免把用户输入的 % 与 _ 当作通配符（MySQL 默认以 \ 为 LIKE 转义符） */
+    private String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private String userTypeName(Integer userType) {
+        if (userType == null) {
+            return null;
+        }
+        return switch (userType) {
+            case 1 -> "总部";
+            case 2 -> "医院维护";
+            case 3 -> "家长";
+            case 4 -> "运营中心";
+            case 5 -> "代理商";
+            case 6 -> "医务人员";
+            default -> "未知";
+        };
+    }
+
+    private String staffRoleName(Integer staffRole) {
+        if (staffRole == null) {
+            return null;
+        }
+        return switch (staffRole) {
+            case 1 -> "医师";
+            case 2 -> "医生助理";
+            default -> "未知";
+        };
+    }
+
+    private List<String> queryRoleNames(Long userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        return jdbcTemplate.queryForList(
+                "SELECT r.role_name FROM sys_user_role ur JOIN sys_role r ON ur.role_id = r.id " +
+                        "WHERE ur.user_id = ? AND r.status = 1", String.class, userId);
+    }
+
+    /** 家长未删除且未隐藏的儿童档案数量 */
+    private Integer countChildProfiles(Long parentId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM child_profile WHERE deleted_at IS NULL AND status <> 2 AND parent_user_id = ?",
+                Integer.class, parentId);
+        return count == null ? 0 : count;
     }
 
     private UserResponse convertToResponse(User user) {

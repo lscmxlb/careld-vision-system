@@ -4,6 +4,32 @@
 import request from './request'
 import type { User, PageResponse } from '@/types'
 
+export interface PhoneLookupIdentity {
+  source: 'sys_user' | 'medical_staff'
+  id: number
+  username?: string
+  realName?: string
+  phone?: string
+  userType?: number
+  userTypeName?: string
+  staffRole?: number
+  staffRoleName?: string
+  roleNames?: string[]
+  centerName?: string
+  agentName?: string
+  storeName?: string
+  status?: number
+  createdAt?: string
+  lastLoginTime?: string
+  childCount?: number
+}
+
+export interface PhoneLookupResult {
+  phone: string
+  found: boolean
+  identities: PhoneLookupIdentity[]
+}
+
 export const userApi = {
   // 获取当前用户信息
   getCurrentUser: (): Promise<User> => {
@@ -52,5 +78,10 @@ export const userApi = {
   // 修改本人密码
   changeMyPassword: (oldPassword: string, newPassword: string): Promise<void> => {
     return request.post('/users/me/password', { oldPassword, newPassword })
+  },
+
+  // 手机号码查询（该号码是否已注册及其身份/角色）
+  phoneLookup: (phone: string): Promise<PhoneLookupResult> => {
+    return request.get('/users/phone-lookup', { params: { phone } })
   }
 }
