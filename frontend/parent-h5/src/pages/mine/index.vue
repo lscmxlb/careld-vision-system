@@ -30,7 +30,8 @@
           <text class="kv-action">修改</text>
         </view>
       </view>
-      <view class="kv kv-editable" @click="openWechat">
+      <!-- 暂时隐藏：微信公众号绑定入口（恢复时删除 v-if="false"） -->
+      <view v-if="false" class="kv kv-editable" @click="openWechat">
         <text class="kv-key">微信公众号</text>
         <view class="kv-right">
           <text class="kv-value" :class="{ 'is-bound': wechat.bound }">{{ wechat.bound ? '已绑定' : '未绑定' }}</text>

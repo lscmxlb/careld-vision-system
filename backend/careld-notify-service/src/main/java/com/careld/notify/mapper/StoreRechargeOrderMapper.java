@@ -41,8 +41,16 @@ public interface StoreRechargeOrderMapper extends BaseMapper<StoreRechargeOrder>
             + "WHERE id = #{id} AND status = 0 AND deleted_at IS NULL")
     int markClosed(@Param("id") Long id, @Param("tradeState") String tradeState);
 
-    /** 充值记录分页：total 为条数，paidAmount 为范围内已支付金额合计 */
-    @Select("<script>SELECT COUNT(*) AS total, IFNULL(SUM(CASE WHEN o.status = 1 THEN o.amount ELSE 0 END), 0) AS paidAmount "
+    /**
+     * 真实收入判定：已支付 + 非模拟支付 + 微信交易成功。
+     * 试用赠送（trade_state=TRIAL_GRANT）与联调模拟支付（mock_flag=1）都不计入实际收入，
+     * 与 RechargeOrderVO.of 里的行级判定保持一致。
+     */
+    String REAL_INCOME = "o.status = 1 AND o.mock_flag = 0 AND o.trade_state = 'SUCCESS'";
+
+    /** 充值记录分页：total 为条数，actualIncome 为范围内实际收入合计（仅真实微信扫码支付） */
+    @Select("<script>SELECT COUNT(*) AS total, "
+            + "IFNULL(SUM(CASE WHEN " + REAL_INCOME + " THEN o.amount ELSE 0 END), 0) AS actualIncome "
             + "FROM store_recharge_order o WHERE o.deleted_at IS NULL " + FILTERS + "</script>")
     Map<String, Object> summaryByQuery(RechargeOrderQuery query);
 

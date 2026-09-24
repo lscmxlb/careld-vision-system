@@ -16,7 +16,7 @@
 
       <el-form :model="config" label-width="160px">
         <el-row :gutter="24">
-          <el-col :span="12">
+          <el-col :span="12" class="config-col config-col--left">
             <el-form-item label="启用真实微信支付">
               <el-switch v-model="config.enabled" />
               <span class="unit">开启后医院端生成真实微信 Native 支付二维码</span>
@@ -39,8 +39,12 @@
             <el-form-item label="微信支付公钥ID">
               <el-input v-model="config.publicKeyId" placeholder="商户平台-API安全 的 PUB_KEY_ID_…" clearable />
             </el-form-item>
+            <el-form-item class="config-actions">
+              <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
+              <el-button :loading="probing" @click="handleProbe">配置诊断</el-button>
+            </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="12" class="config-col config-col--right">
             <el-form-item label="商户API私钥路径">
               <el-input v-model="config.privateKeyPath" placeholder="服务器上 apiclient_key.pem 的绝对路径" clearable />
             </el-form-item>
@@ -67,11 +71,6 @@
           </el-col>
         </el-row>
 
-        <el-form-item>
-          <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
-          <el-button :loading="probing" @click="handleProbe">配置诊断</el-button>
-        </el-form-item>
-
         <el-alert
           v-if="probeResult"
           :type="probeResult.privateKeyOk && (probeResult.publicKeyOk || (probeResult.certificateCount ?? 0) > 0) ? 'success' : 'warning'"
@@ -90,12 +89,12 @@
       </el-form>
     </el-card>
 
-    <!-- 充值记录（各医院实际扫码充值流水） -->
+    <!-- 充值记录（各医院短信账户充值流水：微信扫码 + 试用赠送） -->
     <el-card class="record-card">
       <template #header>
         <div class="card-header">
           <span>充值记录</span>
-          <span class="header-hint">记录各医院实际扫码充值的流水，含微信支付账单号，可按医院与时间查询</span>
+          <span class="header-hint">记录各医院短信账户充值流水（微信扫码 / 试用赠送），含微信支付账单号，可按医院与时间查询</span>
         </div>
       </template>
 
@@ -148,6 +147,11 @@
             <span :class="{ 'paid-amount': row.status === 1 }">￥{{ formatMoney(row.amount) }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="实际收入" width="110" align="right">
+          <template #default="{ row }">
+            <span :class="{ 'real-income': row.actualIncome > 0 }">￥{{ formatMoney(row.actualIncome) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="微信支付账单号" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">{{ row.transactionId || '—' }}</template>
         </el-table-column>
@@ -159,7 +163,8 @@
         </el-table-column>
         <el-table-column label="备注" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-tag v-if="row.mock" type="warning" size="small">模拟支付（联调）</el-tag>
+            <el-tag v-if="row.remark" type="success" size="small">{{ row.remark }}</el-tag>
+            <el-tag v-else-if="row.mock" type="warning" size="small">模拟支付（联调）</el-tag>
             <span v-else-if="row.status === 2" class="fail-text">{{ row.tradeState || '已关闭/支付失败' }}</span>
             <span v-else>—</span>
           </template>
@@ -180,7 +185,7 @@
       </div>
 
       <div class="summary-bar">
-        <span>当前查询条件下已支付金额合计：<b>￥{{ formatMoney(page.paidAmount) }}</b></span>
+        <span>当前查询条件下实际收入合计：<b>￥{{ formatMoney(page.actualIncome) }}</b></span>
         <span class="summary-divider" />
         <span>记录条数：<b>{{ pagination.total }}</b></span>
       </div>
@@ -189,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'SettingsRecharge' })
+defineOptions({ name: 'StoreRecharge' })
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { payApi, storeApi } from '@/api'
@@ -229,7 +234,7 @@ const query = reactive<{ storeId?: number; status?: number; keyword: string }>({
 })
 const dateRange = ref<[string, string] | null>(null)
 const pagination = reactive({ page: 1, size: 20, total: 0 })
-const page = reactive({ paidAmount: 0 })
+const page = reactive({ actualIncome: 0 })
 
 const formatMoney = (value?: number) => Number(value ?? 0).toFixed(2)
 
@@ -280,7 +285,7 @@ const fetchOrders = async () => {
     orders.value = data.list ?? []
     pagination.total = data.pagination?.total ?? 0
     pagination.size = data.pagination?.size ?? pagination.size
-    page.paidAmount = data.paidAmount ?? 0
+    page.actualIncome = data.actualIncome ?? 0
   } finally {
     loading.value = false
   }
@@ -399,6 +404,21 @@ onMounted(() => {
   color: #606266;
 }
 
+/* 操作按钮沉到左栏底部，与右栏「模拟支付（联调）」同一行，压缩卡片高度 */
+.config-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-actions {
+  margin-top: auto;
+  margin-bottom: 0;
+}
+
+.config-col--right .el-form-item:last-child {
+  margin-bottom: 0;
+}
+
 .probe-result {
   margin-bottom: 4px;
 }
@@ -437,6 +457,11 @@ onMounted(() => {
 }
 
 .paid-amount {
+  color: #67c23a;
+  font-weight: 600;
+}
+
+.real-income {
   color: #67c23a;
   font-weight: 600;
 }

@@ -7,13 +7,17 @@ import com.careld.notify.dto.PayConfigRequest;
 import com.careld.notify.dto.PayConfigVO;
 import com.careld.notify.dto.RechargeOrderPageVO;
 import com.careld.notify.dto.RechargeOrderQuery;
+import com.careld.notify.dto.RechargeOrderVO;
+import com.careld.notify.dto.TrialGrantRequest;
 import com.careld.notify.channel.WechatPayClient;
 import com.careld.notify.service.RechargeOrderService;
 import com.careld.notify.service.WechatPayConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,5 +66,13 @@ public class NotifyPayAdminController {
     @RequirePermission("settings:view")
     public Result<RechargeOrderPageVO> orders(RechargeOrderQuery query) {
         return Result.success(orderService.page(query));
+    }
+
+    @OperationLog(module = "notify", action = "trial-grant", description = "短信试用赠送")
+    @Operation(summary = "给医院短信账户赠送试用额度（生成备注「试用赠送」的充值记录）")
+    @PostMapping("/trial-grant")
+    @RequirePermission("settings:view")
+    public Result<RechargeOrderVO> trialGrant(@Valid @RequestBody TrialGrantRequest request) {
+        return Result.success(orderService.grantTrial(request.getStoreId(), request.getAmount()));
     }
 }

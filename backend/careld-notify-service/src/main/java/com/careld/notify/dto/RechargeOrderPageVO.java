@@ -20,6 +20,6 @@ public class RechargeOrderPageVO {
     @Schema(description = "分页信息")
     private PageResult.Pagination pagination;
 
-    @Schema(description = "当前查询条件下已支付金额合计（元）")
-    private BigDecimal paidAmount;
+    @Schema(description = "当前查询条件下实际收入合计（元，仅真实微信扫码支付）")
+    private BigDecimal actualIncome;
 }

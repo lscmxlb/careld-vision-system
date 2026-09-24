@@ -42,6 +42,12 @@ public class RechargeOrderService {
 
     /** 单笔充值上限（元），与请求校验保持一致 */
     private static final BigDecimal MAX_AMOUNT = new BigDecimal("10000");
+    /** 试用赠送记录的备注与交易状态标记（管理后台充值记录中与微信扫码充值区分） */
+    private static final String TRIAL_REMARK = "试用赠送";
+    private static final String TRIAL_TRADE_STATE = "TRIAL_GRANT";
+    /** 订单号前缀：RC=医院端微信扫码充值，GT=总部试用赠送 */
+    private static final String ORDER_PREFIX_RECHARGE = "RC";
+    private static final String ORDER_PREFIX_TRIAL = "GT";
     /** 订单有效期（分钟） */
     private static final int EXPIRE_MINUTES = 120;
     /** 查单同步最小间隔（毫秒），避免前端轮询把微信查单接口打爆 */
@@ -73,12 +79,11 @@ public class RechargeOrderService {
 
         StoreRechargeOrder order = new StoreRechargeOrder();
         order.setStoreId(storeId);
-        order.setOrderNo(generateOrderNo());
+        order.setOrderNo(generateOrderNo(ORDER_PREFIX_RECHARGE));
         order.setAmount(normalized);
         order.setStatus(0);
         order.setExpireAt(LocalDateTime.now().plusMinutes(EXPIRE_MINUTES));
         order.setMockFlag(realReady ? 0 : 1);
-
         if (realReady) {
             String storeName = sourceMapper.selectStoreName(storeId);
             String description = (StringUtils.hasText(storeName) ? storeName + "-" : "") + "短信服务续费";
@@ -101,6 +106,40 @@ public class RechargeOrderService {
 
         orderMapper.insert(order);
         return RechargeOrderVO.of(order);
+    }
+
+    /**
+     * 总部赠送试用额度：直接计入医院短信账户余额，并生成一条备注「试用赠送」的已完成充值记录
+     *
+     * <p>不经过微信支付，落库即置为已支付；记录与余额入账在同一事务内，任一步失败都不留痕。</p>
+     */
+    @Transactional
+    public RechargeOrderVO grantTrial(Long storeId, BigDecimal amount) {
+        if (storeId == null) {
+            throw new BusinessException(400, "缺少医院ID");
+        }
+        BigDecimal normalized = normalizeAmount(amount);
+        String storeName = sourceMapper.selectStoreName(storeId);
+        if (!StringUtils.hasText(storeName)) {
+            throw new BusinessException(404, "医院不存在或已删除");
+        }
+
+        StoreRechargeOrder order = new StoreRechargeOrder();
+        order.setStoreId(storeId);
+        order.setOrderNo(generateOrderNo(ORDER_PREFIX_TRIAL));
+        order.setAmount(normalized);
+        order.setStatus(1);
+        order.setTradeState(TRIAL_TRADE_STATE);
+        order.setPaidAt(LocalDateTime.now());
+        order.setMockFlag(0);
+        order.setRemark(TRIAL_REMARK);
+        orderMapper.insert(order);
+        accountService.recharge(storeId, normalized);
+        log.info("[PAY] 试用赠送到账 storeId={} orderNo={} amount={}", storeId, order.getOrderNo(), normalized);
+
+        RechargeOrderVO vo = RechargeOrderVO.of(order);
+        vo.setStoreName(storeName);
+        return vo;
     }
 
     /** 查询订单（医院端轮询）：待支付且为真实支付时按节流同步微信侧状态 */
@@ -200,8 +239,9 @@ public class RechargeOrderService {
         vo.setList(rows.stream().map(RechargeOrderVO::of).toList());
         int safeSize = query.getSafeSize();
         vo.setPagination(new PageResult.Pagination(query.getOffset() / safeSize + 1, safeSize, total));
-        Object paid = summary == null ? null : summary.get("paidAmount");
-        vo.setPaidAmount(paid == null ? BigDecimal.ZERO : new BigDecimal(paid.toString()).setScale(2, RoundingMode.HALF_UP));
+        Object actualIncome = summary == null ? null : summary.get("actualIncome");
+        vo.setActualIncome(actualIncome == null ? BigDecimal.ZERO
+                : new BigDecimal(actualIncome.toString()).setScale(2, RoundingMode.HALF_UP));
         return vo;
     }
 
@@ -280,9 +320,9 @@ public class RechargeOrderService {
         return amount.multiply(BigDecimal.valueOf(100)).intValueExact();
     }
 
-    private String generateOrderNo() {
+    private String generateOrderNo(String prefix) {
         String suffix = String.format("%06d", secureRandom.nextInt(1_000_000));
-        return "RC" + LocalDateTime.now().format(ORDER_NO_TIME) + suffix;
+        return prefix + LocalDateTime.now().format(ORDER_NO_TIME) + suffix;
     }
 
     private LocalDateTime parseSuccessTime(String successTime) {

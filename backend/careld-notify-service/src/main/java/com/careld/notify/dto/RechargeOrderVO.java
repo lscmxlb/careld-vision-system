@@ -20,6 +20,9 @@ public class RechargeOrderVO {
     @Schema(description = "支付金额（元）")
     private BigDecimal amount;
 
+    @Schema(description = "实际收入（元）：仅真实微信扫码支付计入，试用赠送与模拟支付为 0")
+    private BigDecimal actualIncome;
+
     @Schema(description = "订单状态：0待支付 1已支付 2已关闭")
     private Integer status;
 
@@ -34,6 +37,9 @@ public class RechargeOrderVO {
 
     @Schema(description = "是否模拟支付")
     private Boolean mock;
+
+    @Schema(description = "备注（如：试用赠送）")
+    private String remark;
 
     @Schema(description = "订单过期时间")
     private LocalDateTime expireAt;
@@ -56,16 +62,25 @@ public class RechargeOrderVO {
         RechargeOrderVO vo = new RechargeOrderVO();
         vo.setOrderNo(order.getOrderNo());
         vo.setAmount(order.getAmount());
+        vo.setActualIncome(realIncome(order) ? order.getAmount() : BigDecimal.ZERO);
         vo.setStatus(order.getStatus());
         vo.setCodeUrl(order.getCodeUrl());
         vo.setTransactionId(order.getTransactionId());
         vo.setTradeState(order.getTradeState());
         vo.setMock(order.getMockFlag() != null && order.getMockFlag() == 1);
+        vo.setRemark(order.getRemark());
         vo.setExpireAt(order.getExpireAt());
         vo.setPaidAt(order.getPaidAt());
         vo.setCreatedAt(order.getCreatedAt());
         vo.setStoreId(order.getStoreId());
         vo.setStoreName(order.getStoreName());
         return vo;
+    }
+
+    /** 真实微信扫码支付（判定口径与 StoreRechargeOrderMapper.REAL_INCOME 的 SQL 一致） */
+    private static boolean realIncome(StoreRechargeOrder order) {
+        return order.getStatus() != null && order.getStatus() == 1
+                && order.getMockFlag() != null && order.getMockFlag() == 0
+                && "SUCCESS".equals(order.getTradeState());
     }
 }

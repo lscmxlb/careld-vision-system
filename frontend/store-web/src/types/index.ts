@@ -591,8 +591,8 @@ export interface RechargeOrder {
 export interface RechargeOrderPage {
   list: RechargeOrder[]
   pagination: Pagination
-  /** 已支付金额合计 */
-  paidAmount: number
+  /** 当前查询条件下实际收入合计（元，仅真实微信扫码支付） */
+  actualIncome: number
 }
 
 /** 充值订单查询条件 */

@@ -3,7 +3,7 @@
     <el-aside width="200px" class="sidebar">
       <div class="logo">
         <img :src="logoImg" alt="Careld" class="logo-img">
-        <span>Careld诊约助手服务</span>
+        <span>Careld诊约助手</span>
       </div>
       <el-menu
         :default-active="$route.path"

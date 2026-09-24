@@ -55,6 +55,12 @@ const router = createRouter({
               name: 'StoreMedicalStaff',
               component: () => import('@/views/store/medical-staff.vue'),
               meta: { title: '医务人员', icon: 'UserFilled', permission: 'store:staff:view' }
+            },
+            {
+              path: 'recharge',
+              name: 'StoreRecharge',
+              component: () => import('@/views/store/recharge.vue'),
+              meta: { title: '充值记录', icon: 'Money', permission: 'settings:view' }
             }
           ]
         },
@@ -99,12 +105,6 @@ const router = createRouter({
           name: 'Settings',
           component: () => import('@/views/settings/index.vue'),
           meta: { title: '系统设置', icon: 'Setting', permission: 'settings:view' }
-        },
-        {
-          path: 'settings/recharge',
-          name: 'SettingsRecharge',
-          component: () => import('@/views/settings/recharge.vue'),
-          meta: { title: '充值记录', icon: 'Money', permission: 'settings:view' }
         },
         {
           path: 'settings/role',

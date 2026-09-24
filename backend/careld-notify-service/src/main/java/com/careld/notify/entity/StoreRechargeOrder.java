@@ -55,6 +55,9 @@ public class StoreRechargeOrder extends BaseEntity {
     @Schema(description = "是否模拟支付：1是 0否")
     private Integer mockFlag;
 
+    @Schema(description = "备注（如：试用赠送）")
+    private String remark;
+
     @TableField(exist = false)
     @Schema(description = "支付医院名称")
     private String storeName;

@@ -17,10 +17,11 @@
         </div>
         <div class="switch-item">
           <span class="switch-label">微信消息通知</span>
-          <el-switch v-model="config.wechatEnabled" :active-value="1" :inactive-value="0" />
+          <el-switch :model-value="0" disabled />
+          <span class="switch-hint">暂未开放</span>
         </div>
         <span class="switch-hint">
-          短信按 {{ smsUnitPrice.toFixed(2) }} 元/条计费，微信模板消息免费
+          短信按 {{ smsUnitPrice.toFixed(2) }} 元/条计费
         </span>
       </div>
 
@@ -34,8 +35,7 @@
       </div>
 
       <div class="setting-tip">
-        开启后，办理建档、预约、养护等业务时会自动通知家长；家长需在“家长端 → 我的 → 微信公众号”
-        中关注并绑定公众号，才能收到微信消息（未绑定时微信消息记为失败，不影响短信发送）。
+        开启后，办理建档、预约、养护等业务时会自动通知家长；当前仅支持手机短信通知，微信消息通知暂未开放。
       </div>
     </el-card>
 
@@ -44,48 +44,64 @@
       <template #header>
         <div class="card-header">
           <span class="card-title">通知记录</span>
+          <!-- 费用汇总：查询范围和累计消费 + 可用余额 + 充值入口 -->
+          <div class="fee-summary">
+            <span class="fee-item">
+              查询范围内费用总额：<b class="fee-num">￥{{ formatMoney(page.filterFee) }}</b>
+            </span>
+            <span class="fee-divider" />
+            <span class="fee-item">
+              累计消费：<b class="fee-num">￥{{ formatMoney(page.totalFee) }}</b>
+            </span>
+            <span class="fee-divider" />
+            <span class="fee-item">
+              可用余额：<b class="balance-num" :class="{ 'is-low': page.balance < 1 }">
+                ￥{{ formatMoney(page.balance) }}
+              </b>
+              <el-button class="recharge-btn" type="primary" size="small" @click="openRecharge">微信充值</el-button>
+              <span class="help-hint">短信余额不足将停发短信（微信消息不受影响）</span>
+            </span>
+          </div>
         </div>
       </template>
 
       <el-form :inline="true" class="query-form">
-        <el-form-item label="儿童姓名">
+        <el-form-item label="儿童姓名" class="q-name">
           <el-input
             v-model="query.childNameLike"
             placeholder="姓名关键字"
             clearable
-            style="width: 150px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="通知类型">
-          <el-select v-model="query.eventType" placeholder="全部" clearable style="width: 130px">
+        <el-form-item label="通知类型" class="q-type">
+          <el-select v-model="query.eventType" placeholder="全部" clearable>
             <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="通知渠道">
-          <el-select v-model="query.channel" placeholder="全部" clearable style="width: 130px">
+        <el-form-item label="通知渠道" class="q-channel">
+          <el-select v-model="query.channel" placeholder="全部" clearable>
             <el-option label="手机短信" :value="1" />
             <el-option label="微信消息" :value="2" />
           </el-select>
         </el-form-item>
-        <el-form-item label="通知结果">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
+        <el-form-item label="通知结果" class="q-result">
+          <el-select v-model="query.status" placeholder="全部" clearable>
             <el-option label="成功" :value="1" />
             <el-option label="失败" :value="0" />
           </el-select>
         </el-form-item>
-        <el-form-item label="通知日期">
+        <el-form-item label="通知日期" class="is-daterange">
           <el-date-picker
             v-model="dateRange"
             type="daterange"
             value-format="YYYY-MM-DD"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
-            style="width: 250px"
             unlink-panels
           />
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="q-actions">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
         </el-form-item>
@@ -134,25 +150,6 @@
           layout="total, prev, pager, next"
           @current-change="fetchRecords"
         />
-      </div>
-
-      <!-- 费用汇总：费用总额 + 可用余额 + 续费说明 -->
-      <div class="fee-summary">
-        <span class="fee-item">
-          查询范围内费用总额：<b class="fee-num">￥{{ formatMoney(page.filterFee) }}</b>
-        </span>
-        <span class="fee-divider" />
-        <span class="fee-item">
-          累计消费：<b class="fee-num">￥{{ formatMoney(page.totalFee) }}</b>
-        </span>
-        <span class="fee-divider" />
-        <span class="fee-item">
-          可用余额：<b class="balance-num" :class="{ 'is-low': page.balance < 1 }">
-            ￥{{ formatMoney(page.balance) }}
-          </b>
-          <el-button class="recharge-btn" type="primary" size="small" @click="openRecharge">微信充值</el-button>
-          <span class="help-hint">短信余额不足将停发短信（微信消息不受影响）</span>
-        </span>
       </div>
     </el-card>
 
@@ -338,7 +335,7 @@ const smsUnitPrice = ref(0.1)
 
 const config = reactive<NotifyConfig>({
   smsEnabled: 0,
-  wechatEnabled: 0,
+  wechatEnabled: 0, // 微信通道暂未开放：固定关闭，保存时也下发 0
   enabledTypes: []
 })
 
@@ -428,7 +425,6 @@ const startPolling = () => {
 const fetchConfig = async () => {
   const data = await notifyApi.getConfig(userStore.storeId)
   config.smsEnabled = data.smsEnabled ?? 0
-  config.wechatEnabled = data.wechatEnabled ?? 0
   config.enabledTypes = data.enabledTypes ?? []
 }
 
@@ -479,13 +475,12 @@ const handleSave = async () => {
     const data = await notifyApi.saveConfig(
       {
         smsEnabled: config.smsEnabled,
-        wechatEnabled: config.wechatEnabled,
+        wechatEnabled: 0,
         enabledTypes: config.enabledTypes
       },
       userStore.storeId
     )
     config.smsEnabled = data.smsEnabled ?? 0
-    config.wechatEnabled = data.wechatEnabled ?? 0
     config.enabledTypes = data.enabledTypes ?? []
     ElMessage.success('通知服务设置已保存')
   } finally {
@@ -578,9 +573,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .card-title {
+  flex: 0 0 auto;
   font-size: 16px;
   font-weight: 600;
 }
@@ -631,9 +628,40 @@ onBeforeUnmount(() => {
   color: #909399;
 }
 
+/* 查询条件压成一行：横向 flex（不换行）+ 收紧默认 32px 间距，控件按比例伸缩，日期吃满剩余宽度 */
 .query-form {
-  margin-bottom: 4px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-bottom: 16px;
 }
+
+.query-form :deep(.el-form-item) {
+  margin-right: 12px;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.query-form :deep(.el-form-item:last-child) {
+  margin-right: 0;
+  flex: 0 0 auto;
+}
+
+.query-form :deep(.el-form-item__content) {
+  min-width: 0;
+}
+
+.query-form :deep(.el-input),
+.query-form :deep(.el-select),
+.query-form :deep(.el-date-editor) {
+  width: 100%;
+}
+
+.query-form :deep(.q-name) { flex: 0 1 196px; }
+.query-form :deep(.q-type) { flex: 0 1 186px; }
+.query-form :deep(.q-channel) { flex: 0 1 186px; }
+.query-form :deep(.q-result) { flex: 0 1 168px; }
+.query-form :deep(.is-daterange) { flex: 1 1 258px; max-width: 320px; }
 
 .pagination-wrapper {
   display: flex;
@@ -641,17 +669,25 @@ onBeforeUnmount(() => {
   margin-top: 14px;
 }
 
+/* 费用汇总随标题排在卡片头部右侧：收紧内边距，右对齐，空间不足时整体换行 */
 .fee-summary {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 12px 16px;
+  gap: 4px 10px;
+  min-width: 0;
+  padding: 4px 10px;
   background: #f5f7fa;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   color: #303133;
+}
+
+.fee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .fee-divider {
@@ -673,11 +709,10 @@ onBeforeUnmount(() => {
 }
 
 .recharge-btn {
-  margin-left: 6px;
+  margin-left: 2px;
 }
 
 .help-hint {
-  margin-left: 8px;
   font-size: 12px;
   color: #909399;
 }

@@ -44,11 +44,15 @@ export interface RechargeOrder {
   storeId: number
   storeName: string
   amount: number
+  /** 实际收入（元）：仅真实微信扫码支付计入，试用赠送与模拟支付为 0 */
+  actualIncome: number
   /** 0=待支付 1=已支付 2=已关闭 */
   status: number
   transactionId?: string
   tradeState?: string
   mock?: boolean
+  /** 备注（如：试用赠送） */
+  remark?: string
   expireAt?: string
   paidAt?: string
   createdAt?: string
@@ -57,8 +61,8 @@ export interface RechargeOrder {
 export interface RechargeOrderPage {
   list: RechargeOrder[]
   pagination: { page: number; size: number; total: number; pages: number }
-  /** 当前查询条件下已支付金额合计（元） */
-  paidAmount: number
+  /** 当前查询条件下实际收入合计（元，仅真实微信扫码支付） */
+  actualIncome: number
 }
 
 export interface RechargeOrderQuery {
@@ -69,6 +73,13 @@ export interface RechargeOrderQuery {
   endDate?: string
   page?: number
   size?: number
+}
+
+/** 总部给医院短信账户赠送试用额度 */
+export interface TrialGrantRequest {
+  storeId: number
+  /** 赠送金额（元） */
+  amount: number
 }
 
 export interface PayProbeResult {
@@ -100,5 +111,9 @@ export const payApi = {
 
   /** 分页查询各医院扫码充值流水 */
   getOrders: (params: RechargeOrderQuery): Promise<RechargeOrderPage> =>
-    request.get('/notify/pay/admin/orders', { params })
+    request.get('/notify/pay/admin/orders', { params }),
+
+  /** 给医院短信账户赠送试用额度（充值记录备注「试用赠送」） */
+  grantTrial: (data: TrialGrantRequest): Promise<RechargeOrder> =>
+    request.post('/notify/pay/admin/trial-grant', data)
 }

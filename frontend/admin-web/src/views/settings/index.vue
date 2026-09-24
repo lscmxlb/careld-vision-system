@@ -2,7 +2,7 @@
   <div class="settings-page">
     <el-tabs v-model="activeTab">
       <el-tab-pane label="系统参数" name="system">
-        <el-row :gutter="20">
+        <el-row :gutter="20" class="equal-height-row">
           <el-col :span="12">
             <el-card>
               <template #header>
@@ -22,14 +22,20 @@
                     <img v-if="systemSettings.logoUrl" :src="systemSettings.logoUrl" class="avatar">
                     <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
                   </el-upload>
-                  <el-button v-if="systemSettings.logoUrl" type="danger" size="small" @click="systemSettings.logoUrl = ''" style="margin-top: 8px;">移除Logo</el-button>
+                  <el-button v-if="systemSettings.logoUrl" type="danger" size="small" class="logo-remove" @click="systemSettings.logoUrl = ''">移除Logo</el-button>
                 </el-form-item>
-                <el-form-item label="默认分页大小">
-                  <el-input-number v-model="systemSettings.defaultPageSize" :min="10" :max="100" />
-                </el-form-item>
-                <el-form-item label="Token有效期(小时)">
-                  <el-input-number v-model="systemSettings.tokenExpireHours" :min="1" :max="72" />
-                </el-form-item>
+                <el-row :gutter="24">
+                  <el-col :span="12">
+                    <el-form-item label="默认分页大小">
+                      <el-input-number v-model="systemSettings.defaultPageSize" :min="10" :max="100" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="Token有效期(小时)">
+                      <el-input-number v-model="systemSettings.tokenExpireHours" :min="1" :max="72" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
                 <el-form-item label="登录验证码">
                   <el-switch v-model="systemSettings.enableCaptcha" />
                 </el-form-item>
@@ -776,8 +782,16 @@ const saveSecuritySettings = () => {
 
 <style scoped lang="scss">
 .settings-page {
+  // 系统参数配置 / 安全设置两张卡片等高（较矮的一张随行高拉伸）
+  .equal-height-row > .el-col > .el-card {
+    height: 100%;
+  }
+
   .avatar-uploader {
     :deep(.el-upload) {
+      display: block;
+      width: fit-content;
+      line-height: 0; /* 去掉行内基线的多余间隙，盒子高度=图片高度+边框 */
       border: 1px dashed #d9d9d9;
       border-radius: 6px;
       cursor: pointer;
@@ -790,20 +804,27 @@ const saveSecuritySettings = () => {
       }
     }
 
+    /* 紧凑预览：与输入框同高（30px + 1px 边框 = 32px），宽度随图片比例（最宽 160px） */
     .avatar {
-      width: 178px;
-      height: 178px;
+      height: 30px;
+      width: auto;
+      max-width: 160px;
       display: block;
     }
 
     .avatar-uploader-icon {
-      font-size: 28px;
+      display: block;
+      font-size: 16px;
       color: #8c939d;
-      width: 178px;
-      height: 178px;
+      width: 120px;
+      height: 30px;
       text-align: center;
-      line-height: 178px;
+      line-height: 30px;
     }
+  }
+
+  .logo-remove {
+    margin-left: 12px;
   }
 
   .unit {

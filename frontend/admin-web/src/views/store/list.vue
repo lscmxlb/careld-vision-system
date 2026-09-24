@@ -83,7 +83,7 @@
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
-              <el-button type="success" size="small" @click="handleViewDevices(row)">设备明细</el-button>
+              <el-button type="success" size="small" @click="openTrialGrant(row)" v-permission="'settings:view'">短信试用</el-button>
               <el-button type="warning" size="small" @click="handleViewStatistics(row)">数据统计</el-button>
               <el-button :type="row.status === 1 ? 'danger' : 'success'" size="small" @click="handleToggleStatus(row)" v-permission="'store:list:update'">
                 {{ row.status === 1 ? '禁用' : '启用' }}
@@ -215,21 +215,24 @@
       </template>
     </el-dialog>
 
-    <!-- 设备明细弹窗 -->
-    <el-dialog v-model="deviceDialogVisible" :title="`${currentStoreName} - 设备明细`" width="800px" destroy-on-close>
-      <el-table :data="storeDevices" v-loading="deviceLoading" stripe>
-        <el-table-column prop="deviceCode" label="设备编码" width="140" />
-        <el-table-column prop="deviceName" label="设备名称" width="140" />
-        <el-table-column prop="deviceTypeName" label="设备类型" width="120" />
-        <el-table-column prop="deviceSn" label="设备SN" width="140" />
-        <el-table-column prop="installDate" label="安装日期" width="120" />
-        <el-table-column prop="maintenanceDate" label="维护日期" width="120" />
-        <el-table-column label="到期状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="expireStatusType(row.expireStatus)">{{ expireStatusLabel(row.expireStatus) }}</el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 短信试用赠送弹窗 -->
+    <el-dialog v-model="trialDialogVisible" :title="`${trialStoreName} - 短信试用`" width="480px" destroy-on-close>
+      <el-form label-width="130px">
+        <el-form-item label="医院名称">{{ trialStoreName }}</el-form-item>
+        <el-form-item label="当前可用余额">
+          <span :class="{ 'balance-low': trialBalance < 1 }">￥{{ trialBalance.toFixed(2) }}</span>
+        </el-form-item>
+        <el-form-item label="赠送金额（元）">
+          <el-input v-model="trialAmount" placeholder="请输入赠送金额（1 ~ 10000）" clearable />
+          <div class="trial-tip">
+            赠送金额直接计入该医院短信账户余额，并在「医院管理 → 充值记录」中生成一条备注为「试用赠送」的充值记录。
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="trialDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="trialSubmitting" @click="handleTrialSubmit">确认赠送</el-button>
+      </template>
     </el-dialog>
 
     <!-- 数据统计弹窗 -->
@@ -285,9 +288,9 @@ defineOptions({ name: 'AdminStoreList' })
 import { ref, reactive, onMounted, computed, nextTick, h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { storeApi, orgApi, deviceApi, userApi, roleApi, statisticsApi, departmentApi } from '@/api'
+import { storeApi, orgApi, userApi, roleApi, statisticsApi, departmentApi, payApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import type { Store, StoreQuery, OpsCenter, Agent, Device, User, StoreOverview } from '@/types'
+import type { Store, StoreQuery, OpsCenter, Agent, User, StoreOverview } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
 import { regionData } from 'element-china-area-data'
 
@@ -435,11 +438,13 @@ const onRegionChange = (codes: string[] | undefined) => {
   }
 }
 
-// 设备明细
-const deviceDialogVisible = ref(false)
-const deviceLoading = ref(false)
-const storeDevices = ref<Device[]>([])
-const currentStoreName = ref('')
+// 短信试用赠送
+const trialDialogVisible = ref(false)
+const trialSubmitting = ref(false)
+const trialStoreId = ref<number>()
+const trialStoreName = ref('')
+const trialBalance = ref(0)
+const trialAmount = ref('')
 
 // 数据统计
 const statDialogVisible = ref(false)
@@ -459,16 +464,6 @@ const getAgentContactName = (agentId?: number) => {
 
 /** 短信服务可用余额（元），无账户记录按 0 展示 */
 const formatBalance = (balance?: number) => Number(balance ?? 0).toFixed(2)
-
-const expireStatusLabel = (status?: number) => {
-  const map: Record<number, string> = { 0: '正常', 1: '即将到期', 2: '已到期' }
-  return map[status ?? 0] || '正常'
-}
-
-const expireStatusType = (status?: number) => {
-  const map: Record<number, string> = { 0: 'success', 1: 'warning', 2: 'danger' }
-  return map[status ?? 0] || 'success'
-}
 
 const fetchCenters = async () => {
   try { centerOptions.value = await orgApi.getAllCenters() } catch (e) { console.error('获取运营中心失败', e) }
@@ -613,17 +608,31 @@ const handleEdit = async (row: Store) => {
   })
 }
 
-const handleViewDevices = async (row: Store) => {
-  currentStoreName.value = row.storeName
-  deviceDialogVisible.value = true
-  deviceLoading.value = true
+const openTrialGrant = (row: Store) => {
+  trialStoreId.value = row.id
+  trialStoreName.value = row.storeName
+  trialBalance.value = Number(row.balance ?? 0)
+  trialAmount.value = ''
+  trialDialogVisible.value = true
+}
+
+const handleTrialSubmit = async () => {
+  if (!trialStoreId.value) return
+  const amount = Number(trialAmount.value)
+  if (!trialAmount.value || Number.isNaN(amount) || amount < 1 || amount > 10000) {
+    ElMessage.warning('赠送金额需在 1 ~ 10000 元之间')
+    return
+  }
+  trialSubmitting.value = true
   try {
-    const res = await deviceApi.getDeviceList({ storeId: row.id, page: 1, size: 100 })
-    storeDevices.value = res.list
+    const res = await payApi.grantTrial({ storeId: trialStoreId.value, amount })
+    ElMessage.success(`已为「${trialStoreName.value}」赠送 ￥${Number(res.amount ?? amount).toFixed(2)}，已计入短信账户余额`)
+    trialDialogVisible.value = false
+    fetchData()
   } catch (error) {
-    console.error('获取设备列表失败', error)
+    console.error('短信试用赠送失败', error)
   } finally {
-    deviceLoading.value = false
+    trialSubmitting.value = false
   }
 }
 
@@ -742,6 +751,7 @@ onMounted(() => {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
   .search-form { margin-bottom: 20px; }
   .charge-unit { margin-left: 8px; color: #606266; font-size: 14px; }
+  .trial-tip { margin-top: 6px; color: #909399; font-size: 12px; line-height: 1.6; }
   .balance-low { color: #f56c6c; }
   .pagination-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
   .action-buttons {

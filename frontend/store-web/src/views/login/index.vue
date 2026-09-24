@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-box">
       <img :src="logoImg" alt="Careld" class="login-logo">
-      <h2>Careld诊约助手服务登录</h2>
+      <h2>Careld诊约助手登录</h2>
       <el-form :model="form" @keyup.enter="handleLogin">
         <el-form-item>
           <el-radio-group v-model="form.loginType" size="large" class="login-type">
