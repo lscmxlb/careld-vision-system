@@ -831,7 +831,7 @@ const serviceRecords = ref<ChildServiceRecord[]>([])
 
 const getChangeTypeText = (type: number) => {
   const map: Record<number, string> = {
-    1: '预约授权', 2: '预约扣减', 3: '取消退还', 4: '爽约退还', 5: '爽约不退还'
+    1: '预约授权', 2: '预约扣减', 3: '取消退还', 4: '爽约退还', 5: '爽约不退还', 6: '体验卡兑换'
   }
   return map[type] || '未知'
 }

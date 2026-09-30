@@ -66,4 +66,15 @@ export const childApi = {
 
   /** 恢复已删除（隐藏）档案（医生端/医院端） */
   restoreChild: (id: number): Promise<void> => put<void>(`/children/${id}/restore`, {}),
+
+  /** 兑换项目体验卡（校验通过后该档案可用预约次数 +1） */
+  redeemTrialCard: (data: {
+    childId: number
+    cardNo: string
+    verifyCode: string
+  }): Promise<{ childId: number; cardNo: string; changeCount: number; remainingCount: number }> =>
+    post<{ childId: number; cardNo: string; changeCount: number; remainingCount: number }>(
+      '/trial-cards/redeem',
+      data as unknown as Record<string, unknown>,
+    ),
 }

@@ -13,7 +13,9 @@ fi
 
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="2.0.1"
+# 从父 pom 动态取版本号，避免版本升级后 jar 名对不上
+VERSION="$(sed -n 's/^[[:space:]]*<version>\([^<]*\)<\/version>[[:space:]]*$/\1/p' "$ROOT/backend/pom.xml" | head -1)"
+[ -n "$VERSION" ] || { echo "无法从 backend/pom.xml 解析版本号"; exit 1; }
 LOG_DIR="$ROOT/logs"
 ENV_FILE="$ROOT/backend/.env"
 
@@ -33,9 +35,14 @@ BOOT_ORDER=("8281" "8282" "8283" "8284" "8285" "8286" "8287" "8288")
 
 # 前端: 目录 -> 端口
 declare -A WEB=(
-  [parent-web]="5173"
-  [admin-web]="5174"
+  [admin-web]="5172"
   [store-web]="5175"
+  [parent-web]="5173"
+)
+# uni-app H5 端启动命令与 vite 不同，单独列出
+declare -A H5=(
+  [doctor-h5]="5176"
+  [parent-h5]="5177"
 )
 
 BUILD=0
@@ -136,6 +143,19 @@ if [ $WITH_FRONTEND -eq 1 ]; then
   for w in "${!WEB[@]}"; do
     if wait_port "${WEB[$w]}" 60; then ok "$w :${WEB[$w]} 就绪"; else err "$w :${WEB[$w]} 失败，见 $LOG_DIR/$w.log"; fi
   done
+  for w in "${!H5[@]}"; do
+    dir="$ROOT/frontend/$w"
+    [ -d "$dir/node_modules" ] || { log "$w 缺 node_modules，运行: (cd $dir && npm install)"; }
+    if port_up "${H5[$w]}"; then
+      log "$w :${H5[$w]} 已在运行，跳过"
+    else
+      nohup npm run dev:h5 --prefix "$dir" > "$LOG_DIR/$w.log" 2>&1 &
+      log "启动 $w (pid=$!)"
+    fi
+  done
+  for w in "${!H5[@]}"; do
+    if wait_port "${H5[$w]}" 90; then ok "$w :${H5[$w]} 就绪"; else err "$w :${H5[$w]} 失败，见 $LOG_DIR/$w.log"; fi
+  done
 fi
 
 # ---------- 5. 汇总 ----------
@@ -147,6 +167,9 @@ if [ $WITH_FRONTEND -eq 1 ]; then
   echo
   for w in "${!WEB[@]}"; do
     port_up "${WEB[$w]}" && ok "http://localhost:${WEB[$w]}/  $w"
+  done
+  for w in "${!H5[@]}"; do
+    port_up "${H5[$w]}" && ok "http://localhost:${H5[$w]}/  $w"
   done
 fi
 

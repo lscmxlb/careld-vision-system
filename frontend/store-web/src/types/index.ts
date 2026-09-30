@@ -380,6 +380,8 @@ export interface AppointmentConfig {
   autoCompleteHours: number
   /** 预约记录默认显示的状态，逗号分隔（1已预约2养护中3已完成4已取消5已爽约） */
   defaultShowStatuses?: string
+  /** 儿童档案审核方式 0=需要审核（默认） 1=自动审核 */
+  childAuditMode?: number
 }
 
 /** 医务人员 */
@@ -434,7 +436,7 @@ export interface CareRecord {
 export interface ChildServiceRecord {
   id: number
   childId: number
-  changeType: number // 1=预约授权 2=预约扣减 3=取消退还 4=爽约退还 5=爽约不退还
+  changeType: number // 1=预约授权 2=预约扣减 3=取消退还 4=爽约退还 5=爽约不退还 6=体验卡兑换
   changeCount: number
   remainingAfter?: number
   paymentAmount?: number

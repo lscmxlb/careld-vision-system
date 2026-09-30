@@ -21,7 +21,8 @@
           <span class="switch-hint">暂未开放</span>
         </div>
         <span class="switch-hint">
-          短信按 {{ smsUnitPrice.toFixed(2) }} 元/条计费
+          开启后，办理建档、预约、养护等业务时会自动通知家长；当前仅支持手机短信通知，短信按
+          {{ smsUnitPrice.toFixed(2) }} 元/条计费，微信消息通知暂未开放。
         </span>
       </div>
 
@@ -32,10 +33,6 @@
             {{ item.label }}
           </el-checkbox>
         </el-checkbox-group>
-      </div>
-
-      <div class="setting-tip">
-        开启后，办理建档、预约、养护等业务时会自动通知家长；当前仅支持手机短信通知，微信消息通知暂未开放。
       </div>
     </el-card>
 
@@ -59,7 +56,6 @@
                 ￥{{ formatMoney(page.balance) }}
               </b>
               <el-button class="recharge-btn" type="primary" size="small" @click="openRecharge">微信充值</el-button>
-              <span class="help-hint">短信余额不足将停发短信（微信消息不受影响）</span>
             </span>
           </div>
         </div>
@@ -102,8 +98,8 @@
           />
         </el-form-item>
         <el-form-item class="q-actions">
-          <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
         </el-form-item>
       </el-form>
 
@@ -576,6 +572,11 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+/* 通知记录卡片头部：费用汇总紧随标题同排（不再贴右） */
+.record-card .card-header {
+  justify-content: flex-start;
+}
+
 .card-title {
   flex: 0 0 auto;
   font-size: 16px;
@@ -618,17 +619,7 @@ onBeforeUnmount(() => {
   gap: 4px 16px;
 }
 
-.setting-tip {
-  margin-top: 10px;
-  padding: 8px 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  font-size: 12px;
-  line-height: 1.7;
-  color: #909399;
-}
-
-/* 查询条件压成一行：横向 flex（不换行）+ 收紧默认 32px 间距，控件按比例伸缩，日期吃满剩余宽度 */
+/* 查询条件压成一行：横向 flex（不换行）+ 收紧默认 32px 间距，控件按比例伸缩吃满整行，尾部不留空白 */
 .query-form {
   display: flex;
   flex-wrap: nowrap;
@@ -642,11 +633,6 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.query-form :deep(.el-form-item:last-child) {
-  margin-right: 0;
-  flex: 0 0 auto;
-}
-
 .query-form :deep(.el-form-item__content) {
   min-width: 0;
 }
@@ -657,11 +643,16 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.query-form :deep(.q-name) { flex: 0 1 196px; }
-.query-form :deep(.q-type) { flex: 0 1 186px; }
-.query-form :deep(.q-channel) { flex: 0 1 186px; }
-.query-form :deep(.q-result) { flex: 0 1 168px; }
-.query-form :deep(.is-daterange) { flex: 1 1 258px; max-width: 320px; }
+.query-form :deep(.q-name) { flex: 1 1 196px; }
+.query-form :deep(.q-type) { flex: 1 1 186px; }
+.query-form :deep(.q-channel) { flex: 1 1 186px; }
+.query-form :deep(.q-result) { flex: 1 1 168px; }
+.query-form :deep(.is-daterange) { flex: 1.5 1 300px; }
+
+.query-form :deep(.q-actions) {
+  flex: 0 0 auto;
+  margin-right: 0;
+}
 
 .pagination-wrapper {
   display: flex;
@@ -669,11 +660,10 @@ onBeforeUnmount(() => {
   margin-top: 14px;
 }
 
-/* 费用汇总随标题排在卡片头部右侧：收紧内边距，右对齐，空间不足时整体换行 */
+/* 费用汇总紧随「通知记录」标题排在其右侧：收紧内边距，空间不足时整体换行 */
 .fee-summary {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 4px 10px;
   min-width: 0;
@@ -710,11 +700,6 @@ onBeforeUnmount(() => {
 
 .recharge-btn {
   margin-left: 2px;
-}
-
-.help-hint {
-  font-size: 12px;
-  color: #909399;
 }
 
 .fail-text {

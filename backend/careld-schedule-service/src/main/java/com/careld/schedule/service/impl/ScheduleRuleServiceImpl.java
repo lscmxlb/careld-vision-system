@@ -171,6 +171,7 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
         def.setAutoCompleteHours(new java.math.BigDecimal("1.5"));
         def.setAutoNoShowHours(12);
         def.setDefaultShowStatuses("1,2,3,4,5");
+        def.setChildAuditMode(0);
         return def;
     }
 
@@ -178,6 +179,9 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
     @Transactional
     public void saveConfig(AppointmentConfig config) {
         validateDefaultShowStatuses(config.getDefaultShowStatuses());
+        if (config.getChildAuditMode() != null && config.getChildAuditMode() != 0 && config.getChildAuditMode() != 1) {
+            throw new BusinessException(400, "儿童档案审核方式不合法");
+        }
         AppointmentConfig exist = configMapper.selectByStoreId(config.getStoreId());
         if (exist == null) {
             config.setId(null);

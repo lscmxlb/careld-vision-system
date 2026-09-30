@@ -54,6 +54,7 @@ export const CHANGE_TYPE_MAP: Record<number, { label: string; sign: string }> = 
   3: { label: '取消退还', sign: '+' },
   4: { label: '爽约退还', sign: '+' },
   5: { label: '爽约不退还', sign: '-' },
+  6: { label: '体验卡兑换', sign: '+' },
 }
 
 /* ---------------- 养护记录状态 ---------------- */

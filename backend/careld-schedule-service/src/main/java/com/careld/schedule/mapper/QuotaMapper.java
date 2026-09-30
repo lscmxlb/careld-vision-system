@@ -50,4 +50,10 @@ public interface QuotaMapper {
                           @Param("changeType") int changeType, @Param("changeCount") int changeCount,
                           @Param("appointmentId") Long appointmentId, @Param("operatorId") Long operatorId,
                           @Param("remark") String remark);
+
+    /** 核销该儿童名下最早绑定的体验卡（2 已绑定 → 1 已使用）；无绑定卡时影响行数为 0，不视为错误 */
+    @Update("UPDATE trial_card SET status = 1, used_at = NOW(), updated_by = #{operatorId}, updated_at = NOW() "
+            + "WHERE used_child_id = #{childId} AND status = 2 AND deleted_at IS NULL "
+            + "ORDER BY bound_at ASC, id ASC LIMIT 1")
+    int consumeBoundTrialCard(@Param("childId") Long childId, @Param("operatorId") Long operatorId);
 }

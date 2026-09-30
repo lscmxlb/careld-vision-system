@@ -21,6 +21,9 @@ Thumbs.db
 # 本地工具
 .qoder/
 
+# 微信支付证书（商户私钥，严禁入库）
+careld-certs/
+
 # Env
 .env
 .env.local

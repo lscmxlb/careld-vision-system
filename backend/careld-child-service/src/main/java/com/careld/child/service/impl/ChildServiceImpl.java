@@ -49,9 +49,14 @@ public class ChildServiceImpl implements ChildService {
         profile.setPhoneEncrypted(AesUtil.encrypt(plainPhone, aesKey));
         profile.setNameMask(MaskUtil.maskName(profile.getNameMask()));
         profile.setPhoneMask(MaskUtil.maskPhone(plainPhone));
-        // 来源与审核：医生添加自动通过；家长添加待审核（来源由控制器按用户类型设置）
+        // 来源与审核：医生添加自动通过；家长添加默认待审核，门店配置「自动审核」时直接通过（来源由控制器按用户类型设置）
         if (profile.getSourceType() != null && profile.getSourceType() == 1) {
-            profile.setAuditStatus(0);
+            if (isChildAutoAudit(profile.getStoreId())) {
+                profile.setAuditStatus(1);
+                profile.setAuditedAt(LocalDateTime.now());
+            } else {
+                profile.setAuditStatus(0);
+            }
         } else {
             profile.setSourceType(2);
             profile.setAuditStatus(1);
@@ -78,6 +83,15 @@ public class ChildServiceImpl implements ChildService {
                     NotifyEventTypes.CHILD_CREATED, profile.getId(), payload);
         }
         return profile.getId();
+    }
+
+    /** 门店「儿童档案」是否为自动审核（appointment_config 无配置按需要审核处理） */
+    private boolean isChildAutoAudit(Long storeId) {
+        if (storeId == null) {
+            return false;
+        }
+        Integer mode = childMapper.selectChildAuditMode(storeId);
+        return mode != null && mode == 1;
     }
 
     /**

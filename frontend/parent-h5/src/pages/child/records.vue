@@ -53,13 +53,14 @@ const childId = ref(0)
 const records = ref<ChildServiceRecord[]>([])
 const loading = ref(false)
 
-/** 变更类型：1 预约授权 / 2 预约扣减 / 3 取消退还 / 4 爽约退还 / 5 爽约不退还 */
+/** 变更类型：1 预约授权 / 2 预约扣减 / 3 取消退还 / 4 爽约退还 / 5 爽约不退还 / 6 体验卡兑换 */
 const CHANGE_TYPE_MAP: Record<number, string> = {
   1: '预约授权',
   2: '预约扣减',
   3: '取消退还',
   4: '爽约退还',
   5: '爽约不退还',
+  6: '体验卡兑换',
 }
 
 function typeText(type: number) {

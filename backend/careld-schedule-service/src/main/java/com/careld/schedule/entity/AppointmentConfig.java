@@ -27,4 +27,6 @@ public class AppointmentConfig extends BaseEntity {
     private Integer autoNoShowHours;
     /** 预约记录默认显示的状态，逗号分隔（1已预约2养护中3已完成4已取消5已爽约） */
     private String defaultShowStatuses;
+    /** 儿童档案审核方式 0=需要审核（默认） 1=自动审核 */
+    private Integer childAuditMode;
 }

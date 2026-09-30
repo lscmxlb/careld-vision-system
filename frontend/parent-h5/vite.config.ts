@@ -19,6 +19,7 @@ export default defineConfig({
       '/api/v1/devices': apiProxy('http://127.0.0.1:8283'),
       '/api/v1/departments': apiProxy('http://127.0.0.1:8283'),
       '/api/v1/children': apiProxy('http://127.0.0.1:8284'),
+      '/api/v1/trial-cards': apiProxy('http://127.0.0.1:8284'),
       '/api/v1/schedule-rules': apiProxy('http://127.0.0.1:8285'),
       '/api/v1/appointment-config': apiProxy('http://127.0.0.1:8285'),
       '/api/v1/schedules': apiProxy('http://127.0.0.1:8285'),

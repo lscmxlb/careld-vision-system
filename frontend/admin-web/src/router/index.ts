@@ -61,6 +61,12 @@ const router = createRouter({
               name: 'StoreRecharge',
               component: () => import('@/views/store/recharge.vue'),
               meta: { title: '充值记录', icon: 'Money', permission: 'settings:view' }
+            },
+            {
+              path: 'trial-card',
+              name: 'StoreTrialCard',
+              component: () => import('@/views/store/trial-card.vue'),
+              meta: { title: '项目体验卡', icon: 'Ticket', permission: 'trialcard:view' }
             }
           ]
         },

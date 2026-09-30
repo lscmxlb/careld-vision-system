@@ -47,6 +47,7 @@
 
         <view class="child-actions">
           <view class="btn btn-sm btn-plain" @click="goDetail(item)">档案详情</view>
+          <view class="btn btn-sm btn-outline" @click="openRedeem(item)">兑换次数</view>
           <view
             class="btn btn-sm btn-primary"
             :class="{ 'is-disabled': !canReserve(item) }"
@@ -68,11 +69,58 @@
     </view>
 
     <view v-if="list.length" class="fab" @click="goCreate">＋ 添加儿童档案</view>
+
+    <!-- 兑换次数（体验卡）：居中严格模态，点遮罩不关闭 -->
+    <view v-if="redeemTarget" class="redeem-root">
+      <view class="mask" @touchmove.stop.prevent="noop" />
+      <view class="sheet sheet-center">
+        <view class="sheet-header">
+          <text class="sheet-title">兑换次数</text>
+          <view class="sheet-close-btn" @click="closeRedeem">
+            <text class="sheet-close-icon">✕</text>
+          </view>
+        </view>
+        <view class="sheet-body">
+          <view class="redeem-target">
+            <text class="rt-name">{{ redeemTarget.name || '未命名' }}</text>
+            <text class="rt-tip">兑换成功后，该档案的可用预约次数 +1</text>
+          </view>
+          <view class="redeem-label">体验卡编号</view>
+          <view class="redeem-input-wrap">
+            <input
+              v-model="cardNo"
+              class="redeem-input"
+              type="number"
+              maxlength="11"
+              placeholder="请输入 11 位体验卡编号"
+              placeholder-class="redeem-ph"
+            />
+          </view>
+          <view class="redeem-label">体验卡验证码</view>
+          <view class="redeem-input-wrap">
+            <input
+              v-model="verifyCode"
+              class="redeem-input"
+              type="number"
+              maxlength="8"
+              placeholder="请输入 8 位体验卡验证码"
+              placeholder-class="redeem-ph"
+              @confirm="submitRedeem"
+            />
+          </view>
+        </view>
+        <view class="sheet-footer">
+          <view class="btn btn-block btn-primary" :class="{ 'is-disabled': !canRedeem || redeeming }" @click="submitRedeem">
+            {{ redeeming ? '兑换中…' : '确认兑换' }}
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { childApi } from '@/api/child'
 import { useUserStore } from '@/stores/user'
@@ -149,6 +197,45 @@ function goReserve(item: Child) {
   }
   setReserveChildId(item.id)
   uni.switchTab({ url: '/pages/appointment/index' })
+}
+
+// ------- 兑换次数（体验卡） -------
+const redeemTarget = ref<Child | null>(null)
+const cardNo = ref('')
+const verifyCode = ref('')
+const redeeming = ref(false)
+
+const canRedeem = computed(
+  () => /^\d{11}$/.test(cardNo.value.trim()) && /^\d{8}$/.test(verifyCode.value.trim())
+)
+
+function openRedeem(item: Child) {
+  redeemTarget.value = item
+  cardNo.value = ''
+  verifyCode.value = ''
+}
+
+function closeRedeem() {
+  redeemTarget.value = null
+}
+
+function noop() {}
+
+async function submitRedeem() {
+  if (!redeemTarget.value || !canRedeem.value || redeeming.value) return
+  redeeming.value = true
+  try {
+    const res = await childApi.redeemTrialCard({
+      childId: redeemTarget.value.id,
+      cardNo: cardNo.value.trim(),
+      verifyCode: verifyCode.value.trim()
+    })
+    closeRedeem()
+    toast(`兑换成功，可用次数 +${res?.changeCount ?? 1}`)
+    load()
+  } finally {
+    redeeming.value = false
+  }
 }
 
 onShow(async () => {
@@ -329,5 +416,59 @@ onPullDownRefresh(async () => {
   border-radius: 50rpx;
   box-shadow: 0 8rpx 24rpx rgba(20, 184, 166, 0.35);
   z-index: 20;
+}
+
+/* ------- 兑换次数弹窗（tabBar 层级之上） ------- */
+.redeem-root {
+  position: relative;
+  z-index: 1000;
+}
+
+.redeem-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rpx 0 24rpx;
+}
+
+.rt-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rt-tip {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.redeem-label {
+  margin: 16rpx 0 12rpx;
+  font-size: 26rpx;
+  color: #64748b;
+}
+
+.redeem-input-wrap {
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #f8fafc;
+  border: 2rpx solid #e2e8f0;
+  border-radius: 16rpx;
+}
+
+.redeem-input {
+  flex: 1;
+  font-size: 30rpx;
+  color: #0f172a;
+  letter-spacing: 2rpx;
+}
+
+.redeem-ph {
+  font-size: 26rpx;
+  color: #cbd5e1;
+  letter-spacing: 0;
 }
 </style>

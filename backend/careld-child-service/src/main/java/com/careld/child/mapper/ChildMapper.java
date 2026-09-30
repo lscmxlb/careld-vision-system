@@ -27,6 +27,10 @@ public interface ChildMapper extends BaseMapper<ChildProfile> {
     @Select("SELECT * FROM child_profile WHERE store_id = #{storeId} AND deleted_at IS NULL AND status = 1")
     List<ChildProfile> selectByStoreId(Long storeId);
 
+    /** 门店「儿童档案」审核方式（appointment_config.child_audit_mode）：无配置返回 null，按需要审核处理 */
+    @Select("SELECT child_audit_mode FROM appointment_config WHERE store_id = #{storeId} LIMIT 1")
+    Integer selectChildAuditMode(@Param("storeId") Long storeId);
+
     @Select("<script>SELECT COUNT(*) FROM child_profile WHERE deleted_at IS NULL " +
             "<if test='storeId != null'>AND store_id = #{storeId} </if>" +
             "<if test='parentUserId != null'>AND parent_user_id = #{parentUserId} </if>" +

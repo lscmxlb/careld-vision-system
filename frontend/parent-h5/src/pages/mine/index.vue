@@ -1,7 +1,7 @@
 <template>
   <view class="page">
     <view class="hero">
-      <view class="avatar">{{ avatarText }}</view>
+      <view class="avatar"><text class="avatar-txt">{{ avatarText }}</text></view>
       <view class="hero-info">
         <text class="hero-name">{{ displayName }}</text>
         <text class="hero-role">家长账号</text>
@@ -659,6 +659,12 @@ onUnload(() => {
   background: #fff;
   border-radius: 50%;
   font-weight: 600;
+}
+
+/* 汉字字形在多数中文字体（安卓 Noto Sans CJK 等）em 框内偏下约 0.05em，文字单独上提 2rpx 做视觉居中 */
+.avatar-txt {
+  position: relative;
+  top: -2rpx;
 }
 
 /* 本页是 tabBar 页：uni 底栏 z-index 998，弹层需更高，否则底部按钮被底栏挡住点不动 */

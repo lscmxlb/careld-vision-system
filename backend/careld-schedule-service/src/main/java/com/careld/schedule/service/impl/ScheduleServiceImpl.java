@@ -322,6 +322,9 @@ public class ScheduleServiceImpl implements ScheduleService {
         order.setExecutorName(executorName);
         reserveOrderMapper.updateById(order);
 
+        // 到店开始养护即核销该儿童名下最早绑定的体验卡（体验卡 2 已绑定 → 1 已使用；无绑定卡时静默跳过）
+        quotaMapper.consumeBoundTrialCard(order.getChildId(), UserContext.getCurrentUserId());
+
         // 同事务创建养护记录（录入养护前视力）
         CareRecord record = new CareRecord();
         record.setAppointmentId(order.getId());

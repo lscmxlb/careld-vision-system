@@ -84,6 +84,21 @@
         </el-form>
       </div>
 
+      <!-- 第三组：儿童档案 -->
+      <div class="section">
+        <div class="section-title">儿童档案</div>
+
+        <el-form ref="archiveFormRef" :model="configForm" :rules="configRules" label-width="200px" style="max-width: 640px;">
+          <el-form-item label="儿童档案" prop="childAuditMode">
+            <el-radio-group v-model="configForm.childAuditMode">
+              <el-radio :value="0">需要审核</el-radio>
+              <el-radio :value="1">自动审核</el-radio>
+            </el-radio-group>
+            <div class="form-tip">需要审核：家长建档提交后，需医院审核通过才能正常使用；自动审核：家长提交后系统自动审核通过，无需医院操作</div>
+          </el-form-item>
+        </el-form>
+      </div>
+
       <div class="footer-actions">
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存配置</el-button>
       </div>
@@ -177,7 +192,8 @@ const configForm = reactive({
   noShowBufferMinutes: 15,
   autoNoShowHours: 12,
   autoCompleteHours: 1.5,
-  defaultShowStatuses: ['1', '2', '3', '4', '5'] as string[]
+  defaultShowStatuses: ['1', '2', '3', '4', '5'] as string[],
+  childAuditMode: 0
 })
 
 const configRules = {
@@ -197,8 +213,12 @@ const configRules = {
       },
       trigger: 'change'
     }
-  ]
+  ],
+  childAuditMode: [{ required: true, message: '请选择审核方式', trigger: 'change' }]
 }
+
+// ---------- 儿童档案 ----------
+const archiveFormRef = ref<FormInstance>()
 
 const loadConfig = async () => {
   configLoading.value = true
@@ -210,7 +230,8 @@ const loadConfig = async () => {
       noShowBufferMinutes: config.noShowBufferMinutes,
       autoNoShowHours: config.autoNoShowHours ?? 12,
       autoCompleteHours: Number(config.autoCompleteHours),
-      defaultShowStatuses: (config.defaultShowStatuses || '1,2,3,4,5').split(',').filter(Boolean)
+      defaultShowStatuses: (config.defaultShowStatuses || '1,2,3,4,5').split(',').filter(Boolean),
+      childAuditMode: config.childAuditMode ?? 0
     })
   } catch {
     // 错误已在拦截器处理
@@ -237,15 +258,16 @@ const takeSnapshot = () =>
     noShowBufferMinutes: configForm.noShowBufferMinutes,
     autoNoShowHours: configForm.autoNoShowHours,
     autoCompleteHours: configForm.autoCompleteHours,
-    defaultShowStatuses: [...configForm.defaultShowStatuses].sort().join(',')
+    defaultShowStatuses: [...configForm.defaultShowStatuses].sort().join(','),
+    childAuditMode: configForm.childAuditMode
   })
 
 const isDirty = computed(() => baseline.value !== '' && takeSnapshot() !== baseline.value)
 
 const handleSubmit = async () => {
-  if (!deptFormRef.value || !configFormRef.value) return
+  if (!deptFormRef.value || !configFormRef.value || !archiveFormRef.value) return
   // 无科室记录且未填写科室信息时不校验科室组，配置仍可保存；医院名称有修改时需校验（名称必填）
-  const validations: Promise<unknown>[] = [configFormRef.value.validate()]
+  const validations: Promise<unknown>[] = [configFormRef.value.validate(), archiveFormRef.value.validate()]
   if (deptForm.id || hasDeptInput.value || isStoreNameDirty.value) {
     validations.push(deptFormRef.value.validate())
   }
