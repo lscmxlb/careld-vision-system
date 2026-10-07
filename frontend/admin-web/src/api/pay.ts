@@ -43,6 +43,7 @@ export interface RechargeOrder {
   orderNo: string
   storeId: number
   storeName: string
+  storeType?: number
   amount: number
   /** 实际收入（元）：仅真实微信扫码支付计入，试用赠送与模拟支付为 0 */
   actualIncome: number

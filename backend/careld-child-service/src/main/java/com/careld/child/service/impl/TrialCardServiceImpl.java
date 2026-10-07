@@ -64,6 +64,37 @@ public class TrialCardServiceImpl implements TrialCardService {
         return PageResult.of(rows, safePage, safeSize, total);
     }
 
+    @Override
+    public Map<String, Object> statCards(Long centerId, Long agentId, Long storeId,
+                                         String keyword, String startDate, String endDate) {
+        long total = 0;
+        long unused = 0;
+        long bound = 0;
+        long used = 0;
+        long disabled = 0;
+        // status 传 null：统计口径与列表一致，但不随「状态」筛选收窄
+        for (Map<String, Object> row : trialCardMapper.countGroupByStatus(null, centerId, agentId, storeId,
+                keyword, startDate, endDate)) {
+            long count = row.get("cnt") instanceof Number number ? number.longValue() : 0;
+            total += count;
+            int status = row.get("status") instanceof Number number ? number.intValue() : -1;
+            switch (status) {
+                case 0 -> unused = count;
+                case 1 -> used = count;
+                case 2 -> bound = count;
+                case 3 -> disabled = count;
+                default -> { }
+            }
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("total", total);
+        result.put("unused", unused);
+        result.put("bound", bound);
+        result.put("used", used);
+        result.put("disabled", disabled);
+        return result;
+    }
+
     /** 与儿童详情同口径：真实密文用 AES 解密，兼容种子数据 "ENC:明文" 占位 */
     private String decryptForDetail(String ciphertext, String aesKey) {
         if (!StringUtils.hasText(ciphertext)) {

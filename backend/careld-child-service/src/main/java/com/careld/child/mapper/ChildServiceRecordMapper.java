@@ -35,4 +35,12 @@ public interface ChildServiceRecordMapper extends BaseMapper<ChildServiceRecord>
             + "FROM reserve_order WHERE deleted_at IS NULL AND id IN "
             + "<foreach item='id' collection='ids' open='(' separator=',' close=')'>#{id}</foreach></script>")
     List<Map<String, Object>> selectReserveInfoByIds(@Param("ids") List<Long> ids);
+
+    /** 授权记录开单医生姓名去重（筛选下拉选项，覆盖历史快照/非在职人员） */
+    @Select("<script>SELECT DISTINCT doctor_name FROM child_service_record "
+            + "WHERE deleted_at IS NULL AND change_type IN (1, 6) "
+            + "AND doctor_name IS NOT NULL AND doctor_name != '' "
+            + "<if test='storeId != null'>AND store_id = #{storeId}</if> "
+            + "ORDER BY doctor_name</script>")
+    List<String> selectDoctorNames(@Param("storeId") Long storeId);
 }

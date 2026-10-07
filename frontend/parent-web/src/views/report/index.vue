@@ -47,7 +47,7 @@
             <div class="vision-item">
               <span class="label">左眼</span>
               <span class="value" :class="getVisionClass(record.visionLevel)">
-                {{ record.visionLevel }}
+                {{ displayVision(record.visionLevel) }}
               </span>
             </div>
           </div>
@@ -87,7 +87,7 @@
             <div class="vision-block">
               <span class="vision-label">视力</span>
               <span class="vision-val" :class="getVisionClass(detailRecord.visionLevel)">
-                {{ detailRecord.visionLevel }}
+                {{ displayVision(detailRecord.visionLevel) }}
               </span>
             </div>
           </div>
@@ -108,6 +108,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Child, VisionRecord } from '@/types'
 import { childApi, visionApi } from '@/api'
+import { displayVision } from '@/utils/vision'
 
 const route = useRoute()
 

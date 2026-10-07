@@ -30,6 +30,8 @@ public class Store extends BaseEntity {
     private java.time.LocalDate joinDate;
     private Integer bedCount;
     private Integer institutionType;
+    /** 医院类型 1=社区卫生服务中心 2=卫生院 3=妇幼保健院 4=医院 5=其它 */
+    private Integer storeType;
     private String remark;
 
     @TableField(exist = false)

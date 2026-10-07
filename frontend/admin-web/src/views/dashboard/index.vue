@@ -90,7 +90,12 @@
           </template>
           <el-table :data="pendingAudits" v-loading="loading" stripe>
             <el-table-column prop="name" label="儿童姓名" width="100" />
-            <el-table-column prop="storeName" label="所属医院" />
+            <el-table-column label="所属医院">
+              <template #default="{ row }">
+                <StoreLogo :store-type="row.storeType" />
+                <span>{{ row.storeName }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="age" label="年龄" width="80" />
             <el-table-column prop="createdAt" label="提交时间" width="160">
               <template #default="{ row }">
@@ -114,7 +119,12 @@
             </div>
           </template>
           <el-table :data="deviceStatus" v-loading="loading" stripe>
-            <el-table-column prop="storeName" label="医院" />
+            <el-table-column label="医院">
+              <template #default="{ row }">
+                <StoreLogo :store-type="row.storeType" />
+                <span>{{ row.storeName }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="deviceName" label="设备名称" />
             <el-table-column prop="calibrationStatus" label="校准状态" width="100">
               <template #default="{ row }">
@@ -143,6 +153,7 @@ import { Shop, User, Calendar, TrendCharts } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { statisticsApi, childApi, deviceApi } from '@/api'
 import type { Child, Device } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 const router = useRouter()
 

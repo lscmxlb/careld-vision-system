@@ -21,7 +21,13 @@
             <el-descriptions-item label="用户类型">{{ userTypeText }}</el-descriptions-item>
             <el-descriptions-item label="所属运营中心">{{ userStore.userInfo?.centerName || '无' }}</el-descriptions-item>
             <el-descriptions-item label="所属代理商">{{ userStore.userInfo?.agentName || '无' }}</el-descriptions-item>
-            <el-descriptions-item label="所属医院">{{ userStore.userInfo?.storeName || '无' }}</el-descriptions-item>
+            <el-descriptions-item label="所属医院">
+              <template v-if="userStore.userInfo?.storeName">
+                <StoreLogo :store-type="userStore.userInfo?.storeType" />
+                <span>{{ userStore.userInfo?.storeName }}</span>
+              </template>
+              <span v-else>无</span>
+            </el-descriptions-item>
             <el-descriptions-item label="最近登录">{{ userStore.userInfo?.lastLoginTime || '—' }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ userStore.userInfo?.createdAt || '—' }}</el-descriptions-item>
           </el-descriptions>
@@ -62,6 +68,7 @@ import { UserFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { userApi } from '@/api'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 defineOptions({ name: 'Profile' })
 

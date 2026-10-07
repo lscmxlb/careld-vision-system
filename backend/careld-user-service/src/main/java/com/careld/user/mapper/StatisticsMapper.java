@@ -70,6 +70,7 @@ public interface StatisticsMapper {
      * 最后活跃=该院医生/医生助理(1,2)最后登录时间
      */
     @Select("SELECT s.id AS storeId, s.store_code AS storeCode, s.store_name AS storeName, "
+            + "s.store_type AS storeType, "
             + "s.institution_type AS institutionType, s.status AS status, "
             + "s.province_name AS provinceName, s.city_name AS cityName, s.district_name AS districtName, "
             + "s.address AS address, s.contact_name AS contactName, s.contact_phone AS contactPhone, "
@@ -144,15 +145,15 @@ public interface StatisticsMapper {
                                                         @Param("endDatePlusOne") LocalDate endDatePlusOne);
 
     /**
-     * 门店名称
+     * 门店名称 + 医院类型
      */
-    @Select("SELECT store_name FROM store_info WHERE id = #{storeId} AND deleted_at IS NULL")
-    String storeName(@Param("storeId") Long storeId);
+    @Select("SELECT store_name AS storeName, store_type AS storeType FROM store_info WHERE id = #{storeId} AND deleted_at IS NULL")
+    Map<String, Object> storeInfo(@Param("storeId") Long storeId);
 
     /**
      * 全国门店客流 TopN（含门店名）
      */
-    @Select("SELECT s.id AS storeId, s.store_name AS storeName, COUNT(r.id) AS visitCount "
+    @Select("SELECT s.id AS storeId, s.store_name AS storeName, MAX(s.store_type) AS storeType, COUNT(r.id) AS visitCount "
             + "FROM store_info s "
             + "LEFT JOIN reserve_order r ON r.store_id = s.id AND r.reserve_date BETWEEN #{startDate} AND #{endDate} "
             + "WHERE s.deleted_at IS NULL "

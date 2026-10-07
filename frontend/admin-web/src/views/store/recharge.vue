@@ -138,7 +138,12 @@
       </el-form>
 
       <el-table :data="orders" v-loading="loading" stripe scrollbar-always-on>
-        <el-table-column prop="storeName" label="支付医院" min-width="180" show-overflow-tooltip />
+        <el-table-column label="支付医院" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <StoreLogo :store-type="row.storeType" />
+            <span>{{ row.storeName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="支付时间" width="160">
           <template #default="{ row }">{{ dateTimeOf(row.paidAt || row.createdAt) }}</template>
         </el-table-column>
@@ -200,6 +205,7 @@ import { ElMessage } from 'element-plus'
 import { payApi, storeApi } from '@/api'
 import type { PayConfig, PayProbeResult, RechargeOrder } from '@/api'
 import type { Store } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 const configLoading = ref(false)
 const saving = ref(false)

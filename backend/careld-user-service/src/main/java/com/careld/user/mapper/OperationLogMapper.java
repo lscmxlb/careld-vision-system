@@ -21,7 +21,7 @@ public interface OperationLogMapper extends BaseMapper<SysOperationLog> {
      */
     @Select("<script>"
             + "SELECT l.id, l.log_type, l.user_id, l.user_name, l.store_id, "
-            + "       s.store_name, l.module, l.action, l.description, "
+            + "       s.store_name, s.store_type, l.module, l.action, l.description, "
             + "       l.request_method, l.request_url, l.request_params, l.response_data, "
             + "       l.ip_address, l.user_agent, l.device_type, l.execute_time, l.status, "
             + "       l.error_msg, l.created_at "
@@ -52,7 +52,7 @@ public interface OperationLogMapper extends BaseMapper<SysOperationLog> {
      * 单条详情（含门店名称；storeId 非空时限制在本门店内，防止跨门店越权读取）
      */
     @Select("<script>"
-            + "SELECT l.id, l.log_type, l.user_id, l.user_name, l.store_id, s.store_name, "
+            + "SELECT l.id, l.log_type, l.user_id, l.user_name, l.store_id, s.store_name, s.store_type, "
             + "       l.module, l.action, l.description, l.request_method, l.request_url, "
             + "       l.request_params, l.response_data, l.ip_address, l.user_agent, "
             + "       l.device_type, l.execute_time, l.status, l.error_msg, l.created_at "

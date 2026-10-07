@@ -91,7 +91,7 @@
       </view>
 
       <scroll-view v-if="chartGroups.length" class="trend-scroll" scroll-x :show-scrollbar="false">
-        <view class="trend-inner" :style="{ width: chartGroups.length * 320 + 'rpx' }">
+        <view class="trend-inner" :style="{ width: chartGroups.length * 480 + 'rpx' }">
           <view class="trend-axis">
             <text class="trend-axis-label">视力</text>
             <text class="trend-axis-max">{{ axisMax.toFixed(1) }}</text>
@@ -126,7 +126,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { childApi } from '@/api/child'
 import { careRecordApi } from '@/api/care-record'
-import { displayVision, parseVision, parseVisionValue, visionDelta } from '@/utils/format'
+import { displayVision, parseVision, parseVisionValue, visionDelta, visionMainLabel } from '@/utils/format'
 import { CARE_STATUS_MAP } from '@/utils/dict'
 import type { CareRecord, Child } from '@/types'
 
@@ -171,7 +171,7 @@ const chartGroups = computed(() =>
       bars: SERIES.map((s) => {
         const value = parseVisionValue(row[s.key])
         const height = value === null ? 2 : Math.min(100, Math.max(2, ((value - axisMin.value) / (axisMax - axisMin.value)) * 100))
-        return { label: parseVision(row[s.key]).main || '-', height, color: s.color }
+        return { label: visionMainLabel(parseVision(row[s.key]).main) || '-', height, color: s.color }
       }),
     }
   }),
@@ -391,7 +391,7 @@ onLoad(async (options) => {
 }
 
 .trend-col {
-  width: 320rpx;
+  width: 480rpx;
   flex: none;
 }
 
@@ -408,7 +408,7 @@ onLoad(async (options) => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  width: 42rpx;
+  width: 68rpx;
   height: 100%;
   margin-right: 6rpx;
 }
@@ -418,9 +418,10 @@ onLoad(async (options) => {
 }
 
 .trend-bar-value {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #64748b;
   margin-bottom: 4rpx;
+  white-space: nowrap;
 }
 
 .trend-bar {

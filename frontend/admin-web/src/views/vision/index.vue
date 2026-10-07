@@ -57,7 +57,12 @@
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column prop="recordCode" label="记录编号" width="140" />
         <el-table-column prop="childName" label="儿童姓名" width="100" />
-        <el-table-column prop="storeName" label="所属医院" min-width="130" show-overflow-tooltip />
+        <el-table-column label="所属医院" min-width="130" show-overflow-tooltip>
+          <template #default="{ row }">
+            <StoreLogo :store-type="row.storeType" />
+            <span>{{ row.storeName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="eyeType" label="眼别" width="80">
           <template #default="{ row }">
             <el-tag :type="getEyeTypeTag(row.eyeType)" size="small">
@@ -111,7 +116,10 @@
       <el-descriptions :column="2" border v-if="currentRecord">
         <el-descriptions-item label="记录编号">{{ currentRecord.recordCode }}</el-descriptions-item>
         <el-descriptions-item label="儿童姓名">{{ currentRecord.childName }}</el-descriptions-item>
-        <el-descriptions-item label="所属医院">{{ currentRecord.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">
+          <StoreLogo :store-type="currentRecord.storeType" />
+          <span>{{ currentRecord.storeName }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="检测类型">
           <el-tag :type="currentRecord.testType === 1 ? 'info' : 'success'" size="small">
             {{ currentRecord.testType === 1 ? '检测前' : '检测后' }}
@@ -194,6 +202,7 @@ import { ElMessage } from 'element-plus'
 import { Search, Right } from '@element-plus/icons-vue'
 import { visionApi, storeApi } from '@/api'
 import type { VisionRecord, VisionRecordQuery, VisionCompare, Store } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 // 表格数据
 const loading = ref(false)

@@ -18,6 +18,7 @@ export interface PhoneLookupIdentity {
   centerName?: string
   agentName?: string
   storeName?: string
+  storeType?: number
   status?: number
   createdAt?: string
   lastLoginTime?: string

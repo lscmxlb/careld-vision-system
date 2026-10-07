@@ -59,13 +59,14 @@ public class CareRecordController {
         return Result.success(records);
     }
 
-    @Operation(summary = "养护记录分页（按医院查询，支持儿童姓名/家长姓名/手机号/养护次数筛选）")
+    @Operation(summary = "养护记录分页（按医院查询，支持儿童姓名/家长姓名/手机号/养护人/养护次数筛选）")
     @GetMapping("/page")
     public Result<PageResult<CareRecord>> page(@RequestParam(value = "storeId", required = false) Long storeId,
                                                @RequestParam(value = "childId", required = false) Long childId,
                                                @RequestParam(value = "childName", required = false) String childName,
                                                @RequestParam(value = "parentName", required = false) String parentName,
                                                @RequestParam(value = "phone", required = false) String phone,
+                                               @RequestParam(value = "executorName", required = false) String executorName,
                                                @RequestParam(value = "minCareCount", required = false) Integer minCareCount,
                                                @RequestParam(value = "page", defaultValue = "1") Integer page,
                                                @RequestParam(value = "size", defaultValue = "20") Integer size) {
@@ -83,7 +84,7 @@ public class CareRecordController {
             }
         }
         IPage<CareRecord> p = careRecordMapper.selectPageWithChild(new Page<>(page, size),
-                effectiveStoreId, childId, matchedChildIds, parentName, phone, minCareCount);
+                effectiveStoreId, childId, matchedChildIds, parentName, phone, minCareCount, executorName);
         p.getRecords().forEach(this::decryptChildName);
         fillActualCarePeriod(p.getRecords());
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));

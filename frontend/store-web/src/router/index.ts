@@ -29,6 +29,12 @@ const router = createRouter({
           meta: { title: '儿童档案', icon: 'User' }
         },
         {
+          path: 'authorization-record',
+          name: 'AuthorizationRecord',
+          component: () => import('@/views/authorization-record/index.vue'),
+          meta: { title: '授权记录', icon: 'Ticket' }
+        },
+        {
           path: 'care-record',
           name: 'CareRecord',
           component: () => import('@/views/care-record/index.vue'),

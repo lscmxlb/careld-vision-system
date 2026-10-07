@@ -14,6 +14,7 @@ public class VisionRecordGroup {
     private String childName;
     private String childNameEncrypted;
     private String storeName;
+    private Integer storeType;
     private Long reserveId;
     /** 1=养护前 2=养护后 */
     private Integer testType;

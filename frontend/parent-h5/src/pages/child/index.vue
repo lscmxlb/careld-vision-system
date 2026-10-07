@@ -28,6 +28,7 @@
 
         <view class="child-store">
           <text class="child-store-key">建档医院</text>
+          <StoreLogo v-if="item.storeName" :store-type="item.storeType" :size="20" />
           <text class="child-store-value">{{ item.storeName || '—' }}</text>
         </view>
         <view class="child-store">
@@ -123,6 +124,7 @@
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { childApi } from '@/api/child'
+import StoreLogo from '@/components/StoreLogo.vue'
 import { useUserStore } from '@/stores/user'
 import { ageText } from '@/utils/format'
 import { AUDIT_STATUS_MAP } from '@/utils/dict'

@@ -109,7 +109,12 @@
         </template>
         <template v-else>
           <el-table-column prop="storeCode" label="医院编码" width="120" />
-          <el-table-column prop="storeName" label="医院名称" min-width="150" />
+          <el-table-column label="医院名称" min-width="150">
+            <template #default="{ row }">
+              <StoreLogo :store-type="row.storeType" />
+              <span>{{ row.storeName }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="省/市/区" width="180">
             <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
           </el-table-column>
@@ -136,6 +141,7 @@ import { orgApi } from '@/api'
 import { storeApi } from '@/api'
 import type { OpsCenter, Agent, Store } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 const loading = ref(false)
 const tableData = ref<OpsCenter[]>([])

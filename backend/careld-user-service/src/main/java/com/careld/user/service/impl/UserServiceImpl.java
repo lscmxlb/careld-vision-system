@@ -133,9 +133,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getCurrentUser(Long userId) {
         UserResponse response = getUserById(userId);
-        // 详情查询不含门店名（非表字段），补齐供前端抬头展示
+        // 详情查询不含门店名/医院类型（非表字段），补齐供前端抬头展示
         if (response != null && response.getStoreName() == null && response.getStoreId() != null) {
-            response.setStoreName(selectStoreName(response.getStoreId()));
+            StoreInfo info = selectStoreInfo(response.getStoreId());
+            if (info != null) {
+                response.setStoreName(info.name());
+                response.setStoreType(info.type());
+            }
         }
         return response;
     }
@@ -154,7 +158,11 @@ public class UserServiceImpl implements UserService {
         response.setUserType(6);
         response.setStaffRole(staff.getStaffRole());
         response.setStoreId(staff.getStoreId());
-        response.setStoreName(selectStoreName(staff.getStoreId()));
+        StoreInfo info = selectStoreInfo(staff.getStoreId());
+        if (info != null) {
+            response.setStoreName(info.name());
+            response.setStoreType(info.type());
+        }
         response.setStatus(staff.getStatus());
         response.setCreatedAt(staff.getCreatedAt());
         response.setRoles(List.of("medical_staff"));
@@ -162,13 +170,22 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    private String selectStoreName(Long storeId) {
+    /** 门店名称 + 医院类型（前端在医院名前渲染类型图标） */
+    private record StoreInfo(String name, Integer type) {
+    }
+
+    private StoreInfo selectStoreInfo(Long storeId) {
         if (storeId == null) {
             return null;
         }
-        List<String> names = jdbcTemplate.queryForList(
-                "SELECT store_name FROM store_info WHERE id = ? AND deleted_at IS NULL", String.class, storeId);
-        return names.isEmpty() ? null : names.get(0);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT store_name, store_type FROM store_info WHERE id = ? AND deleted_at IS NULL", storeId);
+        if (rows.isEmpty()) {
+            return null;
+        }
+        Map<String, Object> row = rows.get(0);
+        Object type = row.get("store_type");
+        return new StoreInfo((String) row.get("store_name"), type == null ? null : ((Number) type).intValue());
     }
 
     @Override
@@ -342,6 +359,7 @@ public class UserServiceImpl implements UserService {
             identity.setCenterName(user.getCenterName());
             identity.setAgentName(user.getAgentName());
             identity.setStoreName(user.getStoreName());
+            identity.setStoreType(user.getStoreType());
             identity.setStatus(user.getStatus());
             identity.setCreatedAt(user.getCreatedAt());
             identity.setLastLoginTime(user.getLastLoginTime());
@@ -364,7 +382,11 @@ public class UserServiceImpl implements UserService {
             identity.setUserTypeName(userTypeName(6));
             identity.setStaffRole(staff.getStaffRole());
             identity.setStaffRoleName(staffRoleName(staff.getStaffRole()));
-            identity.setStoreName(selectStoreName(staff.getStoreId()));
+            StoreInfo info = selectStoreInfo(staff.getStoreId());
+            if (info != null) {
+                identity.setStoreName(info.name());
+                identity.setStoreType(info.type());
+            }
             identity.setStatus(staff.getStatus());
             identity.setCreatedAt(staff.getCreatedAt());
             result.getIdentities().add(identity);
@@ -435,6 +457,7 @@ public class UserServiceImpl implements UserService {
         response.setAgentName(user.getAgentName());
         response.setStoreId(user.getStoreId());
         response.setStoreName(user.getStoreName());
+        response.setStoreType(user.getStoreType());
         response.setStatus(user.getStatus());
         response.setLastLoginTime(user.getLastLoginTime());
         response.setCreatedAt(user.getCreatedAt());

@@ -61,6 +61,20 @@ export const VISION_SUB_OPTIONS = ['+0', '+1', '+2', '+3', '+4', '+5', '-1', '-2
 /** 档案裸眼视力下拉（仅主值 5.3~4.0） */
 export const VISION_OPTIONS = VISION_MAIN_OPTIONS
 
+/** 5 分制主值 → 小数视力对照（4.6 → 0.4） */
+export const VISION_DECIMAL_MAP: Record<string, string> = {
+  '4.0': '0.1', '4.1': '0.12', '4.2': '0.15', '4.3': '0.2', '4.4': '0.25', '4.5': '0.3', '4.6': '0.4',
+  '4.7': '0.5', '4.8': '0.6', '4.9': '0.8', '5.0': '1.0', '5.1': '1.2', '5.2': '1.5', '5.3': '2.0',
+}
+
+/** 主值显示文案：4.6 → 4.6/0.4 */
+export function visionMainLabel(main: string): string {
+  const decimal = VISION_DECIMAL_MAP[main]
+  return decimal ? `${main}/${decimal}` : main
+}
+
+export const VISION_MAIN_LABELS = VISION_MAIN_OPTIONS.map(visionMainLabel)
+
 /** 主值 + 子值 → 存储值（子值为空则不拼接） */
 export function combineVision(main: string, sub: string): string | undefined {
   return main ? main + (sub || '') : undefined
@@ -72,10 +86,13 @@ export function parseVision(v?: string): { main: string; sub: string } {
   return matched ? { main: matched[1], sub: matched[2] || '+0' } : { main: '', sub: '+0' }
 }
 
-/** 展示用：去掉子值 +0（与 PC 一致） */
+/** 展示用：4.6 → 4.6/0.4；微调 4.8+1 → 4.8/0.6 +1；子值 +0 不显示 */
 export function displayVision(v?: string): string {
   if (!v) return '-'
-  return v.replace(/\+0$/, '')
+  const { main, sub } = parseVision(v)
+  if (!main) return v
+  const base = visionMainLabel(main)
+  return sub !== '+0' ? `${base} ${sub}` : base
 }
 
 /** 数值差展示（后 - 前），正数为提升 */

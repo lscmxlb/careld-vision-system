@@ -3,13 +3,13 @@
     <text class="vr-label">{{ label }}</text>
     <picker
       mode="selector"
-      :range="VISION_MAIN_OPTIONS"
+      :range="VISION_MAIN_LABELS"
       :value="mainIndex"
       :disabled="disabled"
       @change="onMainChange"
     >
       <view class="vr-cell" :class="{ 'vr-empty': !parsed.main }">
-        <text class="vr-text">{{ parsed.main || '5.3-4.0' }}</text>
+        <text class="vr-text">{{ parsed.main ? visionMainLabel(parsed.main) : '请选择' }}</text>
         <text class="vr-arrow">▾</text>
       </view>
     </picker>
@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { VISION_MAIN_OPTIONS, VISION_SUB_OPTIONS, combineVision, parseVision } from '@/utils/format'
+import { VISION_MAIN_OPTIONS, VISION_MAIN_LABELS, VISION_SUB_OPTIONS, combineVision, parseVision, visionMainLabel } from '@/utils/format'
 
 const props = withDefaults(
   defineProps<{

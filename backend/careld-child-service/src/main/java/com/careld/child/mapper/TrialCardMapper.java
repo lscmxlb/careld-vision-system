@@ -8,13 +8,14 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface TrialCardMapper extends BaseMapper<TrialCard> {
 
     String ENRICHED_COLUMNS =
             "t.*, oc.center_name AS center_name, ag.agent_name AS agent_name, " +
-            "st.store_name AS store_name, ust.store_name AS used_store_name, " +
+            "st.store_name AS store_name, ust.store_name AS used_store_name, ust.store_type AS used_store_type, " +
             "cp.name_encrypted AS child_name_encrypted, cp.phone_encrypted AS parent_phone_encrypted, " +
             "cp.parent_name AS parent_name, " +
             "COALESCE(NULLIF(u.real_name, ''), u.username) AS creator_name ";
@@ -58,6 +59,16 @@ public interface TrialCardMapper extends BaseMapper<TrialCard> {
                        @Param("keyword") String keyword,
                        @Param("startDate") String startDate,
                        @Param("endDate") String endDate);
+
+    /** 状态分组统计（与列表同筛选口径；status 传 null 时不按状态过滤，供统计栏使用） */
+    @Select("<script>SELECT t.status AS status, COUNT(*) AS cnt FROM trial_card t " + ENRICHED_WHERE + "GROUP BY t.status</script>")
+    List<Map<String, Object>> countGroupByStatus(@Param("status") Integer status,
+                                                 @Param("centerId") Long centerId,
+                                                 @Param("agentId") Long agentId,
+                                                 @Param("storeId") Long storeId,
+                                                 @Param("keyword") String keyword,
+                                                 @Param("startDate") String startDate,
+                                                 @Param("endDate") String endDate);
 
     /** 同前缀（年份+区号）内已用的最大顺序号；软删记录一并计入，避免编号复用 */
     @Select("SELECT COALESCE(MAX(seq_no), 0) FROM trial_card WHERE card_no LIKE CONCAT(#{prefix}, '%')")

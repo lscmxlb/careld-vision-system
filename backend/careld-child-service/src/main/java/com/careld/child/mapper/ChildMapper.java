@@ -49,7 +49,7 @@ public interface ChildMapper extends BaseMapper<ChildProfile> {
             "c.audit_status, c.audit_remark, c.audited_by, c.audited_at, c.parent_user_id, " +
             "c.doctor_id, c.doctor_name, c.source_type, c.source_user_id, c.status, c.remaining_count, " +
             "c.created_by, c.updated_by, c.created_at, c.updated_at, c.deleted_at, " +
-            "s.store_name AS store_name, " +
+            "s.store_name AS store_name, s.store_type AS store_type, " +
             // 门店服务电话：取基础信息页维护的那条科室（该页取科室列表第一条：ORDER BY sort_order, id）
             "(SELECT d.service_phone FROM store_department d " +
             " WHERE d.store_id = c.store_id AND d.deleted_at IS NULL " +

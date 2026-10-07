@@ -57,7 +57,9 @@
       <!-- 表格 -->
       <el-table :data="tableData" v-loading="loading" stripe>
         <el-table-column label="所属医院" min-width="160">
-          <template #default="{ row }">{{ storeNameMap[row.storeId] || row.storeId }}</template>
+          <template #default="{ row }">
+            <span>{{ storeNameMap[row.storeId] || row.storeId }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="staffRole" label="角色" width="110">

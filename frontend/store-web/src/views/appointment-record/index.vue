@@ -247,8 +247,8 @@
       <el-form label-width="110px">
         <el-form-item label="双眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.beforeBothMain" placeholder="5.3-4.0" :disabled="careMode !== 'start'">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.beforeBothMain" placeholder="请选择" :disabled="careMode !== 'start'">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.beforeBothSub" placeholder="+0~+5 / -1~-5" :disabled="careMode !== 'start'">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -257,8 +257,8 @@
         </el-form-item>
         <el-form-item label="左眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.beforeLeftMain" placeholder="5.3-4.0" :disabled="careMode !== 'start'">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.beforeLeftMain" placeholder="请选择" :disabled="careMode !== 'start'">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.beforeLeftSub" placeholder="+0~+5 / -1~-5" :disabled="careMode !== 'start'">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -267,8 +267,8 @@
         </el-form-item>
         <el-form-item label="右眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.beforeRightMain" placeholder="5.3-4.0" :disabled="careMode !== 'start'">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.beforeRightMain" placeholder="请选择" :disabled="careMode !== 'start'">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.beforeRightSub" placeholder="+0~+5 / -1~-5" :disabled="careMode !== 'start'">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -281,8 +281,8 @@
       <el-form label-width="110px">
         <el-form-item label="双眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.afterBothMain" placeholder="5.3-4.0">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.afterBothMain" placeholder="请选择">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.afterBothSub" placeholder="+0~+5 / -1~-5">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -291,8 +291,8 @@
         </el-form-item>
         <el-form-item label="左眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.afterLeftMain" placeholder="5.3-4.0">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.afterLeftMain" placeholder="请选择">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.afterLeftSub" placeholder="+0~+5 / -1~-5">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -301,8 +301,8 @@
         </el-form-item>
         <el-form-item label="右眼">
           <div class="vision-pair">
-            <el-select v-model="careForm.afterRightMain" placeholder="5.3-4.0">
-              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="v" :value="v" />
+            <el-select v-model="careForm.afterRightMain" placeholder="请选择">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <el-select v-model="careForm.afterRightSub" placeholder="+0~+5 / -1~-5">
               <el-option v-for="v in VISION_SUB_OPTIONS" :key="v" :label="v" :value="v" />
@@ -416,6 +416,7 @@ import { Plus, QuestionFilled } from '@element-plus/icons-vue'
 import type { Reserve, ScheduleSlot, Child, MedicalStaff } from '@/types'
 import { scheduleRuleApi, reserveApi, childApi, medicalStaffApi, appointmentConfigApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { visionMainLabel } from '@/utils/vision'
 
 const userStore = useUserStore()
 

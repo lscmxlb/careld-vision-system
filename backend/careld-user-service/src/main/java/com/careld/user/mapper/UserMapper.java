@@ -30,7 +30,7 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 手机号码查询：按手机号或用户名（家长账号用户名为手机号）模糊匹配，含组织名称
      */
-    @Select("SELECT u.*, s.store_name as storeName, a.agent_name as agentName, c.center_name as centerName " +
+    @Select("SELECT u.*, s.store_name as storeName, s.store_type as storeType, a.agent_name as agentName, c.center_name as centerName " +
             "FROM sys_user u " +
             "LEFT JOIN store_info s ON u.store_id = s.id " +
             "LEFT JOIN agent a ON u.agent_id = a.id AND a.deleted_at IS NULL " +
@@ -49,7 +49,7 @@ public interface UserMapper extends BaseMapper<User> {
      * - onlyUserId：仅返回指定用户（家长只能看自己）
      */
     @Select("<script>" +
-            "SELECT u.*, s.store_name as storeName, a.agent_name as agentName, c.center_name as centerName " +
+            "SELECT u.*, s.store_name as storeName, s.store_type as storeType, a.agent_name as agentName, c.center_name as centerName " +
             "FROM sys_user u " +
             "LEFT JOIN store_info s ON u.store_id = s.id " +
             "LEFT JOIN agent a ON u.agent_id = a.id AND a.deleted_at IS NULL " +

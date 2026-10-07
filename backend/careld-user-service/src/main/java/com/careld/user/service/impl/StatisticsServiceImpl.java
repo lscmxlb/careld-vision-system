@@ -94,7 +94,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         StatisticsDtos.VisionImprovement result = new StatisticsDtos.VisionImprovement();
         result.setStoreId(storeId);
         if (storeId != null) {
-            result.setStoreName(statisticsMapper.storeName(storeId));
+            Map<String, Object> info = statisticsMapper.storeInfo(storeId);
+            if (info != null) {
+                result.setStoreName((String) info.get("storeName"));
+                Object type = info.get("storeType");
+                result.setStoreType(type == null ? null : ((Number) type).intValue());
+            }
         }
 
         long totalTests = 0;
@@ -157,6 +162,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             StatisticsDtos.NationalSummary.TopStore t = new StatisticsDtos.NationalSummary.TopStore();
             t.setStoreId(toLongObj(row.get("storeId")));
             t.setStoreName(String.valueOf(row.get("storeName")));
+            Object type = row.get("storeType");
+            t.setStoreType(type == null ? null : ((Number) type).intValue());
             t.setVisitCount(toLong(row.get("visitCount")));
             t.setImprovementRate(globalRate);
             topStores.add(t);

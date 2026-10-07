@@ -37,6 +37,8 @@ public class VisionTestRecord extends BaseEntity {
     private String childNameEncrypted;
     @TableField(exist = false)
     private String storeName;
+    @TableField(exist = false)
+    private Integer storeType;
     /** 检测时间：表中无独立列，取 created_at */
     @TableField(exist = false)
     private LocalDateTime testTime;

@@ -2,13 +2,13 @@
   <div class="care-record-page">
     <el-card>
       <!-- 搜索栏 -->
-      <el-form :model="queryForm" inline>
+      <el-form :model="queryForm" inline class="search-form">
         <el-form-item label="儿童姓名">
           <el-input
             v-model="queryForm.childName"
             placeholder="儿童姓名"
             clearable
-            style="width: 140px;"
+            style="width: 100px;"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
@@ -17,19 +17,30 @@
             v-model="queryForm.parentName"
             placeholder="家长姓名"
             clearable
-            style="width: 140px;"
+            style="width: 100px;"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
         <el-form-item label="手机号码">
           <el-input
             v-model="queryForm.phone"
-            placeholder="支持完整号码或片段"
+            placeholder="号码或片段"
             clearable
             maxlength="11"
-            style="width: 170px;"
+            style="width: 130px;"
             @keyup.enter="handleSearch"
           />
+        </el-form-item>
+        <el-form-item label="养护人">
+          <el-select
+            v-model="queryForm.executorName"
+            placeholder="全部"
+            clearable
+            filterable
+            style="width: 105px;"
+          >
+            <el-option v-for="name in executorOptions" :key="name" :label="name" :value="name" />
+          </el-select>
         </el-form-item>
         <el-form-item label="养护次数">
           <span class="care-count-filter">大于</span>
@@ -101,7 +112,7 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- 分页 + 导出 -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
@@ -110,6 +121,9 @@
           layout="total, prev, pager, next"
           @current-change="handleCurrentChange"
         />
+        <el-button type="primary" :loading="exporting" @click="handleExport">
+          <el-icon><Download /></el-icon>导出 Excel
+        </el-button>
       </div>
     </el-card>
 
@@ -167,36 +181,60 @@
 defineOptions({ name: 'StoreCareRecord' })
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Download } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { CareRecord, Child } from '@/types'
-import { careRecordApi, childApi } from '@/api'
+import { careRecordApi, childApi, medicalStaffApi } from '@/api'
+import { exportXlsx } from '@/utils/xlsx'
+import { displayVision } from '@/utils/vision'
 
 const route = useRoute()
 
 const loading = ref(false)
+const exporting = ref(false)
 const recordList = ref<CareRecord[]>([])
+
+/** 导出上限（超出仅导出前 10000 条） */
+const EXPORT_LIMIT = 10000
 
 const queryForm = reactive({
   childId: undefined as number | undefined,
   childName: '',
   parentName: '',
   phone: '',
+  executorName: '',
   minCareCount: undefined as number | undefined
 })
+const executorOptions = ref<string[]>([])
+
+/** 养护人下拉选项：门店全部医师/医生助理（启用），与养护登记可选范围一致 */
+const loadExecutorNames = async () => {
+  try {
+    const res = await medicalStaffApi.getStaffList({ status: 1, page: 1, size: 100 })
+    const names = (res.list || []).map((staff) => staff.name)
+    executorOptions.value = [...new Set(names)].sort((a, b) => a.localeCompare(b, 'zh'))
+  } catch {
+    // 错误已在拦截器处理
+  }
+}
 const pagination = reactive({ page: 1, size: 10, total: 0 })
+
+const buildQueryParams = (page: number, size: number) => ({
+  childId: queryForm.childId,
+  childName: queryForm.childName || undefined,
+  parentName: queryForm.parentName || undefined,
+  phone: queryForm.phone || undefined,
+  executorName: queryForm.executorName || undefined,
+  minCareCount: queryForm.minCareCount,
+  page,
+  size
+})
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await careRecordApi.getRecordPage({
-      childId: queryForm.childId,
-      childName: queryForm.childName || undefined,
-      parentName: queryForm.parentName || undefined,
-      phone: queryForm.phone || undefined,
-      minCareCount: queryForm.minCareCount,
-      page: pagination.page,
-      size: pagination.size
-    })
+    const res = await careRecordApi.getRecordPage(buildQueryParams(pagination.page, pagination.size))
     recordList.value = res.list
     pagination.total = res.pagination.total
   } catch {
@@ -216,6 +254,7 @@ const handleReset = () => {
   queryForm.childName = ''
   queryForm.parentName = ''
   queryForm.phone = ''
+  queryForm.executorName = ''
   queryForm.minCareCount = undefined
   pagination.page = 1
   fetchData()
@@ -224,6 +263,74 @@ const handleReset = () => {
 const handleCurrentChange = (val: number) => {
   pagination.page = val
   fetchData()
+}
+
+const handleExport = async () => {
+  exporting.value = true
+  try {
+    const rows: CareRecord[] = []
+    let page = 1
+    let total = 0
+    do {
+      const res = await careRecordApi.getRecordPage(buildQueryParams(page, 500))
+      rows.push(...res.list)
+      total = res.pagination.total
+      page++
+    } while (rows.length < total && rows.length < EXPORT_LIMIT)
+
+    if (rows.length === 0) {
+      ElMessage.warning('当前查询条件没有可导出的数据')
+      return
+    }
+    if (total > EXPORT_LIMIT) {
+      ElMessage.warning(`数据超过 ${EXPORT_LIMIT} 条，仅导出前 ${EXPORT_LIMIT} 条`)
+    }
+
+    exportXlsx({
+      sheetName: '养护记录',
+      columns: [
+        { title: '养护日期', key: 'careDate', width: 14 },
+        { title: '养护时段', key: 'timeSlot', width: 14 },
+        { title: '儿童姓名', key: 'childName', width: 12 },
+        { title: '性别', key: 'childGenderText', width: 8 },
+        { title: '手机号码', key: 'childPhone', width: 16 },
+        { title: '养护次数', key: 'careCount', width: 10, type: 'number' },
+        { title: '可用次数', key: 'remainingCount', width: 10, type: 'number' },
+        { title: '养护人', key: 'executorName', width: 12 },
+        { title: '状态', key: 'statusText', width: 10 },
+        { title: '首次视力', key: 'nakedVisionBoth', width: 10 },
+        { title: '当前视力', key: 'visionAfterBoth', width: 10 },
+        { title: '备注', key: 'remark', width: 24 }
+      ],
+      rows: rows.map((row) => ({
+        careDate: row.careDate || '-',
+        timeSlot: row.timeSlot || '-',
+        childName: row.childName || `儿童#${row.childId}`,
+        childGenderText: row.childGender === 1 ? '男' : row.childGender === 0 ? '女' : '-',
+        childPhone: row.childPhone || '-',
+        careCount: row.careCount ?? '',
+        remainingCount: row.remainingCount ?? 0,
+        executorName: row.executorName || '-',
+        statusText: row.status === 2 ? '已完成' : '养护中',
+        nakedVisionBoth: displayVision(row.nakedVisionBoth) || '-',
+        visionAfterBoth: displayVision(row.visionAfterBoth) || '-',
+        remark: row.remark || '-'
+      })),
+      fileName: `养护记录_${timestamp()}`
+    })
+    ElMessage.success(`已导出 ${rows.length} 条`)
+  } catch {
+    // 错误已在拦截器处理
+  } finally {
+    exporting.value = false
+  }
+}
+
+/** 导出文件名时间戳：YYYYMMDD_HHmmss */
+const timestamp = () => {
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
 }
 
 // ==================== 详情弹窗 ====================
@@ -243,9 +350,6 @@ const visionMain = (v?: string): number | null => {
   return Number.isNaN(n) ? null : n
 }
 
-/** 视力值展示：去掉结尾的 +0（如 '5.0+0' 显示为 '5.0'） */
-const displayVision = (v?: string): string => (v || '').replace(/\+0$/, '')
-
 /** 六个数据系列（前浅后深：双眼蓝、左眼橙、右眼绿） */
 const SERIES_DEFS = [
   { name: '养护前·双眼', key: 'visionBeforeBoth', color: '#a0cfff' },
@@ -256,8 +360,8 @@ const SERIES_DEFS = [
   { name: '养护后·右眼', key: 'visionAfterRight', color: '#67c23a' }
 ] as const
 
-/** 每次养护的绘图列宽（px）：X 轴三行标注（日期/时段/养护人）需要足够宽度 */
-const CHART_CELL_WIDTH = 150
+/** 每次养护的绘图列宽（px）：X 轴三行标注（日期/时段/养护人）与「4.6/0.4」标签需要足够宽度 */
+const CHART_CELL_WIDTH = 264
 
 const renderTrendChart = () => {
   if (!trendChartRef.value || chartRecords.value.length === 0) return
@@ -281,7 +385,11 @@ const renderTrendChart = () => {
     label: {
       show: true,
       position: 'top' as const,
-      fontSize: 10,
+      rotate: 45,
+      align: 'left' as const,
+      verticalAlign: 'middle' as const,
+      distance: 2,
+      fontSize: 9,
       color: '#606266',
       formatter: (p: { data?: { full?: string } }) => p.data?.full || ''
     },
@@ -307,7 +415,7 @@ const renderTrendChart = () => {
       }
     },
     legend: { top: 0, itemWidth: 12, itemHeight: 8, textStyle: { fontSize: 12 }, selectedMode: false },
-    grid: { left: 45, right: 20, top: 40, bottom: 92 },
+    grid: { left: 45, right: 20, top: 56, bottom: 92 },
     xAxis: {
       type: 'category',
       data: records.map((r) => r.careDate),
@@ -381,6 +489,7 @@ onMounted(() => {
     queryForm.childId = childId
   }
   fetchData()
+  loadExecutorNames()
 })
 
 onBeforeUnmount(() => {
@@ -394,6 +503,28 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .care-record-page {
+  /* 筛选区压缩为一行：不换行 + 缩小控件宽度与间距；与下方列表留出间距 */
+  .search-form {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    margin-bottom: 20px;
+
+    :deep(.el-form-item) {
+      margin-right: 10px;
+      margin-bottom: 0;
+      flex-shrink: 0;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+
+    :deep(.el-form-item__label) {
+      padding-right: 6px;
+    }
+  }
+
   .care-count-filter {
     color: #606266;
     font-size: 14px;
@@ -404,6 +535,8 @@ onBeforeUnmount(() => {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
   }
 
   .detail-section-title {

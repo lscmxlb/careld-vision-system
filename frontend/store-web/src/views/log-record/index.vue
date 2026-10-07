@@ -104,7 +104,13 @@
       <el-descriptions v-if="detail" :column="1" border>
         <el-descriptions-item label="操作时间">{{ formatTime(detail.createdAt) }}</el-descriptions-item>
         <el-descriptions-item label="操作人员">{{ detail.userName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="所属门店">{{ detail.storeName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="所属门店">
+          <template v-if="detail.storeName">
+            <StoreLogo :store-type="detail.storeType" />
+            <span>{{ detail.storeName }}</span>
+          </template>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="日志类型">{{ logTypeText(detail.logType) }}</el-descriptions-item>
         <el-descriptions-item label="所属模块">{{ moduleText(detail.module) }}</el-descriptions-item>
         <el-descriptions-item label="操作类型">{{ actionText(detail.action) }}</el-descriptions-item>
@@ -139,6 +145,7 @@ defineOptions({ name: 'LogRecord' })
 import { ref, reactive, onMounted } from 'vue'
 import type { OperationLog, OperationLogQuery } from '@/types'
 import { logRecordApi } from '@/api'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 const loading = ref(false)
 const tableData = ref<OperationLog[]>([])

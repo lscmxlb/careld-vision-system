@@ -39,16 +39,16 @@
         <div class="vision-row">
           <div class="vision-cell">
             <span class="v-label">养护前</span>
-            <span class="v-value">{{ record.visionBeforeLeft || '-' }}</span>
-            <span class="v-value">{{ record.visionBeforeRight || '-' }}</span>
+            <span class="v-value">{{ displayVision(record.visionBeforeLeft) }}</span>
+            <span class="v-value">{{ displayVision(record.visionBeforeRight) }}</span>
           </div>
           <div class="vision-cell">
             <span class="v-label">养护后</span>
             <span class="v-value" :class="{ improve: isImproved(record) }">
-              {{ record.visionAfterLeft || '-' }}
+              {{ displayVision(record.visionAfterLeft) }}
             </span>
             <span class="v-value" :class="{ improve: isImproved(record) }">
-              {{ record.visionAfterRight || '-' }}
+              {{ displayVision(record.visionAfterRight) }}
             </span>
           </div>
         </div>
@@ -71,11 +71,11 @@
         </div>
         <div class="detail-row">
           <span class="label">养护前视力</span>
-          <span class="value">左 {{ detailRecord.visionBeforeLeft || '-' }} | 右 {{ detailRecord.visionBeforeRight || '-' }}</span>
+          <span class="value">左 {{ displayVision(detailRecord.visionBeforeLeft) }} | 右 {{ displayVision(detailRecord.visionBeforeRight) }}</span>
         </div>
         <div class="detail-row">
           <span class="label">养护后视力</span>
-          <span class="value">左 {{ detailRecord.visionAfterLeft || '-' }} | 右 {{ detailRecord.visionAfterRight || '-' }}</span>
+          <span class="value">左 {{ displayVision(detailRecord.visionAfterLeft) }} | 右 {{ displayVision(detailRecord.visionAfterRight) }}</span>
         </div>
         <div class="detail-row">
           <span class="label">状态</span>
@@ -96,6 +96,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { CareRecord, Child } from '@/types'
 import { childApi, careRecordApi } from '@/api'
+import { displayVision } from '@/utils/vision'
 
 const route = useRoute()
 

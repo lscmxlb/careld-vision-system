@@ -17,8 +17,8 @@ export const reserveApi = {
     return request.post('/schedules/reserves', data)
   },
 
-  /** 创建预约（新链路：slotId + childId，校验审核/次数/满额/每日一约） */
-  createReservationV2: (data: { childId: number; slotId: number; remark?: string }): Promise<number> => {
+  /** 创建预约（新链路：slotId + childId，校验审核/次数/满额/每日一约）；source=1 表明家长端发起 */
+  createReservationV2: (data: { childId: number; slotId: number; source?: number; remark?: string }): Promise<number> => {
     return request.post('/schedules/reserves/v2', data)
   },
 

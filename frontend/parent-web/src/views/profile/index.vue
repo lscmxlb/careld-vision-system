@@ -43,13 +43,13 @@
           <div class="vision-item">
             <span class="label">左眼</span>
             <span class="value" :class="getVisionClass(child.lastVisionTest?.leftEye)">
-              {{ child.lastVisionTest?.leftEye || '--' }}
+              {{ displayVision(child.lastVisionTest?.leftEye) }}
             </span>
           </div>
           <div class="vision-item">
             <span class="label">右眼</span>
             <span class="value" :class="getVisionClass(child.lastVisionTest?.rightEye)">
-              {{ child.lastVisionTest?.rightEye || '--' }}
+              {{ displayVision(child.lastVisionTest?.rightEye) }}
             </span>
           </div>
         </div>
@@ -140,11 +140,17 @@
         <el-form-item label="裸眼视力">
           <div class="naked-vision-row">
             <span class="naked-vision-label">双眼</span>
-            <el-input v-model="childForm.nakedVisionBoth" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+            <el-select v-model="childForm.nakedVisionBoth" placeholder="请选择" clearable style="width: 112px">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
+            </el-select>
             <span class="naked-vision-label">左眼</span>
-            <el-input v-model="childForm.nakedVisionLeft" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+            <el-select v-model="childForm.nakedVisionLeft" placeholder="请选择" clearable style="width: 112px">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
+            </el-select>
             <span class="naked-vision-label">右眼</span>
-            <el-input v-model="childForm.nakedVisionRight" placeholder="如 4.8" maxlength="10" style="width: 90px" />
+            <el-select v-model="childForm.nakedVisionRight" placeholder="请选择" clearable style="width: 112px">
+              <el-option v-for="v in VISION_MAIN_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
+            </el-select>
           </div>
         </el-form-item>
         <el-form-item label="既往病史">
@@ -198,9 +204,9 @@
         <div class="detail-row" v-if="detailChild.nakedVisionBoth || detailChild.nakedVisionLeft || detailChild.nakedVisionRight">
           <span class="detail-label">裸眼视力</span>
           <span class="detail-value">
-            双眼 {{ detailChild.nakedVisionBoth || '--' }} |
-            左眼 {{ detailChild.nakedVisionLeft || '--' }} |
-            右眼 {{ detailChild.nakedVisionRight || '--' }}
+            双眼 {{ displayVision(detailChild.nakedVisionBoth) }} |
+            左眼 {{ displayVision(detailChild.nakedVisionLeft) }} |
+            右眼 {{ displayVision(detailChild.nakedVisionRight) }}
           </span>
         </div>
         <div class="detail-row" v-if="detailChild.medicalHistory">
@@ -214,8 +220,8 @@
         <div class="detail-row" v-if="detailChild.lastVisionTest">
           <span class="detail-label">最近检测</span>
           <span class="detail-value">
-            左眼 {{ detailChild.lastVisionTest.leftEye }} |
-            右眼 {{ detailChild.lastVisionTest.rightEye }}
+            左眼 {{ displayVision(detailChild.lastVisionTest.leftEye) }} |
+            右眼 {{ displayVision(detailChild.lastVisionTest.rightEye) }}
           </span>
         </div>
       </div>
@@ -231,6 +237,7 @@ import { ElMessage } from 'element-plus'
 import { UserFilled, Plus } from '@element-plus/icons-vue'
 import type { Child, CreateChildRequest, Store } from '@/types'
 import { childApi, storeApi } from '@/api'
+import { VISION_MAIN_OPTIONS, displayVision, visionMainLabel } from '@/utils/vision'
 
 const router = useRouter()
 

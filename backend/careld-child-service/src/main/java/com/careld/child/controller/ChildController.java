@@ -6,6 +6,7 @@ import com.careld.child.entity.ChildServiceRecord;
 import com.careld.child.service.ChildService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.log.OperationLog;
+import com.careld.common.result.PageResult;
 import com.careld.common.result.Result;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
@@ -235,6 +236,32 @@ public class ChildController {
     @GetMapping("/{id}/service-records")
     public Result<List<ChildServiceRecord>> serviceRecords(@PathVariable Long id) {
         return Result.success(childService.listServiceRecords(id));
+    }
+
+    @Operation(summary = "授权记录分页（含预约授权与体验卡兑换）")
+    @GetMapping("/service-records/page")
+    public Result<PageResult<ChildServiceRecord>> authorizationRecordPage(
+            @RequestParam(value = "storeId", required = false) Long storeId,
+            @RequestParam(value = "childName", required = false) String childName,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "changeType", required = false) Integer changeType,
+            @RequestParam(value = "doctorName", required = false) String doctorName,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        // 数据权限：家长按所选医院（可为异地），其他角色沿用原逻辑
+        Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
+        return Result.success(childService.pageAuthorizationRecords(effectiveStoreId, childName, phone,
+                changeType, doctorName, startDate, endDate, page, size, aesKey));
+    }
+
+    @Operation(summary = "授权记录开单医生姓名选项（去重，供筛选下拉）")
+    @GetMapping("/service-records/doctor-names")
+    public Result<List<String>> authorizationDoctorNames(
+            @RequestParam(value = "storeId", required = false) Long storeId) {
+        Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
+        return Result.success(childService.listAuthorizationDoctorNames(effectiveStoreId));
     }
 
     @OperationLog(module = "children", action = "delete", description = "删除（隐藏）儿童档案")

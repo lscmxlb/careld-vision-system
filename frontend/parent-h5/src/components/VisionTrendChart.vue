@@ -8,7 +8,7 @@
     </view>
 
     <scroll-view v-if="chartGroups.length" class="trend-scroll" scroll-x :show-scrollbar="false">
-      <view class="trend-inner" :style="{ width: chartGroups.length * 320 + 'rpx' }">
+      <view class="trend-inner" :style="{ width: chartGroups.length * 480 + 'rpx' }">
         <view class="trend-axis">
           <text class="trend-axis-label">视力</text>
           <text class="trend-axis-max">{{ axisMax.toFixed(1) }}</text>
@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { careRecordApi } from '@/api/care-record'
-import { parseVision, parseVisionValue } from '@/utils/format'
+import { parseVision, parseVisionValue, visionMainLabel } from '@/utils/format'
 import type { CareRecord } from '@/types'
 
 const SERIES = [
@@ -90,7 +90,7 @@ const chartGroups = computed(() =>
       bars: SERIES.map((s) => {
         const value = parseVisionValue(row[s.key])
         const height = value === null ? 2 : Math.min(100, Math.max(2, ((value - axisMin.value) / (axisMax - axisMin.value)) * 100))
-        return { label: parseVision(row[s.key]).main || '-', height, color: s.color }
+        return { label: visionMainLabel(parseVision(row[s.key]).main) || '-', height, color: s.color }
       }),
     }
   }),
@@ -185,7 +185,7 @@ watch(() => [props.childId, props.storeId], load, { immediate: true })
 }
 
 .trend-col {
-  width: 320rpx;
+  width: 480rpx;
   flex: none;
 }
 
@@ -202,7 +202,7 @@ watch(() => [props.childId, props.storeId], load, { immediate: true })
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  width: 42rpx;
+  width: 68rpx;
   height: 100%;
   margin-right: 6rpx;
 }
@@ -212,9 +212,10 @@ watch(() => [props.childId, props.storeId], load, { immediate: true })
 }
 
 .trend-bar-value {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #64748b;
   margin-bottom: 4rpx;
+  white-space: nowrap;
 }
 
 .trend-bar {

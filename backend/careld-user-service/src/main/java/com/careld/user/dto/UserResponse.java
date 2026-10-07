@@ -49,6 +49,9 @@ public class UserResponse {
     @Schema(description = "门店名称")
     private String storeName;
 
+    @Schema(description = "医院类型（1 社区卫生服务中心 2 卫生院 3 妇幼保健院 4 医院 5 其它）")
+    private Integer storeType;
+
     @Schema(description = "状态")
     private Integer status;
 

@@ -13,24 +13,40 @@
       <!-- 搜索栏 -->
       <el-form :model="queryForm" inline class="search-form">
         <el-form-item label="运营中心" v-if="isHqUser">
-          <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange" style="width: 150px">
+          <el-select v-model="queryForm.centerId" placeholder="选择运营中心" clearable @change="onCenterChange">
             <el-option v-for="item in centerOptions" :key="item.id" :label="item.centerName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="代理商" v-if="isHqUser">
-          <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch" style="width: 150px">
+          <el-select v-model="queryForm.agentId" placeholder="选择代理商" clearable @change="handleSearch">
             <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryForm.status" placeholder="选择状态" style="width: 100px">
+          <el-select v-model="queryForm.status" placeholder="选择状态">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
             <el-option label="全部" :value="undefined" />
           </el-select>
         </el-form-item>
+        <el-form-item label="机构性质">
+          <el-select v-model="queryForm.institutionType" placeholder="全部" clearable @change="handleSearch">
+            <el-option label="公立医疗机构" :value="1" />
+            <el-option label="民营医疗机构" :value="2" />
+            <el-option label="其他" :value="3" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="医院类型">
+          <el-select v-model="queryForm.storeType" placeholder="全部" clearable @change="handleSearch">
+            <el-option label="社区卫生服务中心" :value="1" />
+            <el-option label="乡镇卫生院" :value="2" />
+            <el-option label="妇幼保健院" :value="3" />
+            <el-option label="医院/专科医院/中医院" :value="4" />
+            <el-option label="其它医疗机构" :value="5" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="queryForm.keyword" placeholder="医院名称/编码" clearable @keyup.enter="handleSearch" style="width: 160px" />
+          <el-input v-model="queryForm.keyword" placeholder="医院名称/编码" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch"><el-icon><Search /></el-icon>搜索</el-button>
@@ -40,9 +56,9 @@
 
       <!-- 数据表格 -->
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="storeCode" label="医院编码" width="120" />
-        <el-table-column prop="storeName" label="医院名称" min-width="150" />
-        <el-table-column label="省/市/区" width="180">
+        <el-table-column prop="storeCode" label="医院编码" width="100" />
+        <el-table-column prop="storeName" label="医院名称" min-width="240" />
+        <el-table-column label="省/市/区" width="250">
           <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
         <el-table-column label="机构性质" width="120">
@@ -50,19 +66,22 @@
             <el-tag :type="institutionTypeTag(row.institutionType)">{{ institutionTypeLabel(row.institutionType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="运营中心" width="150">
+        <el-table-column label="医院类型" width="170">
+          <template #default="{ row }">{{ storeTypeLabel(row.storeType) }}</template>
+        </el-table-column>
+        <el-table-column label="运营中心" width="140">
           <template #default="{ row }">
             <span v-if="row.centerName">{{ row.centerName }}</span>
             <el-tag v-else type="danger" size="small">未设置</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="代理商" width="150">
+        <el-table-column label="代理商" width="140">
           <template #default="{ row }">
             <span v-if="row.agentName">{{ row.agentName }}</span>
             <el-tag v-else type="danger" size="small">未设置</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="业务负责人" width="120">
+        <el-table-column label="业务负责人" width="100">
           <template #default="{ row }">{{ getAgentContactName(row.agentId) }}</template>
         </el-table-column>
         <el-table-column label="可用余额" width="110" align="right">
@@ -70,16 +89,16 @@
             <span :class="{ 'balance-low': Number(row.balance ?? 0) < 1 }">￥{{ formatBalance(row.balance) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="joinDate" label="加盟时间" width="120" />
-        <el-table-column prop="bedCount" label="床位数" width="80" />
-        <el-table-column prop="deviceCount" label="设备数" width="80" />
-        <el-table-column prop="staffCount" label="员工数" width="80" />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column prop="joinDate" label="加盟时间" width="110" />
+        <el-table-column prop="bedCount" label="床位数" width="70" />
+        <el-table-column prop="deviceCount" label="设备数" width="70" />
+        <el-table-column prop="staffCount" label="员工数" width="70" />
+        <el-table-column prop="status" label="状态" width="70">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button type="primary" size="small" @click="handleEdit(row)" v-permission="'store:list:update'">编辑</el-button>
@@ -123,6 +142,15 @@
         <el-form-item label="所属代理商" prop="agentId">
           <el-select v-model="formData.agentId" placeholder="选择代理商" filterable>
             <el-option v-for="item in formAgentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="医院类型" prop="storeType">
+          <el-select v-model="formData.storeType" placeholder="请选择医院类型">
+            <el-option label="社区卫生服务中心" :value="1" />
+            <el-option label="乡镇卫生院" :value="2" />
+            <el-option label="妇幼保健院" :value="3" />
+            <el-option label="医院/专科医院/中医院" :value="4" />
+            <el-option label="其它医疗机构" :value="5" />
           </el-select>
         </el-form-item>
         <el-form-item label="医院名称" prop="storeName">
@@ -216,9 +244,15 @@
     </el-dialog>
 
     <!-- 短信试用赠送弹窗 -->
-    <el-dialog v-model="trialDialogVisible" :title="`${trialStoreName} - 短信试用`" width="480px" destroy-on-close>
+    <el-dialog v-model="trialDialogVisible" width="480px" destroy-on-close>
+      <template #header="{ titleId, titleClass }">
+        <span :id="titleId" :class="titleClass"><StoreLogo :store-type="trialStoreType" />{{ trialStoreName }} - 短信试用</span>
+      </template>
       <el-form label-width="130px">
-        <el-form-item label="医院名称">{{ trialStoreName }}</el-form-item>
+        <el-form-item label="医院名称">
+          <StoreLogo :store-type="trialStoreType" />
+          <span>{{ trialStoreName }}</span>
+        </el-form-item>
         <el-form-item label="当前可用余额">
           <span :class="{ 'balance-low': trialBalance < 1 }">￥{{ trialBalance.toFixed(2) }}</span>
         </el-form-item>
@@ -236,13 +270,19 @@
     </el-dialog>
 
     <!-- 数据统计弹窗 -->
-    <el-dialog v-model="statDialogVisible" :title="`${statStoreName} - 数据统计`" width="720px" destroy-on-close>
+    <el-dialog v-model="statDialogVisible" width="720px" destroy-on-close>
+      <template #header="{ titleId, titleClass }">
+        <span :id="titleId" :class="titleClass"><StoreLogo :store-type="statStoreType" />{{ statStoreName }} - 数据统计</span>
+      </template>
       <div v-loading="statLoading">
         <template v-if="statData">
           <el-descriptions title="医院基本信息" :column="2" border size="small">
             <el-descriptions-item label="医院编码">{{ statData.storeCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="机构性质">{{ institutionTypeLabel(statData.institutionType) }}</el-descriptions-item>
-            <el-descriptions-item label="医院名称">{{ statData.storeName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="医院名称">
+              <StoreLogo v-if="statData.storeName" :store-type="statData.storeType" />
+              <span>{{ statData.storeName || '-' }}</span>
+            </el-descriptions-item>
             <el-descriptions-item label="医院状态">
               <el-tag :type="statData.status === 1 ? 'success' : 'danger'">{{ statData.status === 1 ? '启用' : '禁用' }}</el-tag>
             </el-descriptions-item>
@@ -289,6 +329,7 @@ import { ref, reactive, onMounted, computed, nextTick, h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { storeApi, orgApi, userApi, roleApi, statisticsApi, departmentApi, payApi } from '@/api'
+import StoreLogo from '@/components/StoreLogo.vue'
 import { useUserStore } from '@/stores/user'
 import type { Store, StoreQuery, OpsCenter, Agent, User, StoreOverview } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -310,6 +351,8 @@ const queryForm = reactive<StoreQuery & { centerId?: number }>({
   status: 1,
   agentId: undefined,
   centerId: undefined,
+  institutionType: undefined,
+  storeType: undefined,
   keyword: ''
 })
 
@@ -345,6 +388,7 @@ const formData = reactive<Partial<Store> & {
   joinDate: '',
   bedCount: 0,
   institutionType: undefined,
+  storeType: 1,
   regionCodes: [],
   createManagerAccount: true,
   managerUsername: '',
@@ -366,6 +410,7 @@ const formRules: FormRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   institutionType: [{ required: true, message: '请选择机构性质', trigger: 'change' }],
+  storeType: [{ required: true, message: '请选择医院类型', trigger: 'change' }],
   managerUsername: [{ required: true, message: '请输入店长登录账号', trigger: 'blur' }],
   managerRealName: [{ required: true, message: '请输入店长真实姓名', trigger: 'blur' }],
   managerPhone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
@@ -377,6 +422,11 @@ const formRules: FormRules = {
 
 const institutionTypeLabel = (type?: number) => {
   const map: Record<number, string> = { 1: '公立医疗机构', 2: '民营医疗机构', 3: '其他' }
+  return map[type ?? 0] || '未设置'
+}
+
+const storeTypeLabel = (type?: number) => {
+  const map: Record<number, string> = { 1: '社区卫生服务中心', 2: '乡镇卫生院', 3: '妇幼保健院', 4: '医院/专科医院/中医院', 5: '其它医疗机构' }
   return map[type ?? 0] || '未设置'
 }
 
@@ -443,6 +493,7 @@ const trialDialogVisible = ref(false)
 const trialSubmitting = ref(false)
 const trialStoreId = ref<number>()
 const trialStoreName = ref('')
+const trialStoreType = ref<number>()
 const trialBalance = ref(0)
 const trialAmount = ref('')
 
@@ -451,6 +502,7 @@ const statDialogVisible = ref(false)
 const statLoading = ref(false)
 const statData = ref<StoreOverview | null>(null)
 const statStoreName = ref('')
+const statStoreType = ref<number>()
 
 const getAgentName = (agentId?: number) => {
   const agent = allAgents.value.find(a => a.id === agentId)
@@ -505,6 +557,8 @@ const handleReset = () => {
   queryForm.status = 1
   queryForm.agentId = undefined
   queryForm.centerId = undefined
+  queryForm.institutionType = undefined
+  queryForm.storeType = undefined
   queryForm.keyword = ''
   agentOptions.value = []
   pagination.page = 1
@@ -525,7 +579,7 @@ const onFormCenterChange = async (val: number | undefined) => {
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增医院'
-  Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, regionCodes: [], createManagerAccount: true, managerUsername: '', managerRealName: '', managerPhone: '', managerPassword: '' })
+  Object.assign(formData, { storeCode: '', centerId: undefined, storeName: '', agentId: undefined, provinceCode: '', provinceName: '', cityCode: '', cityName: '', districtCode: '', districtName: '', address: '', contactName: '', contactPhone: '', joinDate: '', bedCount: 0, institutionType: undefined, storeType: 1, regionCodes: [], createManagerAccount: true, managerUsername: '', managerRealName: '', managerPhone: '', managerPassword: '' })
   formAgentOptions.value = []
   currentId.value = null
   resetDeptDialogForm()
@@ -611,6 +665,7 @@ const handleEdit = async (row: Store) => {
 const openTrialGrant = (row: Store) => {
   trialStoreId.value = row.id
   trialStoreName.value = row.storeName
+  trialStoreType.value = row.storeType
   trialBalance.value = Number(row.balance ?? 0)
   trialAmount.value = ''
   trialDialogVisible.value = true
@@ -638,6 +693,7 @@ const handleTrialSubmit = async () => {
 
 const handleViewStatistics = async (row: Store) => {
   statStoreName.value = row.storeName
+  statStoreType.value = row.storeType
   statData.value = null
   statDialogVisible.value = true
   statLoading.value = true
@@ -749,7 +805,39 @@ onMounted(() => {
 <style scoped lang="scss">
 .store-list-page {
   .card-header { display: flex; justify-content: space-between; align-items: center; }
-  .search-form { margin-bottom: 20px; }
+  .search-form {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: nowrap;
+
+    :deep(.el-form-item) {
+      margin-right: 12px;
+      margin-bottom: 0;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    :deep(.el-form-item:last-child) {
+      flex: 0 0 auto;
+      margin-right: 0;
+    }
+
+    :deep(.el-form-item__label) {
+      width: 68px;
+      white-space: nowrap;
+    }
+
+    :deep(.el-form-item__content) {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    :deep(.el-select),
+    :deep(.el-input) {
+      width: 100%;
+      min-width: 64px;
+    }
+  }
   .charge-unit { margin-left: 8px; color: #606266; font-size: 14px; }
   .trial-tip { margin-top: 6px; color: #909399; font-size: 12px; line-height: 1.6; }
   .balance-low { color: #f56c6c; }
@@ -761,6 +849,7 @@ onMounted(() => {
     justify-content: flex-start;
     align-items: center;
     white-space: nowrap;
+    :deep(.el-button + .el-button) { margin-left: 0; }
   }
   .stat-section-title {
     margin: 18px 0 12px;

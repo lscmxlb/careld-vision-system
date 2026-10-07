@@ -28,7 +28,7 @@
       <view class="card">
         <view class="section-title">档案信息</view>
         <view class="kv"><text class="kv-key">档案编号</text><text class="kv-value">{{ child.childCode || '—' }}</text></view>
-        <view class="kv"><text class="kv-key">建档医院</text><text class="kv-value">{{ child.storeName || '—' }}</text></view>
+        <view class="kv kv-center"><text class="kv-key">建档医院</text><StoreLogo v-if="child.storeName" :store-type="child.storeType" :size="20" /><text class="kv-value">{{ child.storeName || '—' }}</text></view>
         <view class="kv"><text class="kv-key">服务电话</text><text class="kv-value">{{ child.storeServicePhone || '—' }}</text></view>
         <view class="kv"><text class="kv-key">主治医师</text><text class="kv-value">{{ child.doctorName || '—' }}</text></view>
         <view class="kv-divider"></view>
@@ -95,6 +95,7 @@
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { childApi } from '@/api/child'
+import StoreLogo from '@/components/StoreLogo.vue'
 import { ageText, displayVision } from '@/utils/format'
 import { AUDIT_STATUS_MAP } from '@/utils/dict'
 import { toast } from '@/utils/request'
@@ -279,6 +280,10 @@ onShow(load)
   align-items: flex-start;
   padding: 12rpx 0;
   font-size: 27rpx;
+}
+
+.kv-center {
+  align-items: center;
 }
 
 .kv-key {

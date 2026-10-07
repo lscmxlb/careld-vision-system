@@ -41,4 +41,13 @@ public class ChildServiceRecord extends BaseEntity {
     private String timeSlotStart;
     @TableField(exist = false)
     private String timeSlotEnd;
+    /** 儿童姓名（非落库字段，授权记录列表回填，解密明文优先、掩码兜底） */
+    @TableField(exist = false)
+    private String childName;
+    /** 家长姓名（非落库字段，授权记录列表回填） */
+    @TableField(exist = false)
+    private String parentName;
+    /** 家长手机（非落库字段，授权记录列表回填，脱敏） */
+    @TableField(exist = false)
+    private String phoneMask;
 }

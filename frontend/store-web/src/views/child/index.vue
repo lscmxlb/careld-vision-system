@@ -219,15 +219,15 @@
           <div class="naked-vision-row">
             <span class="naked-vision-label">双眼</span>
             <el-select v-model="formData.nakedVisionBoth" placeholder="请选择" clearable>
-              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="v" :value="v" />
+              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <span class="naked-vision-label">左眼</span>
             <el-select v-model="formData.nakedVisionLeft" placeholder="请选择" clearable>
-              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="v" :value="v" />
+              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
             <span class="naked-vision-label">右眼</span>
             <el-select v-model="formData.nakedVisionRight" placeholder="请选择" clearable>
-              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="v" :value="v" />
+              <el-option v-for="v in VISION_OPTIONS" :key="v" :label="visionMainLabel(v)" :value="v" />
             </el-select>
           </div>
         </el-form-item>
@@ -403,6 +403,7 @@ import { Plus } from '@element-plus/icons-vue'
 import type { Child, ChildServiceRecord, MedicalStaff } from '@/types'
 import { childApi, medicalStaffApi, departmentApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { visionMainLabel } from '@/utils/vision'
 
 const route = useRoute()
 const userStore = useUserStore()

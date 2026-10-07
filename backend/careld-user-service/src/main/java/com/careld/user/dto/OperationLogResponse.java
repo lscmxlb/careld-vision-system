@@ -18,6 +18,7 @@ public class OperationLogResponse {
     private String userName;
     private Long storeId;
     private String storeName;
+    private Integer storeType;
     private String module;
     private String action;
     private String description;

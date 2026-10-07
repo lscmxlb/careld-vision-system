@@ -23,6 +23,7 @@
             <span>档案管理</span>
           </template>
           <el-menu-item index="/child">儿童档案</el-menu-item>
+          <el-menu-item index="/authorization-record">授权记录</el-menu-item>
           <el-menu-item index="/care-record">养护记录</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="appointment">
@@ -54,7 +55,7 @@
     <el-container>
       <el-header class="header">
         <div class="header-left">
-          <img :src="hisLogo" alt="" class="header-logo">
+          <StoreLogo :store-type="userStore.userInfo?.storeType" :size="30" />
           <span>{{ userStore.userInfo?.storeName }}</span>
         </div>
         <div class="header-right">
@@ -89,8 +90,8 @@ import {
   Setting
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import StoreLogo from '@/components/StoreLogo.vue'
 import logoImg from '@/assets/logo.png'
-import hisLogo from '@/assets/his.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -178,12 +179,6 @@ const handleCommand = async (command: string) => {
       font-weight: 700;
       line-height: 1.3;
       color: #001529;
-
-      .header-logo {
-        width: 30px;
-        height: 30px;
-        flex: none;
-      }
     }
 
     .header-right {

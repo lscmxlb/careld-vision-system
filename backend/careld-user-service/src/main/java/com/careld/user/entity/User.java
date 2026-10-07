@@ -37,6 +37,9 @@ public class User extends BaseEntity {
     private String storeName;
 
     @TableField(exist = false)
+    private Integer storeType;
+
+    @TableField(exist = false)
     private String agentName;
 
     @TableField(exist = false)

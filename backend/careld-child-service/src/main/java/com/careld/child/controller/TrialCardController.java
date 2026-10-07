@@ -46,6 +46,22 @@ public class TrialCardController {
                 keyword == null || keyword.isBlank() ? null : keyword.trim(), startDate, endDate, page, size, aesKey));
     }
 
+    @Operation(summary = "体验卡状态张数统计（同列表筛选口径，不含状态筛选）")
+    @GetMapping("/stats")
+    @RequirePermission("trialcard:view")
+    public Result<Map<String, Object>> stats(@RequestParam(value = "centerId", required = false) Long centerId,
+                                             @RequestParam(value = "agentId", required = false) Long agentId,
+                                             @RequestParam(value = "storeId", required = false) Long storeId,
+                                             @RequestParam(value = "keyword", required = false) String keyword,
+                                             @RequestParam(value = "startDate", required = false) String startDate,
+                                             @RequestParam(value = "endDate", required = false) String endDate) {
+        Long effectiveCenterId = DataScopeHelper.resolveCenterId(centerId);
+        Long effectiveAgentId = DataScopeHelper.resolveAgentId(agentId);
+        Long effectiveStoreId = DataScopeHelper.resolveStoreId(storeId);
+        return Result.success(trialCardService.statCards(effectiveCenterId, effectiveAgentId, effectiveStoreId,
+                keyword == null || keyword.isBlank() ? null : keyword.trim(), startDate, endDate));
+    }
+
     @OperationLog(module = "trialcard", action = "create", description = "发行项目体验卡")
     @Operation(summary = "批量发行体验卡（编号 + 验证码；count 可选 1~10000，同批连续编号）")
     @PostMapping

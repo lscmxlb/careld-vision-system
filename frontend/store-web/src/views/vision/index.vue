@@ -39,12 +39,12 @@
         </el-table-column>
         <el-table-column label="左眼视力" width="100">
           <template #default="{ row }">
-            <span :class="getVisionClass(row.leftEye)">{{ row.leftEye }}</span>
+            <span :class="getVisionClass(row.leftEye)">{{ displayVision(row.leftEye) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="右眼视力" width="100">
           <template #default="{ row }">
-            <span :class="getVisionClass(row.rightEye)">{{ row.rightEye }}</span>
+            <span :class="getVisionClass(row.rightEye)">{{ displayVision(row.rightEye) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="beforeAfter" label="养护阶段" width="100">
@@ -82,8 +82,8 @@
         <el-descriptions :column="2" border style="margin-top: 20px;">
           <el-descriptions-item label="检测时间">{{ formatTestTime(currentRecord.testTime) }}</el-descriptions-item>
           <el-descriptions-item label="检测人">{{ currentRecord.testerName }}</el-descriptions-item>
-          <el-descriptions-item label="左眼视力">{{ currentRecord.leftEye }}</el-descriptions-item>
-          <el-descriptions-item label="右眼视力">{{ currentRecord.rightEye }}</el-descriptions-item>
+          <el-descriptions-item label="左眼视力">{{ displayVision(currentRecord.leftEye) }}</el-descriptions-item>
+          <el-descriptions-item label="右眼视力">{{ displayVision(currentRecord.rightEye) }}</el-descriptions-item>
           <el-descriptions-item label="养护阶段">
             <el-tag :type="currentRecord.beforeAfter === 'before' ? 'info' : 'success'">
               {{ currentRecord.beforeAfter === 'before' ? '养护前' : '养护后' }}
@@ -108,6 +108,7 @@ import { Download } from '@element-plus/icons-vue'
 import type { VisionRecord } from '@/types'
 import { visionApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { displayVision } from '@/utils/vision'
 
 const userStore = useUserStore()
 const loading = ref(false)
@@ -221,8 +222,8 @@ const handleExport = async () => {
         row.childName,
         formatTestTime(row.testTime),
         row.beforeAfter === 'before' ? '养护前' : '养护后',
-        row.leftEye,
-        row.rightEye,
+        displayVision(row.leftEye),
+        displayVision(row.rightEye),
         row.testerName,
         row.remark
       ]

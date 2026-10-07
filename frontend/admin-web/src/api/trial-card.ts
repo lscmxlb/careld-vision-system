@@ -30,6 +30,7 @@ export interface TrialCard {
   agentName?: string
   storeName?: string
   usedStoreName?: string
+  usedStoreType?: number
   /** 发行人姓名（后台列表回填） */
   creatorName?: string
   /** 使用的儿童姓名（明文，仅后台下发） */
@@ -49,6 +50,22 @@ export interface TrialCardQuery {
   endDate?: string
   page?: number
   size?: number
+}
+
+/** 统计口径：同列表筛选（中心/代理商/医院/编号/日期），不含状态筛选 */
+export type TrialCardStatsQuery = Omit<TrialCardQuery, 'status' | 'page' | 'size'>
+
+export interface TrialCardStats {
+  /** 已发行总数 */
+  total: number
+  /** 剩余可用（未兑换） */
+  unused: number
+  /** 已绑定 */
+  bound: number
+  /** 已使用 */
+  used: number
+  /** 已禁用 */
+  disabled: number
 }
 
 export interface TrialCardIssueRequest {
@@ -92,6 +109,11 @@ export interface TrialCardDisableRangeResult {
 export const trialCardApi = {
   getList: (params: TrialCardQuery): Promise<PageResponse<TrialCard>> => {
     return request.get('/trial-cards', { params })
+  },
+
+  /** 状态张数统计（同列表筛选口径，不含状态筛选） */
+  getStats: (params: TrialCardStatsQuery): Promise<TrialCardStats> => {
+    return request.get('/trial-cards/stats', { params })
   },
 
   issue: (data: TrialCardIssueRequest): Promise<TrialCard[]> => {

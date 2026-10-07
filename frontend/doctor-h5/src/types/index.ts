@@ -23,6 +23,7 @@ export interface User {
   staffRole?: number
   storeId?: number
   storeName?: string
+  storeType?: number
   status: number
   roles: string[]
   permissions: string[]

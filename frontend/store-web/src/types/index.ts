@@ -19,6 +19,7 @@ export interface User {
   userType: number
   storeId?: number
   storeName?: string
+  storeType?: number
   status: number
   roles: string[]
   permissions: string[]
@@ -445,6 +446,12 @@ export interface ChildServiceRecord {
   doctorName?: string
   remark?: string
   createdAt: string
+  /** 授权记录列表回填：儿童姓名（明文优先/掩码兜底） */
+  childName?: string
+  /** 授权记录列表回填：家长姓名 */
+  parentName?: string
+  /** 授权记录列表回填：家长手机（脱敏） */
+  phoneMask?: string
 }
 
 /** 预约每日统计 */
@@ -465,6 +472,7 @@ export interface OperationLog {
   userName?: string
   storeId?: number
   storeName?: string
+  storeType?: number
   module: string
   action: string
   description?: string

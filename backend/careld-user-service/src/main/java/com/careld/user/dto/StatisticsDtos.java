@@ -58,6 +58,7 @@ public final class StatisticsDtos {
     public static class VisionImprovement {
         private Long storeId;
         private String storeName;
+        private Integer storeType;
         private long totalTests;
         private long improvedCount;
         private String improvementRate;
@@ -76,6 +77,7 @@ public final class StatisticsDtos {
         public static class TopStore {
             private Long storeId;
             private String storeName;
+            private Integer storeType;
             private long visitCount;
             private String improvementRate;
         }
@@ -122,6 +124,7 @@ public final class StatisticsDtos {
         private Long storeId;
         private String storeCode;
         private String storeName;
+        private Integer storeType;
         private Integer institutionType;
         private Integer status;
         private String provinceName;

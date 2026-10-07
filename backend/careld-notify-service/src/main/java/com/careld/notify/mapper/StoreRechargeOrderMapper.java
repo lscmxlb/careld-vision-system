@@ -54,7 +54,7 @@ public interface StoreRechargeOrderMapper extends BaseMapper<StoreRechargeOrder>
             + "FROM store_recharge_order o WHERE o.deleted_at IS NULL " + FILTERS + "</script>")
     Map<String, Object> summaryByQuery(RechargeOrderQuery query);
 
-    @Select("<script>SELECT o.*, s.store_name AS storeName FROM store_recharge_order o "
+    @Select("<script>SELECT o.*, s.store_name AS storeName, s.store_type AS storeType FROM store_recharge_order o "
             + "LEFT JOIN store_info s ON o.store_id = s.id "
             + "WHERE o.deleted_at IS NULL " + FILTERS
             + " ORDER BY o.id DESC LIMIT #{offset}, #{safeSize}</script>")

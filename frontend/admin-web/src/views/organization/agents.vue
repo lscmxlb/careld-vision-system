@@ -103,7 +103,12 @@
     <el-dialog v-model="storeDialog.visible" :title="storeDialog.title" width="750px" destroy-on-close>
       <el-table :data="storeDialog.data" v-loading="storeDialog.loading" stripe max-height="400">
         <el-table-column prop="storeCode" label="医院编码" width="120" />
-        <el-table-column prop="storeName" label="医院名称" min-width="150" />
+        <el-table-column label="医院名称" min-width="150">
+          <template #default="{ row }">
+            <StoreLogo :store-type="row.storeType" />
+            <span>{{ row.storeName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="省/市/区" width="180">
           <template #default="{ row }">{{ [row.provinceName, row.cityName, row.districtName].filter(Boolean).join(' / ') || '-' }}</template>
         </el-table-column>
@@ -135,6 +140,7 @@ import { orgApi } from '@/api'
 import { storeApi } from '@/api'
 import type { Agent, OpsCenter, Store } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 const loading = ref(false)
 const tableData = ref<Agent[]>([])

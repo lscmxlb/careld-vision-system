@@ -9,7 +9,7 @@
     </view>
 
     <view class="card">
-      <view class="kv"><text class="kv-key">所在医院</text><text class="kv-value">{{ user?.storeName || '—' }}</text></view>
+      <view class="kv"><text class="kv-key">所在医院</text><StoreLogo v-if="user?.storeName" :store-type="user?.storeType" :size="24" /><text class="kv-value">{{ user?.storeName || '—' }}</text></view>
       <view class="kv"><text class="kv-key">用户身份</text><text class="kv-value">{{ roleText }}</text></view>
       <view class="kv"><text class="kv-key">用户姓名</text><text class="kv-value">{{ user?.realName || '—' }}</text></view>
       <view class="kv kv-clickable" @click="openPhoneEdit">
@@ -126,6 +126,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { userApi } from '@/api/auth'
+import StoreLogo from '@/components/StoreLogo.vue'
 import { useUserStore } from '@/stores/user'
 import { userRoleText } from '@/utils/dict'
 import { toast } from '@/utils/request'

@@ -5,7 +5,7 @@
       <view class="hero-top">
         <view class="hero-left">
           <view class="hero-store-row">
-            <image class="hero-store-icon" src="/static/his-white.png" mode="aspectFit" />
+            <StoreLogo class="hero-store-icon" :store-type="userStore.userInfo?.storeType" :size="28" />
             <text class="hero-store" :style="storeNameStyle">{{ storeNameText }}</text>
           </view>
           <text class="hero-doctor">{{ userStore.displayName }}<text class="hero-role"> · {{ roleText }}</text></text>
@@ -91,6 +91,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import DayReserveSheet from '@/components/DayReserveSheet.vue'
+import StoreLogo from '@/components/StoreLogo.vue'
 import { reserveApi, scheduleRuleApi, statisticsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { userRoleText } from '@/utils/dict'
@@ -307,10 +308,7 @@ function goGrant() {
 }
 
 .hero-store-icon {
-  width: 64rpx;
-  height: 54rpx;
   flex-shrink: 0;
-  margin-right: 12rpx;
   /* 文字行框底部含约 0.25em 降部留白（汉字底边高于行框底边），上移 9rpx 让图标底边与汉字底边齐平 */
   position: relative;
   bottom: 9rpx;

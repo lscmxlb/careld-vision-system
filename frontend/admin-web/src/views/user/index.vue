@@ -63,8 +63,13 @@
           <el-table-column prop="agentName" label="代理商" width="140">
             <template #default="{ row }">{{ row.agentName || '-' }}</template>
           </el-table-column>
-          <el-table-column prop="storeName" label="所属医院" min-width="220" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.storeName || '-' }}</template>
+          <el-table-column label="所属医院" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              <template v-if="row.storeName">
+                <span>{{ row.storeName }}</span>
+              </template>
+              <span v-else>-</span>
+            </template>
           </el-table-column>
           <el-table-column prop="realName" label="真实姓名" width="100" show-overflow-tooltip />
           <el-table-column prop="userType" label="用户类型" width="100">
@@ -106,8 +111,13 @@
           <el-table-column prop="agentName" label="代理商" width="140">
             <template #default="{ row }">{{ row.agentName || '-' }}</template>
           </el-table-column>
-          <el-table-column prop="storeName" label="所属医院" min-width="220" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.storeName || '-' }}</template>
+          <el-table-column label="所属医院" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              <template v-if="row.storeName">
+                <span>{{ row.storeName }}</span>
+              </template>
+              <span v-else>-</span>
+            </template>
           </el-table-column>
           <el-table-column prop="phone" label="手机号" width="130">
             <template #default="{ row }">{{ row.userType === 3 ? maskPhone(row.phone) : row.phone }}</template>

@@ -31,6 +31,8 @@ public class StoreController {
     @RequirePermission("store:list:view")
     public Result<PageResult<Store>> list(@RequestParam(value = "status", required = false) Integer status,
                                           @RequestParam(value = "agentId", required = false) Long agentId,
+                                          @RequestParam(value = "institutionType", required = false) Integer institutionType,
+                                          @RequestParam(value = "storeType", required = false) Integer storeType,
                                           @RequestParam(value = "keyword", required = false) String keyword,
                                           @RequestParam(value = "page", defaultValue = "1") Integer page,
                                           @RequestParam(value = "size", defaultValue = "20") Integer size) {
@@ -57,7 +59,7 @@ public class StoreController {
         }
         // 代理商用户强制按自己的 agentId 过滤；运营中心用户可按前端传入的 agentId 筛选（centerId 同时限制范围）
         Long effectiveAgentId = DataScopeHelper.resolveAgentId(agentId);
-        var p = storeService.listStores(status, effectiveAgentId, scopeCenterId, scopeStoreId, keyword, page, size);
+        var p = storeService.listStores(status, effectiveAgentId, institutionType, storeType, scopeCenterId, scopeStoreId, keyword, page, size);
         return Result.success(PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal()));
     }
 

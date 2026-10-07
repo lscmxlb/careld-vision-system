@@ -23,9 +23,9 @@
         </div>
       </template>
 
-      <el-form :inline="true" class="query-form">
+      <el-form :inline="true" class="search-form">
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 110px">
+          <el-select v-model="query.status" placeholder="全部" clearable style="width: 88px">
             <el-option label="未兑换" :value="0" />
             <el-option label="已绑定" :value="2" />
             <el-option label="已使用" :value="1" />
@@ -38,7 +38,7 @@
             placeholder="全部"
             clearable
             filterable
-            style="width: 170px"
+            style="width: 92px"
             @change="handleCenterChange"
           >
             <el-option v-for="item in centers" :key="item.id" :label="item.centerName" :value="item.id" />
@@ -51,7 +51,7 @@
             clearable
             filterable
             :disabled="!query.centerId"
-            style="width: 170px"
+            style="width: 84px"
             @change="handleAgentChange"
           >
             <el-option v-for="item in agentOptions" :key="item.id" :label="item.agentName" :value="item.id" />
@@ -64,7 +64,7 @@
             clearable
             filterable
             :disabled="!query.centerId"
-            style="width: 180px"
+            style="width: 88px"
           >
             <el-option v-for="item in storeOptions" :key="item.id" :label="item.storeName" :value="item.id" />
           </el-select>
@@ -74,7 +74,7 @@
             v-model="query.keyword"
             placeholder="输入编号搜索"
             clearable
-            style="width: 150px"
+            style="width: 96px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
@@ -85,7 +85,7 @@
             value-format="YYYY-MM-DD"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
-            style="width: 240px"
+            style="width: 180px"
             unlink-panels
           />
         </el-form-item>
@@ -159,8 +159,20 @@
         </template>
       </el-table>
 
-      <div class="pagination-wrapper" v-if="pagination.total > pagination.size">
+      <div class="footer-bar" v-loading="statsLoading">
+        <div class="stat-bar">
+          <span class="stat-item">已发行：<b class="stat-total">{{ stats.total }}</b> 张</span>
+          <span class="stat-divider" />
+          <span class="stat-item">已绑定：<b class="stat-bound">{{ stats.bound }}</b> 张</span>
+          <span class="stat-divider" />
+          <span class="stat-item">已使用：<b class="stat-used">{{ stats.used }}</b> 张</span>
+          <span class="stat-divider" />
+          <span class="stat-item">已禁用：<b class="stat-disabled">{{ stats.disabled }}</b> 张</span>
+          <span class="stat-divider" />
+          <span class="stat-item">剩余可用：<b class="stat-unused">{{ stats.unused }}</b> 张</span>
+        </div>
         <el-pagination
+          v-if="pagination.total > pagination.size"
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
           :total="pagination.total"
@@ -293,7 +305,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Plus, Setting } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { orgApi, storeApi, trialCardApi } from '@/api'
-import type { TrialCard, TrialCardQuery } from '@/api'
+import type { TrialCard, TrialCardQuery, TrialCardStats } from '@/api'
 import { exportXlsx } from '@/utils/xlsx'
 import type { Agent, OpsCenter, Store } from '@/types'
 
@@ -303,7 +315,11 @@ const centers = ref<OpsCenter[]>([])
 const allAgents = ref<Agent[]>([])
 const allStores = ref<Store[]>([])
 const dateRange = ref<[string, string] | null>(null)
-const pagination = reactive({ page: 1, size: 20, total: 0 })
+const pagination = reactive({ page: 1, size: 10, total: 0 })
+
+/** 状态张数统计（口径同列表筛选，不含状态筛选） */
+const stats = ref<TrialCardStats>({ total: 0, unused: 0, bound: 0, used: 0, disabled: 0 })
+const statsLoading = ref(false)
 
 const query = reactive<TrialCardQuery>({
   status: undefined,
@@ -347,6 +363,22 @@ const fetchCards = async () => {
   }
 }
 
+const fetchStats = async () => {
+  statsLoading.value = true
+  try {
+    stats.value = await trialCardApi.getStats({
+      centerId: query.centerId,
+      agentId: query.agentId,
+      storeId: query.storeId,
+      keyword: query.keyword || undefined,
+      startDate: dateRange.value?.[0] || undefined,
+      endDate: dateRange.value?.[1] || undefined
+    })
+  } finally {
+    statsLoading.value = false
+  }
+}
+
 const handleCenterChange = () => {
   query.agentId = undefined
   query.storeId = undefined
@@ -361,6 +393,7 @@ const handleAgentChange = () => {
 const handleSearch = () => {
   pagination.page = 1
   fetchCards()
+  fetchStats()
 }
 
 const handleReset = () => {
@@ -409,6 +442,7 @@ const handleDisable = async (row: TrialCard) => {
     await trialCardApi.disable(row.id)
     ElMessage.success(`体验卡 ${row.cardNo} 已禁用`)
     fetchCards()
+    fetchStats()
   } finally {
     rowActionId.value = null
   }
@@ -428,6 +462,7 @@ const handleEnable = async (row: TrialCard) => {
     await trialCardApi.enable(row.id)
     ElMessage.success(`体验卡 ${row.cardNo} 已启用`)
     fetchCards()
+    fetchStats()
   } finally {
     rowActionId.value = null
   }
@@ -729,6 +764,7 @@ onMounted(async () => {
   allAgents.value = agentList ?? []
   allStores.value = storeList ?? []
   fetchCards()
+  fetchStats()
 })
 </script>
 
@@ -764,8 +800,81 @@ onMounted(async () => {
   align-items: center;
 }
 
-.query-form {
-  margin-bottom: 4px;
+.search-form {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-right: 4px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.search-form :deep(.el-form-item:last-child) {
+  margin-right: 0;
+}
+
+.search-form :deep(.el-form-item__label) {
+  padding-right: 2px;
+}
+
+.footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 8px 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.stat-item {
+  color: #606266;
+  white-space: nowrap;
+}
+
+.stat-item b {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.stat-total {
+  color: #14b8a6;
+}
+
+.stat-bound {
+  color: #e6a23c;
+}
+
+.stat-used {
+  color: #909399;
+}
+
+.stat-disabled {
+  color: #f56c6c;
+}
+
+.stat-unused {
+  color: #67c23a;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 16px;
+  background: #dcdfe6;
 }
 
 .field-tip {
@@ -802,11 +911,5 @@ onMounted(async () => {
   font-size: 12px;
   line-height: 1.7;
   color: #909399;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 14px;
 }
 </style>

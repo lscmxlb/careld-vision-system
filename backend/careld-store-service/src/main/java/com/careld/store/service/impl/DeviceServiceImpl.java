@@ -47,9 +47,9 @@ public class DeviceServiceImpl implements DeviceService {
         Page<TvDevice> p = new Page<>(page == null ? 1 : page, size == null ? 20 : size);
         tvDeviceMapper.selectPage(p, buildWrapper(storeId, agentId, centerId, status, keyword));
         List<TvDevice> records = p.getRecords();
-        Map<Long, String> nameMap = resolveStoreNames(records);
+        Map<Long, Store> storeMap = resolveStores(records);
         Map<Long, String> typeNameMap = resolveDeviceTypeNames(records);
-        List<DeviceResponse> list = records.stream().map(d -> toResponse(d, nameMap, typeNameMap)).collect(Collectors.toList());
+        List<DeviceResponse> list = records.stream().map(d -> toResponse(d, storeMap, typeNameMap)).collect(Collectors.toList());
 
         Page<DeviceResponse> result = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
         result.setRecords(list);
@@ -59,17 +59,17 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     public List<DeviceResponse> listDevices(Long storeId, Long agentId, Long centerId, Integer status, String keyword) {
         List<TvDevice> devices = tvDeviceMapper.selectList(buildWrapper(storeId, agentId, centerId, status, keyword));
-        Map<Long, String> nameMap = resolveStoreNames(devices);
+        Map<Long, Store> storeMap = resolveStores(devices);
         Map<Long, String> typeNameMap = resolveDeviceTypeNames(devices);
-        return devices.stream().map(d -> toResponse(d, nameMap, typeNameMap)).collect(Collectors.toList());
+        return devices.stream().map(d -> toResponse(d, storeMap, typeNameMap)).collect(Collectors.toList());
     }
 
     @Override
     public DeviceResponse getDeviceById(Long id) {
         TvDevice device = getEntityById(id);
-        Map<Long, String> nameMap = resolveStoreNames(Collections.singletonList(device));
+        Map<Long, Store> storeMap = resolveStores(Collections.singletonList(device));
         Map<Long, String> typeNameMap = resolveDeviceTypeNames(Collections.singletonList(device));
-        return toResponse(device, nameMap, typeNameMap);
+        return toResponse(device, storeMap, typeNameMap);
     }
 
     @Override
@@ -320,7 +320,7 @@ public class DeviceServiceImpl implements DeviceService {
         throw new BusinessException(403, "无权操作该设备");
     }
 
-    private Map<Long, String> resolveStoreNames(List<TvDevice> devices) {
+    private Map<Long, Store> resolveStores(List<TvDevice> devices) {
         if (devices.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -333,7 +333,7 @@ public class DeviceServiceImpl implements DeviceService {
             return Collections.emptyMap();
         }
         List<Store> stores = storeMapper.selectBatchIds(storeIds);
-        return stores.stream().collect(Collectors.toMap(Store::getId, Store::getStoreName, (a, b) -> a));
+        return stores.stream().collect(Collectors.toMap(Store::getId, s -> s, (a, b) -> a));
     }
 
     private Map<Long, String> resolveDeviceTypeNames(List<TvDevice> devices) {
@@ -352,7 +352,7 @@ public class DeviceServiceImpl implements DeviceService {
         return types.stream().collect(Collectors.toMap(DeviceType::getId, DeviceType::getTypeName, (a, b) -> a));
     }
 
-    private DeviceResponse toResponse(TvDevice d, Map<Long, String> nameMap, Map<Long, String> typeNameMap) {
+    private DeviceResponse toResponse(TvDevice d, Map<Long, Store> storeMap, Map<Long, String> typeNameMap) {
         DeviceResponse r = new DeviceResponse();
         r.setId(d.getId());
         r.setDeviceCode(d.getDeviceCode());
@@ -361,7 +361,9 @@ public class DeviceServiceImpl implements DeviceService {
         r.setDeviceSn(d.getDeviceSn());
         r.setDeviceName(d.getDeviceName());
         r.setStoreId(d.getStoreId());
-        r.setStoreName(nameMap.get(d.getStoreId()));
+        Store store = d.getStoreId() != null ? storeMap.get(d.getStoreId()) : null;
+        r.setStoreName(store != null ? store.getStoreName() : null);
+        r.setStoreType(store != null ? store.getStoreType() : null);
         r.setAndroidVersion(d.getAndroidVersion());
         r.setScreenResolution(d.getScreenResolution());
         r.setScreenSize(d.getScreenSize());

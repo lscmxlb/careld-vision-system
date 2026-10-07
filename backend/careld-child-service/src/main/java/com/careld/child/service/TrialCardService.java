@@ -12,6 +12,10 @@ public interface TrialCardService {
                                     String keyword, String startDate, String endDate,
                                     int page, int size, String aesKey);
 
+    /** 状态张数统计（同列表筛选口径，不含状态筛选）：返回 {total, unused, bound, used, disabled} */
+    Map<String, Object> statCards(Long centerId, Long agentId, Long storeId,
+                                  String keyword, String startDate, String endDate);
+
     /** 批量发行体验卡（编号=2位年份+4位区号+5位顺序号，验证码=6位随机+2位校验位；同批连续编号、共用一个标题） */
     List<TrialCard> issueCards(Long centerId, Long agentId, Long storeId, String areaCode,
                                String title, String remark, Integer count);

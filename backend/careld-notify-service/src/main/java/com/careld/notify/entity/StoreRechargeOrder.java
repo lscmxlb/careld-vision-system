@@ -61,4 +61,8 @@ public class StoreRechargeOrder extends BaseEntity {
     @TableField(exist = false)
     @Schema(description = "支付医院名称")
     private String storeName;
+
+    @TableField(exist = false)
+    @Schema(description = "医院类型（1 社区卫生服务中心 2 卫生院 3 妇幼保健院 4 医院 5 其它）")
+    private Integer storeType;
 }

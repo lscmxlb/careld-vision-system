@@ -1,5 +1,7 @@
 package com.careld.child.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.careld.child.entity.ChildProfile;
 import com.careld.child.entity.ChildServiceRecord;
 import com.careld.child.entity.ParentUser;
@@ -9,6 +11,7 @@ import com.careld.child.service.ChildService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.notify.NotifyEventTypes;
 import com.careld.common.notify.NotifyTaskWriter;
+import com.careld.common.result.PageResult;
 import com.careld.common.security.AesUtil;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.common.security.UserContext;
@@ -20,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,6 +34,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -589,6 +596,126 @@ public class ChildServiceImpl implements ChildService {
             record.setTimeSlotEnd((String) row.get("timeSlotEnd"));
         }
     }
+    @Override
+    public PageResult<ChildServiceRecord> pageAuthorizationRecords(Long storeId, String childName, String phone,
+                                                                   Integer changeType, String doctorName,
+                                                                   String startDate, String endDate,
+                                                                   int page, int size, String aesKey) {
+        // 类型范围：默认 1=预约授权 + 6=体验卡兑换（用户口径），传具体值则只看该类型
+        List<Integer> changeTypes;
+        if (changeType == null) {
+            changeTypes = List.of(1, 6);
+        } else if (changeType == 1 || changeType == 6) {
+            changeTypes = List.of(changeType);
+        } else {
+            throw new BusinessException(400, "授权类型仅支持 1=预约授权 / 6=体验卡兑换");
+        }
+
+        // 姓名/手机号：掩码包含 + 解密明文包含双模式（与儿童档案搜索口径一致），先解析出匹配儿童；无匹配直接空页
+        List<Long> matchedChildIds = null;
+        String nameKw = StringUtils.hasText(childName) ? childName.trim() : null;
+        String phoneKw = StringUtils.hasText(phone) ? phone.trim() : null;
+        if (nameKw != null || phoneKw != null) {
+            matchedChildIds = childMapper.selectByCondition(storeId, null, null, null, true).stream()
+                    .filter(c -> matchesChild(c, nameKw, phoneKw, aesKey))
+                    .map(ChildProfile::getId)
+                    .toList();
+            if (matchedChildIds.isEmpty()) {
+                return PageResult.of(List.of(), page, size, 0);
+            }
+        }
+
+        LambdaQueryWrapper<ChildServiceRecord> wrapper = new LambdaQueryWrapper<>();
+        if (storeId != null) {
+            wrapper.eq(ChildServiceRecord::getStoreId, storeId);
+        }
+        wrapper.in(ChildServiceRecord::getChangeType, changeTypes);
+        if (matchedChildIds != null) {
+            wrapper.in(ChildServiceRecord::getChildId, matchedChildIds);
+        }
+        if (StringUtils.hasText(doctorName)) {
+            wrapper.like(ChildServiceRecord::getDoctorName, doctorName.trim());
+        }
+        LocalDate start = parseDate(startDate, "开始日期");
+        LocalDate end = parseDate(endDate, "结束日期");
+        if (start != null) {
+            wrapper.ge(ChildServiceRecord::getCreatedAt, start.atStartOfDay());
+        }
+        if (end != null) {
+            wrapper.le(ChildServiceRecord::getCreatedAt, end.atTime(23, 59, 59));
+        }
+        wrapper.orderByDesc(ChildServiceRecord::getCreatedAt).orderByDesc(ChildServiceRecord::getId);
+
+        IPage<ChildServiceRecord> p = serviceRecordMapper.selectPage(new Page<>(page, size), wrapper);
+        fillChildDisplay(p.getRecords(), aesKey);
+        return PageResult.of(p.getRecords(), p.getCurrent(), p.getSize(), p.getTotal());
+    }
+
+    @Override
+    public List<String> listAuthorizationDoctorNames(Long storeId) {
+        return serviceRecordMapper.selectDoctorNames(storeId);
+    }
+
+    /** 授权记录筛选：姓名/手机号双模式（掩码包含或解密明文包含），两个条件均填写时为「且」 */
+    private boolean matchesChild(ChildProfile c, String nameKw, String phoneKw, String aesKey) {
+        if (nameKw != null) {
+            boolean hit = c.getNameMask() != null && c.getNameMask().contains(nameKw);
+            if (!hit) {
+                String plain = decryptForDetail(c.getNameEncrypted(), aesKey);
+                hit = StringUtils.hasText(plain) && plain.contains(nameKw);
+            }
+            if (!hit) {
+                return false;
+            }
+        }
+        if (phoneKw != null) {
+            boolean hit = c.getPhoneMask() != null && c.getPhoneMask().contains(phoneKw);
+            if (!hit) {
+                String plain = decryptForDetail(c.getPhoneEncrypted(), aesKey);
+                hit = StringUtils.hasText(plain) && plain.contains(phoneKw);
+            }
+            if (!hit) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 授权记录行回填儿童姓名（解密明文优先/掩码兜底）、家长姓名、家长手机（掩码） */
+    private void fillChildDisplay(List<ChildServiceRecord> records, String aesKey) {
+        List<Long> childIds = records.stream()
+                .map(ChildServiceRecord::getChildId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (childIds.isEmpty()) {
+            return;
+        }
+        Map<Long, ChildProfile> childMap = childMapper.selectBatchIds(childIds).stream()
+                .collect(Collectors.toMap(ChildProfile::getId, Function.identity()));
+        for (ChildServiceRecord record : records) {
+            ChildProfile child = childMap.get(record.getChildId());
+            if (child == null) {
+                continue;
+            }
+            String plainName = decryptForDetail(child.getNameEncrypted(), aesKey);
+            record.setChildName(StringUtils.hasText(plainName) ? plainName : child.getNameMask());
+            record.setParentName(child.getParentName());
+            record.setPhoneMask(child.getPhoneMask());
+        }
+    }
+
+    private LocalDate parseDate(String value, String label) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.trim());
+        } catch (DateTimeParseException e) {
+            throw new BusinessException(400, label + "格式错误（要求 yyyy-MM-dd）");
+        }
+    }
+
     private String generateChildCode() {
         return "CH" + System.currentTimeMillis();
     }

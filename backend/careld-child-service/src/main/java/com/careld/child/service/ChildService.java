@@ -42,4 +42,16 @@ public interface ChildService {
 
     /** 服务次数变更流水 */
     List<ChildServiceRecord> listServiceRecords(Long childId);
+
+    /**
+     * 授权记录分页（含体验卡兑换）：change_type IN (1=预约授权, 6=体验卡兑换)，
+     * changeType 传 1/6 时仅看对应类型；childName/phone 掩码与明文双模式匹配；doctorName 按开单医生姓名快照模糊；
+     * startDate/endDate 为 yyyy-MM-dd。
+     */
+    com.careld.common.result.PageResult<ChildServiceRecord> pageAuthorizationRecords(
+            Long storeId, String childName, String phone, Integer changeType, String doctorName,
+            String startDate, String endDate, int page, int size, String aesKey);
+
+    /** 授权记录开单医生姓名选项（去重快照，供筛选下拉；覆盖历史/非在职人员） */
+    List<String> listAuthorizationDoctorNames(Long storeId);
 }

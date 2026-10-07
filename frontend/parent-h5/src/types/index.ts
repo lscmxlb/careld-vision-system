@@ -68,6 +68,7 @@ export interface Child {
   auditRemark?: string
   storeId?: number
   storeName?: string
+  storeType?: number
   /** 建档医院服务电话（医院端基础信息维护，随档案详情下发） */
   storeServicePhone?: string
   doctorId?: number

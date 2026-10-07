@@ -126,7 +126,12 @@
           </template>
           <el-table :data="summaryData.topStores" stripe size="small" max-height="350">
             <el-table-column type="index" label="排名" width="60" />
-            <el-table-column prop="storeName" label="医院名称" />
+            <el-table-column label="医院名称">
+              <template #default="{ row }">
+                <StoreLogo :store-type="row.storeType" />
+                <span>{{ row.storeName }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="visitCount" label="到店次数" width="100" />
             <el-table-column prop="improvementRate" label="改善率" width="100">
               <template #default="{ row }">
@@ -148,6 +153,7 @@ import { Search, Download, Shop, User, View, TrendCharts } from '@element-plus/i
 import * as echarts from 'echarts'
 import { statisticsApi, storeApi } from '@/api'
 import type { NationalSummary, Store } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 // 筛选条件
 const storeOptions = ref<Store[]>([])

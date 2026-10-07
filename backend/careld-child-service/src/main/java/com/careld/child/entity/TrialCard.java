@@ -52,6 +52,9 @@ public class TrialCard extends BaseEntity {
     /** 使用医院名 */
     @TableField(exist = false)
     private String usedStoreName;
+    /** 使用医院类型（前端在医院名前渲染类型图标） */
+    @TableField(exist = false)
+    private Integer usedStoreType;
     /** 使用的儿童姓名（解密后明文，仅后台列表/导出下发） */
     @TableField(exist = false)
     private String childName;

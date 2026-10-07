@@ -51,7 +51,12 @@
         </el-table-column>
         <el-table-column prop="age" label="年龄" width="80" />
         <el-table-column prop="phone" label="家长手机号" width="130" />
-        <el-table-column prop="storeName" label="所属医院" />
+        <el-table-column label="所属医院">
+          <template #default="{ row }">
+            <StoreLogo :store-type="row.storeType" />
+            <span>{{ row.storeName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="eyeCondition" label="视力状况" />
         <el-table-column prop="createdAt" label="提交时间" width="160">
           <template #default="{ row }">
@@ -97,7 +102,10 @@
     >
       <el-descriptions :column="2" border>
         <el-descriptions-item label="档案编号">{{ currentRow?.childCode }}</el-descriptions-item>
-        <el-descriptions-item label="所属医院">{{ currentRow?.storeName }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">
+          <StoreLogo :store-type="currentRow?.storeType" />
+          <span>{{ currentRow?.storeName }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="儿童姓名">{{ currentRow?.name }}</el-descriptions-item>
         <el-descriptions-item label="性别">{{ currentRow?.gender === 1 ? '男' : '女' }}</el-descriptions-item>
         <el-descriptions-item label="出生日期">{{ currentRow?.birthDate }}</el-descriptions-item>
@@ -160,6 +168,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { childApi, storeApi } from '@/api'
 import type { Child, Store } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 // 状态
 const auditStatus = ref(0)

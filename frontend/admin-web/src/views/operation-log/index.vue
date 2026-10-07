@@ -90,7 +90,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="userName" label="操作用户" width="100" />
-        <el-table-column prop="storeName" label="所属医院" width="130" show-overflow-tooltip />
+        <el-table-column label="所属医院" width="130" show-overflow-tooltip>
+          <template #default="{ row }">
+            <template v-if="row.storeName">
+              <StoreLogo :store-type="row.storeType" />
+              <span>{{ row.storeName }}</span>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="module" label="模块" width="100">
           <template #default="{ row }">
             {{ moduleLabel(row.module) }}
@@ -168,7 +176,13 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="操作用户">{{ currentLog.userName }}</el-descriptions-item>
-        <el-descriptions-item label="所属医院">{{ currentLog.storeName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="所属医院">
+          <template v-if="currentLog.storeName">
+            <StoreLogo :store-type="currentLog.storeType" />
+            <span>{{ currentLog.storeName }}</span>
+          </template>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="模块">{{ moduleLabel(currentLog.module) }}</el-descriptions-item>
         <el-descriptions-item label="操作内容">
           {{ currentLog.description || actionLabel(currentLog.action) }}
@@ -223,6 +237,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { operationLogApi, storeApi } from '@/api'
 import type { OperationLog, OperationLogQuery, Store } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 
 // 表格数据
 const loading = ref(false)

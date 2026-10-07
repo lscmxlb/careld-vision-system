@@ -45,7 +45,7 @@ public interface CareRecordMapper extends BaseMapper<CareRecord> {
     List<ChildNameCandidate> selectChildNameCandidates(@Param("storeId") Long storeId);
 
     /**
-     * 养护记录分页查询：JOIN child_profile 支持按儿童姓名/家长姓名/手机号筛选，
+     * 养护记录分页查询：JOIN child_profile 支持按儿童姓名/家长姓名/手机号/养护人筛选，
      * 并支持按儿童累计已完成养护次数（大于 x 次）筛选
      */
     @Select("<script>" +
@@ -76,6 +76,7 @@ public interface CareRecordMapper extends BaseMapper<CareRecord> {
             "<otherwise>AND c.phone_mask LIKE CONCAT('%',#{phone},'%') </otherwise>" +
             "</choose>" +
             "</if>" +
+            "<if test='executorName != null and executorName != \"\"'>AND r.executor_name LIKE CONCAT('%',#{executorName},'%') </if>" +
             "<if test='minCareCount != null'>AND r.child_id IN (" +
             "SELECT cr.child_id FROM care_record cr WHERE cr.deleted_at IS NULL AND cr.status = 2 " +
             "<if test='storeId != null'>AND cr.store_id = #{storeId} </if>" +
@@ -87,7 +88,8 @@ public interface CareRecordMapper extends BaseMapper<CareRecord> {
                                           @Param("childIds") List<Long> childIds,
                                           @Param("parentName") String parentName,
                                           @Param("phone") String phone,
-                                          @Param("minCareCount") Integer minCareCount);
+                                          @Param("minCareCount") Integer minCareCount,
+                                          @Param("executorName") String executorName);
 
     /** 养护记录详情：聚合字段口径与分页查询保持一致 */
     @Select("SELECT r.*, " +

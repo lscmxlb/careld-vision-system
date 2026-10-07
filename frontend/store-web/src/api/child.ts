@@ -2,7 +2,7 @@
  * 儿童档案相关API
  */
 import request from './request'
-import type { Child, ChildQuery, CreateChildRequest, ChildServiceRecord } from '@/types'
+import type { Child, ChildQuery, CreateChildRequest, ChildServiceRecord, PageResult } from '@/types'
 
 export const childApi = {
   // 获取档案列表（后端返回全量数组，前端本地分页展示）
@@ -80,5 +80,27 @@ export const childApi = {
   // 服务次数变更流水
   getServiceRecords: (id: number): Promise<ChildServiceRecord[]> => {
     return request.get(`/children/${id}/service-records`)
+  },
+
+  // 授权记录分页（含预约授权与体验卡兑换）
+  getAuthorizationRecordPage: (params: {
+    storeId?: number
+    childName?: string
+    phone?: string
+    /** 1=预约授权 6=体验卡兑换；不传=全部 */
+    changeType?: number
+    /** 开单医生姓名（模糊） */
+    doctorName?: string
+    startDate?: string
+    endDate?: string
+    page?: number
+    size?: number
+  }): Promise<PageResult<ChildServiceRecord>> => {
+    return request.get('/children/service-records/page', { params })
+  },
+
+  // 授权记录开单医生姓名选项（去重快照，筛选下拉）
+  getDoctorNames: (storeId?: number): Promise<string[]> => {
+    return request.get('/children/service-records/doctor-names', { params: { storeId } })
   }
 }

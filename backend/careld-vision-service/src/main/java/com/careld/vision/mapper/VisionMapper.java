@@ -53,7 +53,7 @@ public interface VisionMapper extends BaseMapper<VisionTestRecord> {
 
     @Select("<script>" +
             "SELECT v.*, c.name_mask AS childName, c.name_encrypted AS childNameEncrypted, " +
-            "s.store_name AS storeName, v.created_at AS testTime " +
+            "s.store_name AS storeName, s.store_type AS storeType, v.created_at AS testTime " +
             "FROM vision_test_record v " +
             "LEFT JOIN child_profile c ON c.id = v.child_id AND c.deleted_at IS NULL " +
             "LEFT JOIN store_info s ON s.id = v.store_id AND s.deleted_at IS NULL " +
@@ -64,7 +64,7 @@ public interface VisionMapper extends BaseMapper<VisionTestRecord> {
     List<VisionTestRecord> selectPageByQuery(VisionQuery query);
 
     @Select("SELECT v.*, c.name_mask AS childName, c.name_encrypted AS childNameEncrypted, " +
-            "s.store_name AS storeName, v.created_at AS testTime " +
+            "s.store_name AS storeName, s.store_type AS storeType, v.created_at AS testTime " +
             "FROM vision_test_record v " +
             "LEFT JOIN child_profile c ON c.id = v.child_id AND c.deleted_at IS NULL " +
             "LEFT JOIN store_info s ON s.id = v.store_id AND s.deleted_at IS NULL " +
@@ -79,7 +79,7 @@ public interface VisionMapper extends BaseMapper<VisionTestRecord> {
 
     @Select("<script>" +
             "SELECT v.child_id AS childId, MAX(c.name_mask) AS childName, " +
-            "MAX(c.name_encrypted) AS childNameEncrypted, MAX(s.store_name) AS storeName, " +
+            "MAX(c.name_encrypted) AS childNameEncrypted, MAX(s.store_name) AS storeName, MAX(s.store_type) AS storeType, " +
             "MAX(v.reserve_id) AS reserveId, v.test_type AS testType, MIN(v.created_at) AS testTime, " +
             EYES + "AS leftEye, " +
             "MAX(CASE WHEN v.eye_type = 2 OR v.eye_type = 0 OR v.eye_type IS NULL THEN v.vision_level END) AS rightEye, " +

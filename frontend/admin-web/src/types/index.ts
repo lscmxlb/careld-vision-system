@@ -12,6 +12,7 @@ export interface User {
   userType: number
   storeId?: number
   storeName?: string
+  storeType?: number
   hqId?: number
   centerId?: number
   centerName?: string
@@ -69,6 +70,7 @@ export interface Store {
   joinDate?: string
   bedCount?: number
   institutionType?: number // 1=公立医疗机构 2=民营医疗机构 3=其他
+  storeType?: number // 1=社区卫生服务中心 2=卫生院 3=妇幼保健院 4=医院 5=其它
   agentName?: string
   centerName?: string
   balance?: number
@@ -80,6 +82,8 @@ export interface StoreQuery {
   size?: number
   status?: number
   agentId?: number
+  institutionType?: number
+  storeType?: number
   provinceCode?: string
   keyword?: string
 }
@@ -90,6 +94,7 @@ export interface Child {
   childCode: string
   storeId: number
   storeName: string
+  storeType?: number
   name: string
   phone: string
   birthDate: string
@@ -235,6 +240,7 @@ export interface VisionRecord {
   childName: string
   storeId?: number
   storeName?: string
+  storeType?: number
   reserveId?: number
   testType: number // 1=检测前 2=检测后
   eyeType: number // 1=左眼 2=右眼 3=双眼
@@ -344,6 +350,7 @@ export interface Device {
   deviceName: string
   storeId: number
   storeName: string
+  storeType?: number
   status: number
   maintenanceDate?: string
   installDate?: string
@@ -387,6 +394,7 @@ export interface StoreTraffic {
 export interface VisionImprovement {
   storeId: number
   storeName: string
+  storeType?: number
   totalTests: number
   improvedCount: number
   improvementRate: string
@@ -401,6 +409,7 @@ export interface NationalSummary {
   topStores: Array<{
     storeId: number
     storeName: string
+    storeType?: number
     visitCount: number
     improvementRate: string
   }>
@@ -411,6 +420,7 @@ export interface StoreOverview {
   storeId: number
   storeCode: string
   storeName: string
+  storeType?: number
   institutionType?: number
   status: number
   provinceName?: string
@@ -438,6 +448,7 @@ export interface OperationLog {
   userName?: string
   storeId?: number
   storeName?: string
+  storeType?: number
   module: string
   action: string
   description?: string

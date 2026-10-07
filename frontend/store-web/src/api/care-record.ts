@@ -17,6 +17,8 @@ export const careRecordApi = {
     childName?: string
     parentName?: string
     phone?: string
+    /** 养护人姓名（模糊） */
+    executorName?: string
     /** 筛选累计已完成养护次数大于该值的儿童 */
     minCareCount?: number
     page?: number

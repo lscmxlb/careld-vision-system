@@ -58,6 +58,9 @@ public class RechargeOrderVO {
     @Schema(description = "支付医院名称")
     private String storeName;
 
+    @Schema(description = "医院类型（1 社区卫生服务中心 2 卫生院 3 妇幼保健院 4 医院 5 其它）")
+    private Integer storeType;
+
     public static RechargeOrderVO of(StoreRechargeOrder order) {
         RechargeOrderVO vo = new RechargeOrderVO();
         vo.setOrderNo(order.getOrderNo());
@@ -74,6 +77,7 @@ public class RechargeOrderVO {
         vo.setCreatedAt(order.getCreatedAt());
         vo.setStoreId(order.getStoreId());
         vo.setStoreName(order.getStoreName());
+        vo.setStoreType(order.getStoreType());
         return vo;
     }
 

@@ -39,7 +39,12 @@
         <el-table-column prop="deviceName" label="设备名称" width="130" />
         <el-table-column prop="deviceTypeName" label="设备类型" width="120" />
         <el-table-column prop="deviceSn" label="设备SN" width="140" />
-        <el-table-column prop="storeName" label="所属医院" min-width="120" />
+        <el-table-column label="所属医院" min-width="120">
+          <template #default="{ row }">
+            <StoreLogo :store-type="row.storeType" />
+            <span>{{ row.storeName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="在线状态" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">{{ row.status === 1 ? '在线' : '离线' }}</el-tag>
@@ -117,6 +122,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { deviceApi, storeApi, deviceTypeApi } from '@/api'
 import type { Device, Store, DeviceType } from '@/types'
+import StoreLogo from '@/components/StoreLogo.vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const loading = ref(false)

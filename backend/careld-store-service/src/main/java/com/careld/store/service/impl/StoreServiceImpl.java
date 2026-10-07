@@ -36,10 +36,16 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public Store getStoreByCode(String storeCode) { return storeMapper.selectByStoreCode(storeCode); }
     @Override
-    public IPage<Store> listStores(Integer status, Long agentId, Long centerId, Long storeId, String keyword, Integer page, Integer size) {
+    public IPage<Store> listStores(Integer status, Long agentId, Integer institutionType, Integer storeType, Long centerId, Long storeId, String keyword, Integer page, Integer size) {
         LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<>();
         if (status != null) {
             wrapper.eq(Store::getStatus, status);
+        }
+        if (institutionType != null) {
+            wrapper.eq(Store::getInstitutionType, institutionType);
+        }
+        if (storeType != null) {
+            wrapper.eq(Store::getStoreType, storeType);
         }
         if (storeId != null) {
             wrapper.eq(Store::getId, storeId);

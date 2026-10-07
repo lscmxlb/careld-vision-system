@@ -94,11 +94,11 @@
                 检测: {{ record.testerName }}
               </p>
               <p class="effect">
-                视力: {{ record.visionLevel }}
+                视力: {{ displayVision(record.visionLevel) }}
               </p>
             </div>
             <div class="history-vision" :class="getVisionClass(record.visionLevel)">
-              {{ record.visionLevel }}
+              {{ displayVision(record.visionLevel) }}
             </div>
           </div>
         </div>
@@ -115,6 +115,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import type { Child, VisionRecord } from '@/types'
 import { childApi, visionApi } from '@/api'
+import { displayVision } from '@/utils/vision'
 
 const route = useRoute()
 
@@ -222,7 +223,14 @@ const renderChart = () => {
       max: (value: { max: number }) => Math.ceil(value.max * 10 + 1) / 10
     },
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: (params: Array<{ dataIndex: number }>) => {
+        const idx = params[0]?.dataIndex ?? 0
+        const r = records.value[idx]
+        if (!r) return ''
+        const label = r.testType === 1 ? '养护前' : '养护后'
+        return `${r.testTime.substring(5, 10).replace('-', '/')}<br/>${label}：${displayVision(r.visionLevel)}`
+      }
     },
     series: [
       {
