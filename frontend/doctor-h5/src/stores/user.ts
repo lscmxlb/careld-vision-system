@@ -28,7 +28,7 @@ export const useUserStore = defineStore('user', {
 
   actions: {
     async loginByPassword(phone: string, password: string) {
-      const res = await authApi.login({ phone, password, loginType: 2 })
+      const res = await authApi.login({ phone, password, loginType: 2, client: 'doctor' })
       this.applyLogin(res)
       return res
     },

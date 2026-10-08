@@ -32,7 +32,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const login = async (loginData: LoginRequest) => {
-    const res = await authApi.login(loginData)
+    const res = await authApi.login({ ...loginData, client: 'admin' })
     setToken(res.accessToken)
     userInfo.value = res.user
     permissions.value = res.user.permissions

@@ -29,4 +29,7 @@ public class LoginRequest {
 
     @Schema(description = "登录方式:1用户名密码登录 2手机号密码登录")
     private Integer loginType = 1;
+
+    @Schema(description = "来源端:admin管理后台(PC两端) doctor医生端；用于端级角色隔离，缺省不校验")
+    private String client;
 }

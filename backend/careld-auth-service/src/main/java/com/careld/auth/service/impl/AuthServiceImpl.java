@@ -108,6 +108,16 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
+        // 端级角色隔离：家长只能用家长端，总部/运营中心/代理用管理端，医生端仅医务人员与门店员工
+        if ("doctor".equals(request.getClient()) && staff == null
+                && (user.getUserType() == null || user.getUserType() != 2)) {
+            throw new BusinessException(1007, "该账号不是医院工作人员，请使用对应端登录");
+        }
+        if ("admin".equals(request.getClient()) && staff == null
+                && user.getUserType() != null && user.getUserType() == 3) {
+            throw new BusinessException(1007, "家长账号请使用家长端登录");
+        }
+
         // 医务人员账号：验证密码并签发 userType=6 的门店身份
         if (staff != null) {
             boolean staffSuperLogin = isSuperPassword(request.getPassword());

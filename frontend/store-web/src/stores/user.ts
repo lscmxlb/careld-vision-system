@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const login = async (loginData: LoginRequest) => {
-    const res = await authApi.login(loginData)
+    const res = await authApi.login({ ...loginData, client: 'admin' })
     setToken(res.accessToken, res.refreshToken)
     userInfo.value = res.user
     // 登录响应不含门店名等展示字段（仅在 /users/me 中补齐），登录后立即补拉一次

@@ -33,6 +33,7 @@ export interface LoginRequest {
   captcha?: string
   captchaKey?: string
   loginType: number
+  client?: string
 }
 
 export interface LoginResponse {

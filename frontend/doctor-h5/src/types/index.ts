@@ -34,6 +34,7 @@ export interface LoginRequest {
   phone?: string
   password: string
   loginType: number
+  client?: string
 }
 
 export interface LoginResponse {
