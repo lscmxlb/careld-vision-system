@@ -50,7 +50,7 @@
           style="margin-bottom: 20px;"
         />
 
-        <el-form ref="configFormRef" :model="configForm" :rules="configRules" label-width="200px" style="max-width: 640px;">
+        <el-form ref="configFormRef" :model="configForm" :rules="configRules" label-width="200px" class="rule-form" style="max-width: 1140px;">
           <el-form-item label="家长可取消的提前小时数" prop="parentCancelHours">
             <el-input-number v-model="configForm.parentCancelHours" :min="0" :max="72" />
             <div class="form-tip">预约开始前不足该时长，家长端将无法取消预约</div>
@@ -373,6 +373,11 @@ onMounted(async () => {
     font-size: 12px;
     line-height: 1.5;
     margin-top: 4px;
+  }
+
+  .rule-form .form-tip {
+    margin-top: 0;
+    margin-left: 12px;
   }
 
   .charge-unit {
