@@ -30,6 +30,7 @@ export interface LoginRequest {
   phone?: string
   password: string
   loginType: number // 1=用户名 2=手机号
+  client?: string // 来源端:admin管理后台(PC两端) doctor医生端；用于端级角色隔离
 }
 
 export interface LoginResponse {
