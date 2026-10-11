@@ -6,6 +6,7 @@ import com.careld.user.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -14,6 +15,20 @@ import java.util.List;
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
+
+    /**
+     * 禁用用户：用户名加 ZF- 前缀、清空手机号释放占用、置禁用状态
+     * 注：updateById 默认不更新 null 字段，phone 置空必须走显式 SQL
+     */
+    @Update("UPDATE sys_user SET username = #{username}, phone = NULL, status = 0, updated_at = NOW() " +
+            "WHERE id = #{id} AND deleted_at IS NULL")
+    int disableUser(@Param("id") Long id, @Param("username") String username);
+
+    /**
+     * 启用用户（保持当前用户名与手机号不变）
+     */
+    @Update("UPDATE sys_user SET status = 1, updated_at = NOW() WHERE id = #{id} AND deleted_at IS NULL")
+    int enableUser(@Param("id") Long id);
 
     /**
      * 根据用户名查询

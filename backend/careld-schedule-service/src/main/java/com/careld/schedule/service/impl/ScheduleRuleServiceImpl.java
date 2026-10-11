@@ -172,6 +172,7 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
         def.setAutoNoShowHours(12);
         def.setDefaultShowStatuses("1,2,3,4,5");
         def.setChildAuditMode(0);
+        def.setNoShowRefund(0);
         return def;
     }
 
@@ -181,6 +182,9 @@ public class ScheduleRuleServiceImpl implements ScheduleRuleService {
         validateDefaultShowStatuses(config.getDefaultShowStatuses());
         if (config.getChildAuditMode() != null && config.getChildAuditMode() != 0 && config.getChildAuditMode() != 1) {
             throw new BusinessException(400, "儿童档案审核方式不合法");
+        }
+        if (config.getNoShowRefund() != null && config.getNoShowRefund() != 0 && config.getNoShowRefund() != 1) {
+            throw new BusinessException(400, "爽约次数是否返还不合法");
         }
         AppointmentConfig exist = configMapper.selectByStoreId(config.getStoreId());
         if (exist == null) {

@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +41,9 @@ import java.util.stream.Collectors;
 public class ChildServiceImpl implements ChildService {
 
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("自费支付", "医保-个人余额", "医保-统筹支付", "免费体验", "其它");
+
+    /** 医生建档自动创建家长账号的默认初始密码（与医务人员默认密码一致） */
+    private static final String DEFAULT_PARENT_PASSWORD = "4009993608";
 
     private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
@@ -102,7 +104,7 @@ public class ChildServiceImpl implements ChildService {
     }
 
     /**
-     * 按监护人手机号取家长账号：已存在家长账号直接复用（顺带同步所属医院/代理商/运营中心），否则新建。
+     * 按监护人手机号取家长账号：已存在家长账号直接复用（顺带同步所属医院/代理商/运营中心），否则按默认密码新建。
      * 手机号被非家长账号占用时返回 null（无法建号，档案保持未绑定）。
      */
     private Long ensureParentUser(String phone, String parentName, Long storeId) {
@@ -116,7 +118,7 @@ public class ChildServiceImpl implements ChildService {
         }
         ParentUser parent = new ParentUser();
         parent.setUsername(phone);
-        parent.setPassword(PASSWORD_ENCODER.encode(UUID.randomUUID().toString()));
+        parent.setPassword(PASSWORD_ENCODER.encode(DEFAULT_PARENT_PASSWORD));
         parent.setRealName(StringUtils.hasText(parentName) ? parentName : "家长" + phone.substring(7));
         parent.setPhone(phone);
         parent.setUserType(3);

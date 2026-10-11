@@ -320,7 +320,7 @@
 
     <!-- 标记爽约弹窗 -->
     <el-dialog v-model="noShowVisible" title="标记爽约" width="420px">
-      <div class="no-show-tip">标记爽约不退还预约次数（与取消不同），确认标记该预约为爽约吗？</div>
+      <div class="no-show-tip">{{ noShowTip }}</div>
       <template #footer>
         <el-button @click="noShowVisible = false">取消</el-button>
         <el-button type="warning" :loading="noShowLoading" @click="handleNoShowSubmit">确定标记</el-button>
@@ -410,7 +410,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'StoreAppointmentRecord' })
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Plus, QuestionFilled } from '@element-plus/icons-vue'
 import type { Reserve, ScheduleSlot, Child, MedicalStaff } from '@/types'
@@ -442,6 +442,8 @@ const STATUS_OPTIONS = [
 /** 默认显示状态（系统设置-预约规则），进入页与重置时作为默认勾选 */
 const DEFAULT_SHOW_STATUSES = [1, 2, 3, 4, 5]
 const defaultShowStatuses = ref<number[]>([...DEFAULT_SHOW_STATUSES])
+/** 爽约次数是否返还（系统设置-预约规则）：1=是（视为自动取消，不扣次数） 0=否 */
+const noShowRefund = ref(0)
 
 const loadDefaultShowStatuses = async () => {
   try {
@@ -451,6 +453,7 @@ const loadDefaultShowStatuses = async () => {
       .map((v) => Number(v))
       .filter((v) => v >= 1 && v <= 5)
     defaultShowStatuses.value = parsed.length ? parsed : [...DEFAULT_SHOW_STATUSES]
+    noShowRefund.value = config.noShowRefund ?? 0
   } catch {
     // 拉取失败按全部状态处理
   }
@@ -839,6 +842,13 @@ const noShowVisible = ref(false)
 const noShowLoading = ref(false)
 const noShowingReserve = ref<Reserve | null>(null)
 
+/** 弹窗文案随「爽约次数是否返还」配置动态展示 */
+const noShowTip = computed(() =>
+  noShowRefund.value === 1
+    ? '爽约视为自动取消，将返还预约次数，确认标记该预约为爽约吗？'
+    : '标记爽约不退还预约次数（与取消不同），确认标记该预约为爽约吗？'
+)
+
 const handleNoShow = (row: Reserve) => {
   noShowingReserve.value = row
   noShowVisible.value = true
@@ -849,7 +859,7 @@ const handleNoShowSubmit = async () => {
   noShowLoading.value = true
   try {
     await reserveApi.markNoShow(noShowingReserve.value.id)
-    ElMessage.success('已标记爽约（不退还次数）')
+    ElMessage.success(noShowRefund.value === 1 ? '已标记爽约（已返还次数）' : '已标记爽约（不退还次数）')
     noShowVisible.value = false
     fetchReserves()
   } catch {

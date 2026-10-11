@@ -102,6 +102,28 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
 
+        // 用户名允许编辑：非空且发生变更时校验唯一性
+        if (request.getUsername() != null && !request.getUsername().isBlank()
+                && !request.getUsername().equals(user.getUsername())) {
+            User exist = userMapper.selectByUsername(request.getUsername());
+            if (exist != null && !exist.getId().equals(id)) {
+                throw new BusinessException(400, "用户名已存在");
+            }
+            user.setUsername(request.getUsername());
+        }
+
+        // 手机号变更时查重（家长账号以手机号为用户名，两个口径都要查，避免登录串号）
+        if (request.getPhone() != null && !request.getPhone().isBlank()
+                && !request.getPhone().equals(user.getPhone())) {
+            User byPhone = userMapper.selectByPhone(request.getPhone());
+            User byUsername = userMapper.selectByUsername(request.getPhone());
+            boolean dup = (byPhone != null && !byPhone.getId().equals(id))
+                    || (byUsername != null && !byUsername.getId().equals(id));
+            if (dup) {
+                throw new BusinessException(400, "该手机号已被使用");
+            }
+        }
+
         user.setRealName(request.getRealName());
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
@@ -247,9 +269,26 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
         }
+        if (status == null || (status != 0 && status != 1)) {
+            throw new BusinessException(400, "状态值不合法");
+        }
 
-        user.setStatus(status);
-        userMapper.updateById(user);
+        if (status == 0) {
+            // 禁用：用户名加 ZF- 前缀并清空手机号，释放原用户名/手机号供其它身份注册
+            String username = user.getUsername();
+            String disabledUsername = (username == null || username.isBlank())
+                    ? ("ZF-" + id)
+                    : (username.startsWith("ZF-") ? username : "ZF-" + username);
+            // 极端情况防重：加前缀后撞库则追加 id 兜底
+            User dup = userMapper.selectByUsername(disabledUsername);
+            if (dup != null && !dup.getId().equals(id)) {
+                disabledUsername = disabledUsername + "-" + id;
+            }
+            userMapper.disableUser(id, disabledUsername);
+        } else {
+            // 启用：保持当前用户名（含 ZF- 前缀）与手机号不变
+            userMapper.enableUser(id);
+        }
     }
 
     @Override

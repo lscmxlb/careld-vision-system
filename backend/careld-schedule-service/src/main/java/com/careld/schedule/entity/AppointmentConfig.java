@@ -29,4 +29,6 @@ public class AppointmentConfig extends BaseEntity {
     private String defaultShowStatuses;
     /** 儿童档案审核方式 0=需要审核（默认） 1=自动审核 */
     private Integer childAuditMode;
+    /** 爽约次数是否返还 0=否（默认，按现规则扣除） 1=是（视为自动取消，不扣次数） */
+    private Integer noShowRefund;
 }

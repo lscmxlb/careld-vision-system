@@ -110,6 +110,8 @@ const loading = ref(false)
 const cancelVisible = ref(false)
 const cancelRow = ref<Reserve | null>(null)
 const cancelLoading = ref(false)
+/** 爽约次数是否返还（预约规则配置）：1=是（视为自动取消，不扣次数） 0=否 */
+const noShowRefund = ref(0)
 
 const today = todayStr()
 const dateOptions = Array.from({ length: 30 }, (_, i) => {
@@ -130,6 +132,7 @@ async function loadDefaultStatuses() {
       .map((v) => Number(v))
       .filter((v) => v >= 1 && v <= 5)
     statuses.value = parsed.length ? parsed : [...DEFAULT_STATUSES]
+    noShowRefund.value = config.noShowRefund ?? 0
   } catch {
     // 拉取失败按全部状态
   }
@@ -223,16 +226,19 @@ function onAdjust(row: Reserve) {
 }
 
 function onNoShow(row: Reserve) {
+  const refund = noShowRefund.value === 1
   uni.showModal({
     title: '标记爽约',
-    content: '标记爽约不退还预约次数（与取消不同），确认标记该预约为爽约吗？',
+    content: refund
+      ? '爽约视为自动取消，将返还预约次数，确认标记该预约为爽约吗？'
+      : '标记爽约不退还预约次数（与取消不同），确认标记该预约为爽约吗？',
     confirmText: '确定标记',
     confirmColor: '#f59e0b',
     success: async (res) => {
       if (!res.confirm) return
       try {
         await reserveApi.markNoShow(row.id)
-        uni.showToast({ title: '已标记爽约（不退还次数）', icon: 'none' })
+        uni.showToast({ title: refund ? '已标记爽约（已返还次数）' : '已标记爽约（不退还次数）', icon: 'none' })
         reload()
       } catch {
         // 错误提示已在请求层处理

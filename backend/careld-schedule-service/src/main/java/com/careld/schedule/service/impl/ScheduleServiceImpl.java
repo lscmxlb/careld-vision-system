@@ -442,14 +442,14 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Transactional
     public void markNoShow(Long id) {
         ReserveOrder order = requireMarkableNoShow(id);
-        applyNoShow(order, UserContext.getCurrentUserId(), null, "爽约（未到）", "爽约不退还");
+        applyNoShow(order, UserContext.getCurrentUserId(), null, "爽约（未到）", false);
     }
 
     @Override
     @Transactional
     public void autoMarkNoShow(Long id) {
         ReserveOrder order = requireMarkableNoShow(id);
-        applyNoShow(order, null, "系统", "爽约（系统自动标记）", "爽约不退还（系统自动标记）");
+        applyNoShow(order, null, "系统", "爽约（系统自动标记）", true);
     }
 
     private ReserveOrder requireMarkableNoShow(Long id) {
@@ -467,10 +467,13 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     private void applyNoShow(ReserveOrder order, Long operatorId, String operatorName,
-                             String reason, String noRefundRemark) {
+                             String reason, boolean autoMarked) {
+        // 门店配置「爽约次数是否返还」：是→爽约视为自动取消，退还 1 次；否→按原规则扣除（不退还）
+        AppointmentConfig config = configMapper.selectByStoreId(order.getStoreId());
+        boolean refund = config != null && Integer.valueOf(1).equals(config.getNoShowRefund());
         order.setStatus(4);
         order.setNoShowFlag(1);
-        order.setRefundFlag(0);
+        order.setRefundFlag(refund ? 1 : 0);
         order.setCancelReason(reason);
         order.setCancelledAt(LocalDateTime.now());
         if (StringUtils.hasText(operatorName)) {
@@ -484,9 +487,14 @@ public class ScheduleServiceImpl implements ScheduleService {
         } else {
             scheduleMapper.decrementReserved(order.getScheduleId());
         }
-        // 爽约不退还次数（与取消不同，手动/自动标记均不退还）
-        quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 5, 0,
-                order.getId(), operatorId, noRefundRemark);
+        if (refund) {
+            quotaMapper.changeRemaining(order.getChildId(), 1);
+            quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 4, 1,
+                    order.getId(), operatorId, autoMarked ? "爽约退还（系统自动标记）" : "爽约退还（视为自动取消）");
+        } else {
+            quotaMapper.insertQuotaRecord(order.getChildId(), order.getStoreId(), 5, 0,
+                    order.getId(), operatorId, autoMarked ? "爽约不退还（系统自动标记）" : "爽约不退还");
+        }
     }
 
     @Override

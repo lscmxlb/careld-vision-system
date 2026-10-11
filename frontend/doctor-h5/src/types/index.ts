@@ -34,7 +34,6 @@ export interface LoginRequest {
   phone?: string
   password: string
   loginType: number
-  client?: string
 }
 
 export interface LoginResponse {
@@ -199,6 +198,8 @@ export interface AppointmentConfig {
   autoNoShowHours: number
   autoCompleteHours: number
   defaultShowStatuses?: string
+  /** 爽约次数是否返还 0=否（默认，按现规则扣除） 1=是（视为自动取消，不扣次数） */
+  noShowRefund?: number
 }
 
 /* ---------------- 医务人员 / 科室 ---------------- */

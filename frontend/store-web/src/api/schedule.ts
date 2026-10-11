@@ -83,7 +83,7 @@ export const reserveApi = {
     return request.post(`/schedules/reserves/${id}/complete`, data)
   },
 
-  // 标记爽约（不退还预约次数）
+  // 标记爽约（次数是否退还按门店预约规则配置）
   markNoShow: (id: number): Promise<void> => {
     return request.post(`/schedules/reserves/${id}/no-show`)
   },

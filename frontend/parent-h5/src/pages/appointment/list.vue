@@ -35,7 +35,9 @@
         <view v-if="item.status === 4 && item.cancelReason" class="rc-meta">
           <text class="rc-meta-item rc-reason">取消原因：{{ cancelPrefix(item) }}{{ item.cancelReason }}</text>
         </view>
-        <view v-if="statusValue(item) === 5" class="rc-noshow-tip">已爽约，本次预约次数不退还</view>
+        <view v-if="statusValue(item) === 5" class="rc-noshow-tip">
+          {{ Number(item.refundFlag) === 1 ? '已爽约，本次预约次数已退还' : '已爽约，本次预约次数不退还' }}
+        </view>
         <view v-if="item.remark" class="rc-meta">
           <text class="rc-meta-item">备注：{{ item.remark }}</text>
         </view>

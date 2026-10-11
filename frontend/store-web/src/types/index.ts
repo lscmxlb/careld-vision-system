@@ -30,7 +30,6 @@ export interface LoginRequest {
   phone?: string
   password: string
   loginType: number // 1=用户名 2=手机号
-  client?: string
 }
 
 export interface LoginResponse {
@@ -384,6 +383,8 @@ export interface AppointmentConfig {
   defaultShowStatuses?: string
   /** 儿童档案审核方式 0=需要审核（默认） 1=自动审核 */
   childAuditMode?: number
+  /** 爽约次数是否返还 0=否（默认，按现规则扣除） 1=是（视为自动取消，不扣次数） */
+  noShowRefund?: number
 }
 
 /** 医务人员 */

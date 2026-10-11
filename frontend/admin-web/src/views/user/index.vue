@@ -157,7 +157,7 @@
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="550px" destroy-on-close>
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="formData.username" placeholder="请输入用户名" :disabled="isEdit" />
+          <el-input v-model="formData.username" placeholder="请输入用户名" />
         </el-form-item>
         <el-form-item label="真实姓名" prop="realName">
           <el-input v-model="formData.realName" placeholder="请输入真实姓名" />
@@ -418,8 +418,15 @@ const formRules = computed<FormRules>(() => {
     realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
     userType: [{ required: true, message: '请选择用户类型', trigger: 'change' }],
     phone: [
-      { required: true, message: '请输入手机号', trigger: 'blur' },
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+      // 编辑时手机号可为空（禁用释放后用户手机号为空，管理员手动维护），填写则校验格式
+      ...(isEdit.value ? [] : [{ required: true, message: '请输入手机号', trigger: 'blur' }]),
+      {
+        validator: (_rule: any, value: string, callback: any) => {
+          if (!value || /^1[3-9]\d{9}$/.test(value)) callback()
+          else callback(new Error('请输入正确的手机号'))
+        },
+        trigger: 'blur'
+      }
     ],
     password: isEdit.value ? [] : [{ required: true, message: '请输入密码', trigger: 'blur' }]
   }
@@ -639,7 +646,10 @@ const handleResetPwd = async (row: User) => {
 
 const handleToggleStatus = async (row: User) => {
   try {
-    await ElMessageBox.confirm(`确定要${row.status === 1 ? '禁用' : '启用'}用户"${row.realName}"吗？`, '提示', { type: 'warning' })
+    const tip = row.status === 1
+      ? `确定要禁用用户"${row.realName}"吗？禁用后用户名自动加「ZF-」前缀，手机号将被释放，可用于注册其它身份`
+      : `确定要启用用户"${row.realName}"吗？启用后保留现有用户名「${row.username}」，手机号为空时请编辑维护`
+    await ElMessageBox.confirm(tip, '提示', { type: 'warning' })
     await userApi.updateUserStatus(row.id, row.status === 1 ? 0 : 1)
     ElMessage.success('操作成功')
     fetchData()

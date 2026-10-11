@@ -52,7 +52,7 @@ export const reserveApi = {
   getCareRecord: (id: number): Promise<import('@/types').CareRecord> =>
     get(`/schedules/reserves/${id}/care-record`),
 
-  /** 标记爽约（不退还次数） */
+  /** 标记爽约（次数是否退还按门店预约规则配置） */
   markNoShow: (id: number): Promise<void> => post<void>(`/schedules/reserves/${id}/no-show`),
 
   /** 预约调整到新时段 */

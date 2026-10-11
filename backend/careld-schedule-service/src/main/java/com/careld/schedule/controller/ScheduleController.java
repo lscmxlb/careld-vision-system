@@ -162,7 +162,7 @@ public class ScheduleController {
     }
 
     @OperationLog(module = "reserve", action = "no-show", description = "标记爽约")
-    @Operation(summary = "标记爽约（不退还预约次数）")
+    @Operation(summary = "标记爽约（次数是否退还按预约规则配置）")
     @PostMapping("/reserves/{id}/no-show")
     public Result<Void> noShow(@PathVariable Long id) {
         scheduleService.markNoShow(id);

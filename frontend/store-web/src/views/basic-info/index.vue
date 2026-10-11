@@ -65,7 +65,14 @@
           </el-form-item>
           <el-form-item label="爽约自动标记时长（小时）" prop="autoNoShowHours">
             <el-input-number v-model="configForm.autoNoShowHours" :min="1" :max="72" />
-            <div class="form-tip">预约时段结束后超过该时长仍未处理，系统自动标记为爽约（不退还次数）</div>
+            <div class="form-tip">预约时段结束后超过该时长仍未处理，系统自动标记为爽约（次数是否退还见下方设置）</div>
+          </el-form-item>
+          <el-form-item label="爽约次数是否返还" prop="noShowRefund">
+            <el-radio-group v-model="configForm.noShowRefund">
+              <el-radio :value="1">是</el-radio>
+              <el-radio :value="0">否</el-radio>
+            </el-radio-group>
+            <div class="form-tip">是：家长爽约视为自动取消，不扣相应次数；否：爽约按现在的规则自动扣除次数（不退还）</div>
           </el-form-item>
           <el-form-item label="养护自动完成时长（小时）" prop="autoCompleteHours">
             <el-input-number v-model="configForm.autoCompleteHours" :min="0.5" :max="8" :step="0.5" />
@@ -193,7 +200,8 @@ const configForm = reactive({
   autoNoShowHours: 12,
   autoCompleteHours: 1.5,
   defaultShowStatuses: ['1', '2', '3', '4', '5'] as string[],
-  childAuditMode: 0
+  childAuditMode: 0,
+  noShowRefund: 0
 })
 
 const configRules = {
@@ -214,7 +222,8 @@ const configRules = {
       trigger: 'change'
     }
   ],
-  childAuditMode: [{ required: true, message: '请选择审核方式', trigger: 'change' }]
+  childAuditMode: [{ required: true, message: '请选择审核方式', trigger: 'change' }],
+  noShowRefund: [{ required: true, message: '请选择爽约次数是否返还', trigger: 'change' }]
 }
 
 // ---------- 儿童档案 ----------
@@ -231,7 +240,8 @@ const loadConfig = async () => {
       autoNoShowHours: config.autoNoShowHours ?? 12,
       autoCompleteHours: Number(config.autoCompleteHours),
       defaultShowStatuses: (config.defaultShowStatuses || '1,2,3,4,5').split(',').filter(Boolean),
-      childAuditMode: config.childAuditMode ?? 0
+      childAuditMode: config.childAuditMode ?? 0,
+      noShowRefund: config.noShowRefund ?? 0
     })
   } catch {
     // 错误已在拦截器处理
@@ -259,7 +269,8 @@ const takeSnapshot = () =>
     autoNoShowHours: configForm.autoNoShowHours,
     autoCompleteHours: configForm.autoCompleteHours,
     defaultShowStatuses: [...configForm.defaultShowStatuses].sort().join(','),
-    childAuditMode: configForm.childAuditMode
+    childAuditMode: configForm.childAuditMode,
+    noShowRefund: configForm.noShowRefund
   })
 
 const isDirty = computed(() => baseline.value !== '' && takeSnapshot() !== baseline.value)

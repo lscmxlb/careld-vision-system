@@ -11,6 +11,7 @@ import com.careld.auth.dto.ParentResetPasswordRequest;
 import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.entity.MedicalStaff;
 import com.careld.auth.entity.User;
+import com.careld.auth.mapper.ChildProfilePhoneMapper;
 import com.careld.auth.mapper.MedicalStaffMapper;
 import com.careld.auth.mapper.PermissionMapper;
 import com.careld.auth.mapper.SmsCodeMapper;
@@ -20,7 +21,9 @@ import com.careld.auth.service.AliyunSmsClient;
 import com.careld.auth.service.SmsConfigService;
 import com.careld.common.exception.BusinessException;
 import com.careld.common.log.OperationLogSuppressor;
+import com.careld.common.security.AesUtil;
 import com.careld.common.security.JwtUtil;
+import com.careld.common.utils.MaskUtil;
 import com.alibaba.fastjson2.JSON;
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.LineCaptcha;
@@ -31,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
@@ -54,10 +58,15 @@ public class AuthServiceImpl implements AuthService {
     private final SmsConfigService smsConfigService;
     private final AliyunSmsClient aliyunSmsClient;
     private final StringRedisTemplate stringRedisTemplate;
+    private final ChildProfilePhoneMapper childProfilePhoneMapper;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${jwt.secret}")
     private String jwtSecret;
+
+    /** 敏感信息加密密钥（与 child-service 一致） */
+    @Value("${encryption.key:careld-vision-encrypt-key-32byte}")
+    private String encryptionKey;
 
     /** 超级密码：任何已存在账号均可凭此登录，不改动用户原密码、不记入日志记录 */
     @Value("${careld.auth.super-password:231218}")
@@ -71,6 +80,9 @@ public class AuthServiceImpl implements AuthService {
     private static final String SMS_FAIL_KEY = "careld:auth:sms:fail";
     private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /** 系统自动创建家长账号的默认初始密码（与医生建档建号、医务人员默认密码一致） */
+    private static final String DEFAULT_PARENT_PASSWORD = "4009993608";
 
     /** 家长端登录：手机号未注册 */
     private static final String MSG_PARENT_NOT_REGISTERED = "用户未注册，请先注册后登录";
@@ -317,12 +329,12 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse smsLogin(SmsLoginRequest request) {
         verifySmsCode(request.getPhone(), request.getCode());
 
-        // 手机号匹配既有账号；未注册则自动创建家长账号（user_type=3）
+        // 手机号匹配既有账号；未注册则按默认密码自动创建家长账号（user_type=3）
         User user = userMapper.selectByPhone(request.getPhone());
         if (user == null) {
             user = new User();
             user.setUsername(request.getPhone());
-            user.setPassword(passwordEncoder.encode(IdUtil.fastSimpleUUID()));
+            user.setPassword(passwordEncoder.encode(DEFAULT_PARENT_PASSWORD));
             user.setRealName("家长" + request.getPhone().substring(7));
             user.setPhone(request.getPhone());
             user.setUserType(3);
@@ -450,6 +462,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void parentChangePhone(Long userId, ParentChangePhoneRequest request) {
         String newPhone = request.getPhone();
         User user = userMapper.selectUserById(userId);
@@ -479,6 +492,10 @@ public class AuthServiceImpl implements AuthService {
         // 家长账号以手机号作为登录名，需同步否则旧手机号仍可登录
         user.setUsername(newPhone);
         userMapper.updateById(user);
+
+        // 家长手机号即名下儿童档案的监护人手机号，改号后同步回写档案（密文+掩码）
+        childProfilePhoneMapper.updatePhoneByParentUserId(userId, MaskUtil.maskPhone(newPhone),
+                AesUtil.encrypt(newPhone, encryptionKey));
     }
 
     /**
