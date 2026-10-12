@@ -76,6 +76,14 @@
 
       <view v-if="pwdMatchText" class="pwd-compare" :class="pwdMatchClass">{{ pwdMatchText }}</view>
 
+      <view class="agree-row">
+        <view class="agree-check" :class="{ 'is-on': agreed }" @click="agreed = !agreed">
+          <text v-if="agreed" class="agree-tick">✓</text>
+        </view>
+        <text class="agree-text" @click="agreed = !agreed">我已阅读并同意</text>
+        <text class="agree-link" @click="goPrivacy">《隐私政策》</text>
+      </view>
+
       <view class="register-btn" :class="{ 'is-disabled': !canSubmit || loading }" @click="handleRegister">
         {{ loading ? '注册中…' : '注 册' }}
       </view>
@@ -97,6 +105,7 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
 import { getToken } from '@/utils/auth'
 import { toast } from '@/utils/request'
+import { PRIVACY_POLICY_VERSION } from '@/constants/privacy'
 
 const userStore = useUserStore()
 const form = reactive({ phone: '', code: '', realName: '', password: '', confirmPassword: '' })
@@ -104,6 +113,7 @@ const showPassword = ref(false)
 const loading = ref(false)
 const sending = ref(false)
 const countdown = ref(0)
+const agreed = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
 
 const pwdMismatch = computed(() => !!form.confirmPassword && form.confirmPassword !== form.password)
@@ -152,6 +162,10 @@ function goLogin() {
   uni.reLaunch({ url: '/pages/login/index' })
 }
 
+function goPrivacy() {
+  uni.navigateTo({ url: '/pages/privacy/index' })
+}
+
 async function handleSendCode() {
   if (countdown.value > 0 || sending.value) return
   if (!/^1[3-9]\d{9}$/.test(form.phone)) {
@@ -172,6 +186,10 @@ async function handleSendCode() {
 
 async function handleRegister() {
   if (loading.value) return
+  if (!agreed.value) {
+    toast('请先阅读并同意《隐私政策》')
+    return
+  }
   if (!/^1[3-9]\d{9}$/.test(form.phone)) {
     toast('请输入正确的11位手机号')
     return
@@ -199,6 +217,7 @@ async function handleRegister() {
       code: form.code,
       realName: form.realName.trim(),
       password: form.password,
+      privacyPolicyVersion: PRIVACY_POLICY_VERSION,
     })
     // 注册即登录：自动认领同手机号未绑定档案
     await userStore.claimMyChildren()
@@ -293,6 +312,46 @@ async function handleRegister() {
 
 .pwd-compare.is-ok {
   color: #16a34a;
+}
+
+.agree-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8rpx;
+}
+
+.agree-check {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  border: 2rpx solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.agree-check.is-on {
+  background: #14b8a6;
+  border-color: #14b8a6;
+}
+
+.agree-tick {
+  font-size: 22rpx;
+  color: #fff;
+  line-height: 1;
+}
+
+.agree-text {
+  font-size: 25rpx;
+  color: #6b7280;
+}
+
+.agree-link {
+  font-size: 25rpx;
+  color: #14b8a6;
 }
 
 .register-btn {

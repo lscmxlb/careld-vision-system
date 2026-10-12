@@ -43,6 +43,10 @@
     </view>
 
     <view class="card">
+      <view class="entry" @click="goPrivacy">
+        <text class="entry-label">隐私政策</text>
+        <text class="entry-arrow">›</text>
+      </view>
       <view class="entry" @click="showAbout = true">
         <text class="entry-label">关于</text>
         <text class="entry-arrow">›</text>
@@ -264,6 +268,10 @@ const childCount = ref(0)
 const totalRemaining = ref(0)
 
 function noop() {}
+
+function goPrivacy() {
+  uni.navigateTo({ url: '/pages/privacy/index' })
+}
 
 /* ---------------- 用户名称 ---------------- */
 const showNameEdit = ref(false)

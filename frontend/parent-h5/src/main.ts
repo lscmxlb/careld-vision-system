@@ -18,8 +18,8 @@ Object.defineProperty(document, 'title', {
 })
 
 const PAGE_LOGIN = '/pages/login/index'
-// 未登录也可进入的公开页（注册、忘记密码都是登录入口的分支）
-const PUBLIC_PAGES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot']
+// 未登录也可进入的公开页（注册、忘记密码都是登录入口的分支；隐私政策页需在未登录时可达，合规要求）
+const PUBLIC_PAGES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot', 'pages/privacy/index']
 
 function isPublicPage(url?: string) {
   if (!url) return false

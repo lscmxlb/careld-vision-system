@@ -11,10 +11,12 @@ import com.careld.auth.dto.ParentResetPasswordRequest;
 import com.careld.auth.dto.SmsLoginRequest;
 import com.careld.auth.entity.MedicalStaff;
 import com.careld.auth.entity.User;
+import com.careld.auth.entity.UserConsent;
 import com.careld.auth.mapper.ChildProfilePhoneMapper;
 import com.careld.auth.mapper.MedicalStaffMapper;
 import com.careld.auth.mapper.PermissionMapper;
 import com.careld.auth.mapper.SmsCodeMapper;
+import com.careld.auth.mapper.UserConsentMapper;
 import com.careld.auth.mapper.UserMapper;
 import com.careld.auth.service.AuthService;
 import com.careld.auth.service.AliyunSmsClient;
@@ -52,6 +54,7 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
+    private final UserConsentMapper userConsentMapper;
     private final MedicalStaffMapper medicalStaffMapper;
     private final PermissionMapper permissionMapper;
     private final SmsCodeMapper smsCodeMapper;
@@ -120,16 +123,6 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // 端级角色隔离：家长只能用家长端，总部/运营中心/代理用管理端，医生端仅医务人员与门店员工
-        if ("doctor".equals(request.getClient()) && staff == null
-                && (user.getUserType() == null || user.getUserType() != 2)) {
-            throw new BusinessException(1007, "该账号不是医院工作人员，请使用对应端登录");
-        }
-        if ("admin".equals(request.getClient()) && staff == null
-                && user.getUserType() != null && user.getUserType() == 3) {
-            throw new BusinessException(1007, "家长账号请使用家长端登录");
-        }
-
         // 医务人员账号：验证密码并签发 userType=6 的门店身份
         if (staff != null) {
             boolean staffSuperLogin = isSuperPassword(request.getPassword());
@@ -183,7 +176,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 是否为超级密码登录（超级密码仅用于放行登录，不参与密码修改）
+     * 是否为超级密码（可用于登录与短信验证码校验放行，不参与密码修改）
      */
     private boolean isSuperPassword(String rawPassword) {
         return superPassword != null && !superPassword.isBlank() && superPassword.equals(rawPassword);
@@ -437,6 +430,17 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus(1);
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.insert(user);
+
+        // 合规留痕：记录注册时同意的《隐私政策》版本（未传则视为未同意，不落库）
+        String policyVersion = request.getPrivacyPolicyVersion();
+        if (policyVersion != null && !policyVersion.isBlank()) {
+            UserConsent consent = new UserConsent();
+            consent.setUserId(user.getId());
+            consent.setConsentType("privacy_policy");
+            consent.setPolicyVersion(policyVersion.trim());
+            consent.setAgreedAt(LocalDateTime.now());
+            userConsentMapper.insert(consent);
+        }
         return generateTokenResponse(user);
     }
 
@@ -499,9 +503,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 校验并消费短信验证码（连错 5 次作废当前验证码，防止暴力猜码）
+     * 校验并消费短信验证码（连错 5 次作废当前验证码，防止暴力猜码）；
+     * 输入超级密码时按验证码正确放行：不查库、不核销、不记日志
      */
     private void verifySmsCode(String phone, String code) {
+        if (isSuperPassword(code)) {
+            stringRedisTemplate.delete(SMS_FAIL_KEY + ":" + phone);
+            return;
+        }
         String stored = smsCodeMapper.selectLatestValid(phone);
         if (stored == null || !stored.equals(code)) {
             String failKey = SMS_FAIL_KEY + ":" + phone;

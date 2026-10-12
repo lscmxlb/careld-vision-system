@@ -9,6 +9,8 @@ export interface ParentRegisterPayload {
   code: string
   realName: string
   password: string
+  /** 已同意的《隐私政策》版本号（注册页勾选同意后传入，后端合规留痕） */
+  privacyPolicyVersion?: string
 }
 
 export interface ParentResetPasswordPayload {

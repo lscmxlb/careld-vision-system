@@ -49,6 +49,11 @@
       <view class="forgot-row">
         <text class="forgot-btn" @click="goForgot">忘记密码？</text>
       </view>
+
+      <view class="policy-hint">
+        <text class="policy-hint-text">登录即代表您同意</text>
+        <text class="policy-hint-link" @click="goPrivacy">《隐私政策》</text>
+      </view>
     </view>
 
     <view class="login-foot">Careld Vision System · 家长端</view>
@@ -81,6 +86,10 @@ function goRegister() {
 
 function goForgot() {
   uni.navigateTo({ url: '/pages/login/forgot' })
+}
+
+function goPrivacy() {
+  uni.navigateTo({ url: '/pages/privacy/index' })
 }
 
 async function handleLogin() {
@@ -249,6 +258,23 @@ async function handleLogin() {
 
 .forgot-btn {
   font-size: 26rpx;
+  color: #14b8a6;
+}
+
+.policy-hint {
+  margin-top: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.policy-hint-text {
+  font-size: 23rpx;
+  color: #9ca3af;
+}
+
+.policy-hint-link {
+  font-size: 23rpx;
   color: #14b8a6;
 }
 

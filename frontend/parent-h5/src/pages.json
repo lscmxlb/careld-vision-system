@@ -22,6 +22,12 @@
       }
     },
     {
+      "path": "pages/privacy/index",
+      "style": {
+        "navigationBarTitleText": "隐私政策"
+      }
+    },
+    {
       "path": "pages/login/forgot",
       "style": {
         "navigationBarTitleText": "忘记密码"

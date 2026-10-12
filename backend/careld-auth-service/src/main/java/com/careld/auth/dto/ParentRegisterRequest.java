@@ -31,4 +31,7 @@ public class ParentRegisterRequest {
     @Size(min = 6, max = 20, message = "密码长度需为6~20位")
     @Schema(description = "登录密码")
     private String password;
+
+    @Schema(description = "已同意的《隐私政策》版本号（注册页勾选同意后传入，用于合规留痕）")
+    private String privacyPolicyVersion;
 }

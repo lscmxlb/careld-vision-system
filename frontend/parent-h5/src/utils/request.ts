@@ -7,8 +7,8 @@ import { clearAuth, getToken } from './auth'
 const BASE_URL = '/api/v1'
 const TIMEOUT = 30000
 const PAGE_LOGIN = '/pages/login/index'
-// 登录/注册/忘记密码页本身就允许未登录访问，401 时不要把用户从这里踢走
-const PUBLIC_ROUTES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot']
+// 登录/注册/忘记密码/隐私政策页本身就允许未登录访问，401 时不要把用户从这里踢走
+const PUBLIC_ROUTES = ['pages/login/index', 'pages/register/index', 'pages/login/forgot', 'pages/privacy/index']
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
