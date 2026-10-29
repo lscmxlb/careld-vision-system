@@ -1,6 +1,6 @@
 {
   "name": "careld-parent-h5",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "private": true,
   "scripts": {
     "dev:h5": "uni",

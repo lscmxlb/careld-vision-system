@@ -8,11 +8,13 @@ import com.careld.common.result.Result;
 import com.careld.common.security.DataScopeHelper;
 import com.careld.user.entity.MedicalStaff;
 import com.careld.user.mapper.MedicalStaffMapper;
+import com.careld.user.mapper.MedicalStaffRecordMapper;
 import com.careld.common.log.OperationLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class MedicalStaffController {
 
     private final MedicalStaffMapper medicalStaffMapper;
+    private final MedicalStaffRecordMapper medicalStaffRecordMapper;
     private final PasswordEncoder passwordEncoder;
 
     /** 默认登录密码（新建留空与重置留空均使用） */
@@ -41,6 +44,17 @@ public class MedicalStaffController {
             @RequestParam(value = "size", defaultValue = "20") Integer size) {
         // 数据权限：家长可为孩子选择任意医院建档，需按所选医院查医生；总部不传 storeId 时查询全部医院
         Long effectiveStoreId = DataScopeHelper.resolveStoreIdWithParentChoice(storeId);
+        // status=2 表示「已经删除」：逻辑删除行被 @TableLogic 过滤，需走自定义 SQL 查询
+        if (status != null && status == 2) {
+            Page<MedicalStaff> deleted = medicalStaffMapper.selectDeletedPage(
+                    new Page<>(page, size), effectiveStoreId, keyword, staffRole);
+            deleted.getRecords().forEach(s -> {
+                s.setLoginPassword(null);
+                s.setPhone(null);
+                s.setStatus(2);
+            });
+            return Result.success(PageResult.of(deleted.getRecords(), page, size, deleted.getTotal()));
+        }
         LambdaQueryWrapper<MedicalStaff> wrapper = new LambdaQueryWrapper<MedicalStaff>()
                 .eq(effectiveStoreId != null, MedicalStaff::getStoreId, effectiveStoreId)
                 .eq(staffRole != null, MedicalStaff::getStaffRole, staffRole)
@@ -173,8 +187,9 @@ public class MedicalStaffController {
         return Result.success();
     }
 
-    @Operation(summary = "删除医务人员（录入后不可删除，仅可禁用）")
+    @Operation(summary = "删除医务人员（释放手机号，历史记录姓名后追加[已经删除]）")
     @DeleteMapping("/{id}")
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> delete(@PathVariable Long id) {
         Long storeId = DataScopeHelper.resolveStoreId(null);
         MedicalStaff exist = medicalStaffMapper.selectById(id);
@@ -182,6 +197,13 @@ public class MedicalStaffController {
         if (exist == null || (storeId != null && !storeId.equals(exist.getStoreId()))) {
             throw new BusinessException(404, "医务人员不存在");
         }
-        throw new BusinessException(400, "医务人员不可删除，如需停用请使用「禁用」");
+        // 先按原姓名同步历史记录快照，再改名释放手机号（顺序不可颠倒）
+        medicalStaffRecordMapper.markChildServiceRecord(id, exist.getStoreId(), exist.getName());
+        medicalStaffRecordMapper.markChildProfile(id, exist.getStoreId(), exist.getName());
+        medicalStaffRecordMapper.markCareRecord(id, exist.getStoreId(), exist.getName());
+        medicalStaffRecordMapper.markReserveOrder(id, exist.getStoreId(), exist.getName());
+        medicalStaffMapper.markDeleted(id);
+        medicalStaffMapper.deleteById(id);
+        return Result.success();
     }
 }

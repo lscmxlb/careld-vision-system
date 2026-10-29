@@ -46,6 +46,7 @@
           <el-select v-model="queryForm.status" placeholder="全部" clearable style="width: 120px;">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
+            <el-option label="已经删除" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -70,15 +71,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号（登录账号）" width="170">
-          <template #default="{ row }">{{ maskPhone(row.phone) }}</template>
+          <template #default="{ row }">{{ maskPhone(row.phone) || '—' }}</template>
         </el-table-column>
         <el-table-column prop="gender" label="性别" width="80">
           <template #default="{ row }">{{ getGenderText(row.gender) }}</template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="row.status === 2 ? 'info' : row.status === 1 ? 'success' : 'danger'" size="small">
+              {{ row.status === 2 ? '已经删除' : row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -87,7 +88,7 @@
         </el-table-column>
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
-            <div class="operation-btns">
+            <div v-if="row.status !== 2" class="operation-btns">
               <el-button v-permission="'store:staff:update'" type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
               <el-button
                 v-permission="'store:staff:update'"
@@ -100,6 +101,7 @@
               <el-button v-permission="'store:staff:resetpwd'" type="info" size="small" @click="handleResetPwd(row)">重置密码</el-button>
               <el-button v-permission="'store:staff:delete'" type="danger" size="small" @click="handleDelete(row)">删除</el-button>
             </div>
+            <span v-else>—</span>
           </template>
         </el-table-column>
       </el-table>
@@ -373,7 +375,11 @@ const handleResetPwd = async (row: MedicalStaff) => {
 
 const handleDelete = async (row: MedicalStaff) => {
   try {
-    await ElMessageBox.confirm(`确定删除医务人员「${row.name}」吗？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `删除后「${row.name}」将无法登录，其手机号会被释放；历史授权/养护记录中该医务人员显示为「${row.name}[已经删除]」。是否确认删除？`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }
+    )
     await medicalStaffApi.deleteStaff(row.id!)
     ElMessage.success('删除成功')
     fetchData()

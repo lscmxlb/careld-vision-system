@@ -29,6 +29,7 @@
           <el-select v-model="queryForm.status" placeholder="全部" clearable style="width: 120px;">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
+            <el-option label="已经删除" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -40,7 +41,9 @@
       <!-- 表格 -->
       <el-table :data="tableData" v-loading="loading" stripe scrollbar-always-on>
         <el-table-column prop="name" label="姓名" width="120" />
-        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column prop="phone" label="手机号" width="140">
+          <template #default="{ row }">{{ row.phone || '—' }}</template>
+        </el-table-column>
         <el-table-column prop="gender" label="性别" width="80">
           <template #default="{ row }">{{ getGenderText(row.gender) }}</template>
         </el-table-column>
@@ -53,23 +56,25 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+            <el-tag :type="row.status === 2 ? 'info' : row.status === 1 ? 'success' : 'danger'" size="small">
+              {{ row.status === 2 ? '已经删除' : row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="账户启用时间" width="120">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="234" fixed="right">
+        <el-table-column label="操作" width="318" fixed="right">
           <template #default="{ row }">
-            <div class="operation-btns">
+            <div v-if="row.status !== 2" class="operation-btns">
               <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
               <el-button :type="row.status === 1 ? 'warning' : 'success'" size="small" @click="handleToggleStatus(row)">
                 {{ row.status === 1 ? '禁用' : '启用' }}
               </el-button>
               <el-button type="info" size="small" @click="handleResetPwd(row)">重置密码</el-button>
+              <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
             </div>
+            <span v-else>—</span>
           </template>
         </el-table-column>
       </el-table>
@@ -267,6 +272,21 @@ const handleToggleStatus = async (row: MedicalStaff) => {
     }
     await medicalStaffApi.changeStatus(row.id!, row.status === 1 ? 0 : 1)
     ElMessage.success(row.status === 1 ? '已禁用' : '已启用')
+    fetchData()
+  } catch {
+    // 用户取消或错误已在拦截器处理
+  }
+}
+
+const handleDelete = async (row: MedicalStaff) => {
+  try {
+    await ElMessageBox.confirm(
+      `删除后「${row.name}」将无法登录，其手机号会被释放；历史授权/养护记录中该医务人员显示为「${row.name}[已经删除]」。是否确认删除？`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }
+    )
+    await medicalStaffApi.deleteStaff(row.id!)
+    ElMessage.success('删除成功')
     fetchData()
   } catch {
     // 用户取消或错误已在拦截器处理
