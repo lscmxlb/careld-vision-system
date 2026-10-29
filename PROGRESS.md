@@ -6,10 +6,12 @@
 **最后更新**：2026-10-29
 **当前版本**：v2.3.6（dev = main = 61dd0b6，tag v2.3.6）
 
-## 已上线（生产 182.92.100.21，2026-10-12 部署）
+## 已上线（生产 182.92.100.21，最近部署 2026-10-29）
 
 | 功能 | 相关迁移 | 状态 |
 |---|---|---|
+| 医务人员删除（软删 + 姓名追加「[已经删除]」+ 释放手机号 + 4 表姓名快照）及两端列表「已经删除」筛选（v2.3.6） | — | ✅ 已上线 |
+| 运营中心体验卡「导出 Excel」按钮权限（center_admin 追加 export，v2.3.6） | 41 | ✅ 已上线 |
 | 家长端隐私政策合规改造（注册必选勾选 + 政策全文页 + 登录提示 + 我的入口 + user_consent 留痕，v2.3.5） | 40 | ✅ 已上线 |
 | 验证码校验超级密码放行（231218，v2.3.5 auth） | — | ✅ 已上线 |
 | 基础信息页「预约规则设置」注释同行显示（v2.3.4 store-web） | — | ✅ 已上线 |
@@ -21,16 +23,17 @@
 | 医院类型与品牌 Logo（v2.3.2） | 37 | ✅ 已上线 |
 | 体验卡功能（v2.3.1） | — | ✅ 已上线 |
 
-## 待发布（v2.3.6，dev/main 已合并，未部署生产）
-
-| 功能 | 相关迁移 | 状态 |
-|---|---|---|
-| 医务人员删除（软删 + 姓名追加「[已经删除]」+ 释放手机号 + 4 表姓名快照）及两端列表「已经删除」筛选 | — | 待生产 |
-| 运营中心体验卡「导出 Excel」按钮权限（center_admin 追加 export） | 41 | 待生产 |
-
 ## 进行中
 
-（v2.3.6 已合并 dev/main，待生产部署：迁移41 + user-service jar + admin-web/store-web dist）
+（无）
+
+## v2.3.6 生产部署记录（2026-10-29）
+
+- 数据库：部署前全库备份 `/root/backups/careld_vision-pre-v236-20261029-122354.sql.gz`（140,862 bytes）；执行迁移 41，`center_admin` 的 `trialcard:view` actions 已追加 `export`（JSON_CONTAINS=1）；清理 Redis `careld:perm:user:*` 权限缓存
+- 后端：`careld-user-service-2.3.6.jar`（md5 `73f1098b00498557f9cca3382b167557`，生产/构建机一致），systemd ExecStart 切换后重启，8 个服务全部 active、8282 监听、日志 0 ERROR
+- 前端：admin-web `index-hIpuicQx.js`（52 文件）、store-web `index-DOdBIgJd.js`（44 文件），旧版本备份于 `/root/backups/{admin-web,store-web}.bak-20261029-122419`
+- 验证：公网 ops/med/staff/appt 均 200；API 登录成功，`status=2` 返回 200/0 条、`status=1` 11 条；admin-web 医务人员页「已经删除」筛选 UI 9/9 通过（截图 `/tmp/verify-236-prod-shots/`）
+- 未覆盖：store-web 医务人员页与运营中心体验卡导出按钮未用真实医院/运营中心账号做 UI 登录验证（已通过 dist bundle 含新代码 + 公网 200 + 权限数据校验替代）
 
 ## 待办 / 遗留
 
